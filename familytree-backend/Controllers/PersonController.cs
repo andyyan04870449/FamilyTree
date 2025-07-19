@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
+using Dapper;
 
-namespace MyApp.Namespace
+namespace familytree_backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -19,42 +20,12 @@ namespace MyApp.Namespace
         {
             try
             {
-                var persons = new List<Person>();
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
                 
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    await connection.OpenAsync();
-                    
-                    using (var command = new NpgsqlCommand(
-                        "SELECT id, name, gender, birthday, nationality, mobile, phone, id_number, passport_number, family_relationships, friends, extra_data, created_at, updated_at FROM person_profile ORDER BY created_at DESC", 
-                        connection))
-                    {
-                        using (var reader = await command.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                persons.Add(new Person
-                                {
-                                    Id = reader.GetInt32("id"),
-                                    Name = reader.IsDBNull("name") ? "" : reader.GetString("name"),
-                                    Gender = reader.IsDBNull("gender") ? "" : reader.GetString("gender"),
-                                    Birthday = reader.IsDBNull("birthday") ? "" : reader.GetDateTime("birthday").ToString("yyyy-MM-dd"),
-                                    Nationality = reader.IsDBNull("nationality") ? "" : reader.GetString("nationality"),
-                                    Mobile = reader.IsDBNull("mobile") ? "" : reader.GetString("mobile"),
-                                    Phone = reader.IsDBNull("phone") ? "" : reader.GetString("phone"),
-                                    IdNumber = reader.IsDBNull("id_number") ? "" : reader.GetString("id_number"),
-                                    PassportNumber = reader.IsDBNull("passport_number") ? "" : reader.GetString("passport_number"),
-                                    FamilyRelationships = reader.IsDBNull("family_relationships") ? "" : reader.GetString("family_relationships"),
-                                    Friends = reader.IsDBNull("friends") ? "" : reader.GetString("friends"),
-                                    ProfileData = reader.IsDBNull("extra_data") ? null : reader.GetString("extra_data"),
-                                    CreatedAt = reader.GetDateTime("created_at"),
-                                    UpdatedAt = reader.GetDateTime("updated_at")
-                                });
-                            }
-                        }
-                    }
-                }
-
+                var persons = await connection.QueryAsync<Person>(
+                    "SELECT id, name, gender, birthday, nationality, mobile, phone, id_number, passport_number, family_relationships, friends, extra_data as profiledata, created_at, updated_at FROM person_profile ORDER BY created_at DESC");
+                
                 return Ok(persons);
             }
             catch (Exception ex)
@@ -68,45 +39,17 @@ namespace MyApp.Namespace
         {
             try
             {
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    await connection.OpenAsync();
-                    
-                    using (var command = new NpgsqlCommand(
-                        "SELECT id, name, gender, birthday, nationality, mobile, phone, id_number, passport_number, family_relationships, friends, extra_data, created_at, updated_at FROM person_profile WHERE id = @id", 
-                        connection))
-                    {
-                        command.Parameters.AddWithValue("@id", id);
-                        
-                        using (var reader = await command.ExecuteReaderAsync())
-                        {
-                            if (await reader.ReadAsync())
-                            {
-                                var person = new Person
-                                {
-                                    Id = reader.GetInt32("id"),
-                                    Name = reader.IsDBNull("name") ? "" : reader.GetString("name"),
-                                    Gender = reader.IsDBNull("gender") ? "" : reader.GetString("gender"),
-                                    Birthday = reader.IsDBNull("birthday") ? "" : reader.GetDateTime("birthday").ToString("yyyy-MM-dd"),
-                                    Nationality = reader.IsDBNull("nationality") ? "" : reader.GetString("nationality"),
-                                    Mobile = reader.IsDBNull("mobile") ? "" : reader.GetString("mobile"),
-                                    Phone = reader.IsDBNull("phone") ? "" : reader.GetString("phone"),
-                                    IdNumber = reader.IsDBNull("id_number") ? "" : reader.GetString("id_number"),
-                                    PassportNumber = reader.IsDBNull("passport_number") ? "" : reader.GetString("passport_number"),
-                                    FamilyRelationships = reader.IsDBNull("family_relationships") ? "" : reader.GetString("family_relationships"),
-                                    Friends = reader.IsDBNull("friends") ? "" : reader.GetString("friends"),
-                                    ProfileData = reader.IsDBNull("extra_data") ? null : reader.GetString("extra_data"),
-                                    CreatedAt = reader.GetDateTime("created_at"),
-                                    UpdatedAt = reader.GetDateTime("updated_at")
-                                };
-
-                                return Ok(person);
-                            }
-                        }
-                    }
-                }
-
-                return NotFound();
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var person = await connection.QueryFirstOrDefaultAsync<Person>(
+                    "SELECT id, name, gender, birthday, nationality, mobile, phone, id_number, passport_number, family_relationships, friends, extra_data as profiledata, created_at, updated_at FROM person_profile WHERE id = @id",
+                    new { id });
+                
+                if (person == null)
+                    return NotFound();
+                
+                return Ok(person);
             }
             catch (Exception ex)
             {
@@ -119,33 +62,32 @@ namespace MyApp.Namespace
         {
             try
             {
-                using (var connection = new NpgsqlConnection(_connectionString))
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var sql = @"INSERT INTO person_profile (name, gender, birthday, nationality, mobile, extra_data, created_at, updated_at) 
+                           VALUES (@name, @gender, @birthday, @nationality, @mobile, @profiledata, @createdat, @updatedat) 
+                           RETURNING id";
+                
+                var parameters = new
                 {
-                    await connection.OpenAsync();
-                    
-                    using (var command = new NpgsqlCommand(
-                        @"INSERT INTO person_profile (name, gender, birthday, nationality, mobile, extra_data, created_at, updated_at) 
-                          VALUES (@name, @gender, @birthday, @nationality, @mobile, @extraData, @createdAt, @updatedAt) 
-                          RETURNING id", 
-                        connection))
-                    {
-                        command.Parameters.AddWithValue("@name", person.Name);
-                        command.Parameters.AddWithValue("@gender", person.Gender);
-                        command.Parameters.AddWithValue("@birthday", string.IsNullOrEmpty(person.Birthday) ? DBNull.Value : (object)DateTime.Parse(person.Birthday));
-                        command.Parameters.AddWithValue("@nationality", person.Nationality);
-                        command.Parameters.AddWithValue("@mobile", person.Mobile);
-                        command.Parameters.AddWithValue("@extraData", (object)person.ProfileData ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@createdAt", DateTime.UtcNow);
-                        command.Parameters.AddWithValue("@updatedAt", DateTime.UtcNow);
-
-                        var newId = await command.ExecuteScalarAsync();
-                        person.Id = Convert.ToInt32(newId);
-                        person.CreatedAt = DateTime.UtcNow;
-                        person.UpdatedAt = DateTime.UtcNow;
-
-                        return CreatedAtAction(nameof(GetPerson), new { id = person.Id }, person);
-                    }
-                }
+                    person.Name,
+                    person.Gender,
+                    Birthday = string.IsNullOrEmpty(person.Birthday) ? (DateTime?)null : DateTime.Parse(person.Birthday),
+                    person.Nationality,
+                    person.Mobile,
+                    person.ProfileData,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                
+                var newId = await connection.ExecuteScalarAsync<int>(sql, parameters);
+                
+                person.Id = newId;
+                person.CreatedAt = DateTime.UtcNow;
+                person.UpdatedAt = DateTime.UtcNow;
+                
+                return CreatedAtAction(nameof(GetPerson), new { id = person.Id }, person);
             }
             catch (Exception ex)
             {
@@ -158,115 +100,35 @@ namespace MyApp.Namespace
         {
             try
             {
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    await connection.OpenAsync();
-                    
-                    using (var command = new NpgsqlCommand(
-                        @"UPDATE person_profile 
-                          SET name = @name, gender = @gender, birthday = @birthday, nationality = @nationality, 
-                              mobile = @mobile, extra_data = @extraData, updated_at = @updatedAt 
-                          WHERE id = @id", 
-                        connection))
-                    {
-                        command.Parameters.AddWithValue("@id", id);
-                        command.Parameters.AddWithValue("@name", person.Name);
-                        command.Parameters.AddWithValue("@gender", person.Gender);
-                        command.Parameters.AddWithValue("@birthday", string.IsNullOrEmpty(person.Birthday) ? DBNull.Value : (object)DateTime.Parse(person.Birthday));
-                        command.Parameters.AddWithValue("@nationality", person.Nationality);
-                        command.Parameters.AddWithValue("@mobile", person.Mobile);
-                        command.Parameters.AddWithValue("@extraData", (object)person.ProfileData ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@updatedAt", DateTime.UtcNow);
-
-                        var rowsAffected = await command.ExecuteNonQueryAsync();
-                        
-                        if (rowsAffected == 0)
-                            return NotFound();
-
-                        person.Id = id;
-                        person.UpdatedAt = DateTime.UtcNow;
-
-                        return Ok(person);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { error = ex.Message });
-            }
-        }
-
-        [HttpGet("search")]
-        public async Task<IActionResult> SearchPersons([FromQuery] string? name, [FromQuery] string? birthDate)
-        {
-            try
-            {
-                var persons = new List<Person>();
-                var conditions = new List<string>();
-                var parameters = new List<NpgsqlParameter>();
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
                 
-                if (!string.IsNullOrEmpty(name))
-                {
-                    conditions.Add("name ILIKE @name");
-                    parameters.Add(new NpgsqlParameter("@name", $"%{name}%"));
-                }
+                var sql = @"UPDATE person_profile 
+                           SET name = @name, gender = @gender, birthday = @birthday, nationality = @nationality, 
+                               mobile = @mobile, extra_data = @profiledata, updated_at = @updatedat 
+                           WHERE id = @id";
                 
-                if (!string.IsNullOrEmpty(birthDate))
+                var parameters = new
                 {
-                    // 驗證日期格式
-                    if (DateTime.TryParse(birthDate, out DateTime parsedDate))
-                    {
-                        conditions.Add("DATE(birthday) = @birthDate::date");
-                        parameters.Add(new NpgsqlParameter("@birthDate", parsedDate.ToString("yyyy-MM-dd")));
-                    }
-                    else
-                    {
-                        return BadRequest(new { error = "Invalid date format. Please use YYYY-MM-DD format." });
-                    }
-                }
+                    id,
+                    person.Name,
+                    person.Gender,
+                    Birthday = string.IsNullOrEmpty(person.Birthday) ? (DateTime?)null : DateTime.Parse(person.Birthday),
+                    person.Nationality,
+                    person.Mobile,
+                    person.ProfileData,
+                    UpdatedAt = DateTime.UtcNow
+                };
                 
-                var whereClause = conditions.Count > 0 ? "WHERE " + string.Join(" AND ", conditions) : "";
+                var rowsAffected = await connection.ExecuteAsync(sql, parameters);
                 
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    await connection.OpenAsync();
-                    
-                    using (var command = new NpgsqlCommand(
-                        $"SELECT id, name, gender, birthday, nationality, mobile, phone, id_number, passport_number, family_relationships, friends, extra_data, created_at, updated_at FROM person_profile {whereClause} ORDER BY created_at DESC", 
-                        connection))
-                    {
-                        foreach (var parameter in parameters)
-                        {
-                            command.Parameters.Add(parameter);
-                        }
-                        
-                        using (var reader = await command.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                persons.Add(new Person
-                                {
-                                    Id = reader.GetInt32("id"),
-                                    Name = reader.IsDBNull("name") ? "" : reader.GetString("name"),
-                                    Gender = reader.IsDBNull("gender") ? "" : reader.GetString("gender"),
-                                    Birthday = reader.IsDBNull("birthday") ? "" : reader.GetDateTime("birthday").ToString("yyyy-MM-dd"),
-                                    Nationality = reader.IsDBNull("nationality") ? "" : reader.GetString("nationality"),
-                                    Mobile = reader.IsDBNull("mobile") ? "" : reader.GetString("mobile"),
-                                    Phone = reader.IsDBNull("phone") ? "" : reader.GetString("phone"),
-                                    IdNumber = reader.IsDBNull("id_number") ? "" : reader.GetString("id_number"),
-                                    PassportNumber = reader.IsDBNull("passport_number") ? "" : reader.GetString("passport_number"),
-                                    FamilyRelationships = reader.IsDBNull("family_relationships") ? "" : reader.GetString("family_relationships"),
-                                    Friends = reader.IsDBNull("friends") ? "" : reader.GetString("friends"),
-                                    ProfileData = reader.IsDBNull("extra_data") ? null : reader.GetString("extra_data"),
-                                    CreatedAt = reader.GetDateTime("created_at"),
-                                    UpdatedAt = reader.GetDateTime("updated_at")
-                                });
-                            }
-                        }
-                    }
-                }
-
-                return Ok(persons);
+                if (rowsAffected == 0)
+                    return NotFound();
+                
+                person.Id = id;
+                person.UpdatedAt = DateTime.UtcNow;
+                
+                return Ok(person);
             }
             catch (Exception ex)
             {
@@ -279,24 +141,52 @@ namespace MyApp.Namespace
         {
             try
             {
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    await connection.OpenAsync();
-                    
-                    using (var command = new NpgsqlCommand(
-                        "DELETE FROM person_profile WHERE id = @id", 
-                        connection))
-                    {
-                        command.Parameters.AddWithValue("@id", id);
-                        
-                        var rowsAffected = await command.ExecuteNonQueryAsync();
-                        
-                        if (rowsAffected == 0)
-                            return NotFound();
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var rowsAffected = await connection.ExecuteAsync(
+                    "DELETE FROM person_profile WHERE id = @id",
+                    new { id });
+                
+                if (rowsAffected == 0)
+                    return NotFound();
+                
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
 
-                        return NoContent();
-                    }
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchPersons([FromQuery] string? name, [FromQuery] string? birthDate)
+        {
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var sql = "SELECT id, name, gender, birthday, nationality, mobile, phone, id_number, passport_number, family_relationships, friends, extra_data as profiledata, created_at, updated_at FROM person_profile WHERE 1=1";
+                var parameters = new DynamicParameters();
+                
+                if (!string.IsNullOrEmpty(name))
+                {
+                    sql += " AND name ILIKE @name";
+                    parameters.Add("@name", $"%{name}%");
                 }
+                
+                if (!string.IsNullOrEmpty(birthDate))
+                {
+                    sql += " AND DATE(birthday) = @birthDate";
+                    parameters.Add("@birthDate", DateTime.Parse(birthDate).Date);
+                }
+                
+                sql += " ORDER BY created_at DESC";
+                
+                var persons = await connection.QueryAsync<Person>(sql, parameters);
+                
+                return Ok(persons);
             }
             catch (Exception ex)
             {
@@ -308,18 +198,18 @@ namespace MyApp.Namespace
     public class Person
     {
         public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Gender { get; set; } = string.Empty;
-        public string Birthday { get; set; } = string.Empty;
-        public string Nationality { get; set; } = string.Empty;
-        public string Mobile { get; set; } = string.Empty;
-        public string? ProfileData { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public string Name { get; set; } = "";
+        public string Gender { get; set; } = "";
+        public string Birthday { get; set; } = "";
+        public string Nationality { get; set; } = "";
+        public string Mobile { get; set; } = "";
         public string? Phone { get; set; }
         public string? IdNumber { get; set; }
         public string? PassportNumber { get; set; }
         public string? FamilyRelationships { get; set; }
         public string? Friends { get; set; }
+        public string? ProfileData { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
     }
 } 
