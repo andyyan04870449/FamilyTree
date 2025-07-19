@@ -593,12 +593,10 @@ export class FamilyTreeComponent implements OnInit, AfterViewInit, OnDestroy {
             // 如果分析完成
             if (progress.status === 'completed') {
               clearInterval(progressInterval);
-              this.showNotification('視覺分析完成！', 'success');
+              this.showNotification('視覺分析完成！正在載入結果...', 'success');
               
-              // 詢問是否查看結果
-              if (confirm('分析已完成！是否要查看分析結果？')) {
-                this.viewAnalysisResult(personId);
-              }
+              // 直接查看結果，不需要用戶確認
+              this.viewAnalysisResult(personId);
             } else if (progress.status === 'failed') {
               clearInterval(progressInterval);
               this.showNotification('視覺分析失敗', 'error');
