@@ -14,10 +14,6 @@ import { EventService } from './services/event.service';
 export class App {
   constructor(private router: Router, private eventService: EventService) {}
 
-  title() {
-    return 'FamilyTree';
-  }
-
   onKeywordSearchClick() {
     // 如果當前在 family-tree 路由，發送事件給該組件
     if (this.router.url.includes('/family-tree')) {

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PersonService, AnalysisProgress } from '../../services/person.service';
 import { Router } from '@angular/router';
+import { AppConstants } from '../../constants/app.constants';
 
 @Component({
   selector: 'app-person-list',
@@ -52,17 +53,11 @@ import { Router } from '@angular/router';
                 </span>
               </div>
               <div class="job-actions">
-                <button *ngIf="job.status === 'processing'" class="btn btn-sm btn-secondary" (click)="viewProgress(job.personId)">
-                  📊 查看進度
-                </button>
                 <button *ngIf="job.status === 'processing'" class="btn btn-sm btn-warning" (click)="stopJob(job.personId)">
                   ⏹️ 終止
                 </button>
                 <button *ngIf="job.status === 'completed'" class="btn btn-sm btn-success" (click)="viewResults(job.personId)">
                   👁️ 查看結果
-                </button>
-                <button *ngIf="job.status === 'failed'" class="btn btn-sm btn-danger" (click)="retryJob(job.personId)">
-                  🔄 重試
                 </button>
               </div>
             </div>
@@ -111,10 +106,10 @@ export class PersonListComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadAnalysisJobs();
-    // 每3秒自動重新整理，實現即時更新
+    // 自動重新整理，實現即時更新
     this.refreshInterval = setInterval(() => {
       this.loadAnalysisJobs();
-    }, 3000);
+    }, AppConstants.REFRESH_INTERVAL_MS);
   }
 
   ngOnDestroy() {
@@ -137,28 +132,18 @@ export class PersonListComponent implements OnInit, OnDestroy {
           }));
         } else {
           console.error('載入分析工作失敗:', response.message);
-          this.analysisJobs = []; // 清空列表
+          this.analysisJobs = [];
         }
       },
       error: (error) => {
         console.error('載入分析工作錯誤:', error);
-        this.analysisJobs = []; // 清空列表
+        this.analysisJobs = [];
       }
     });
   }
 
   getStatusText(status: string): string {
-    switch (status) {
-      case 'processing': return '處理中';
-      case 'completed': return '已完成';
-      case 'failed': return '失敗';
-      default: return '未知';
-    }
-  }
-
-  viewProgress(personId: number) {
-    console.log('查看進度:', personId);
-    // TODO: 實作查看詳細進度功能
+    return AppConstants.STATUS_TEXTS[status as keyof typeof AppConstants.STATUS_TEXTS] || AppConstants.STATUS_TEXTS.unknown;
   }
 
   viewResults(personId: number) {
@@ -172,20 +157,13 @@ export class PersonListComponent implements OnInit, OnDestroy {
     });
   }
 
-  retryJob(personId: number) {
-    console.log('重試工作:', personId);
-    // TODO: 實作重試功能
-  }
-
   stopJob(personId: number) {
     const job = this.analysisJobs.find(j => j.personId === personId);
     const personName = job?.personName || `人物ID ${personId}`;
     
     if (confirm(`確定要終止 ${personName} 的分析工作嗎？此操作無法撤銷。`)) {
       console.log('開始終止工作:', personId);
-      
-      // 添加重試機制
-      this.retryStopAnalysis(personId, 3);
+      this.retryStopAnalysis(personId, AppConstants.MAX_RETRY_COUNT);
     }
   }
 
@@ -194,40 +172,22 @@ export class PersonListComponent implements OnInit, OnDestroy {
       next: (response) => {
         console.log('終止工作回應:', response);
         if (response.success) {
-          this.showNotification('分析工作已終止', 'success');
-          this.loadAnalysisJobs(); // 重新載入工作列表
+          this.showNotification('分析工作已終止', AppConstants.NOTIFICATION_TYPES.success);
+          this.loadAnalysisJobs();
         } else {
-          // 如果終止失敗，可能是工作已經不存在，從列表中移除
-          if (response.message && response.message.includes('找不到') || response.message.includes('已完成')) {
-            this.removeJobFromList(personId);
-            this.showNotification('工作已從列表中移除', 'info');
-          } else {
-            this.showNotification(response.message || '終止工作失敗', 'error');
-          }
+          this.removeJobFromList(personId);
         }
       },
       error: (error) => {
-        console.error(`終止工作錯誤 (嘗試 ${4 - retryCount}/3):`, error);
-        
-        if (retryCount > 1) {
-          // 重試
+        console.error('終止工作錯誤:', error);
+        if (retryCount > 0) {
+          console.log(`重試終止工作，剩餘重試次數: ${retryCount - 1}`);
           setTimeout(() => {
             this.retryStopAnalysis(personId, retryCount - 1);
-          }, 1000); // 1秒後重試
+          }, 1000);
         } else {
-          // 最後一次嘗試失敗
-          let errorMessage = '終止工作時發生錯誤';
-          
-          // 檢查是否是網絡連接問題
-          if (error.status === 0 || error.statusText === 'Unknown Error') {
-            errorMessage = '無法連接到後端服務，請檢查後端是否正在運行';
-          } else if (error.error && error.error.message) {
-            errorMessage = error.error.message;
-          } else if (error.message) {
-            errorMessage = error.message;
-          }
-          
-          this.showNotification(errorMessage, 'error');
+          this.showNotification('終止工作失敗', AppConstants.NOTIFICATION_TYPES.error);
+          this.removeJobFromList(personId);
         }
       }
     });
@@ -241,10 +201,12 @@ export class PersonListComponent implements OnInit, OnDestroy {
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.innerHTML = `
-      <span class="notification-icon">${this.getNotificationIcon(type)}</span>
-      <span class="notification-message">${message}</span>
+      <div class="notification-content">
+        <span class="notification-icon">${this.getNotificationIcon(type)}</span>
+        <span class="notification-message">${message}</span>
+      </div>
     `;
-    
+
     // 添加樣式
     notification.style.cssText = `
       position: fixed;
@@ -255,25 +217,17 @@ export class PersonListComponent implements OnInit, OnDestroy {
       color: white;
       font-weight: 500;
       z-index: 10000;
-      display: flex;
-      align-items: center;
-      gap: 8px;
       background: ${this.getNotificationColor(type)};
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       animation: slideIn 0.3s ease-out;
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     // 3秒後自動移除
     setTimeout(() => {
       if (notification.parentNode) {
-        notification.style.animation = 'slideOut 0.3s ease-in';
-        setTimeout(() => {
-          if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-          }
-        }, 300);
+        notification.parentNode.removeChild(notification);
       }
     }, 3000);
   }
@@ -283,7 +237,7 @@ export class PersonListComponent implements OnInit, OnDestroy {
       case 'success': return '✅';
       case 'error': return '❌';
       case 'info': return 'ℹ️';
-      default: return '📢';
+      default: return 'ℹ️';
     }
   }
 
@@ -292,7 +246,7 @@ export class PersonListComponent implements OnInit, OnDestroy {
       case 'success': return '#10b981';
       case 'error': return '#ef4444';
       case 'info': return '#3b82f6';
-      default: return '#6b7280';
+      default: return '#3b82f6';
     }
   }
 }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { AgGridModule } from 'ag-grid-angular';
 import { ColDef, GridOptions } from 'ag-grid-community';
 import { PersonService, Person } from '../../services/person.service';
+import { AppConstants } from '../../constants/app.constants';
 
 @Component({
   selector: 'app-person-table',
@@ -55,11 +56,7 @@ export class PersonTableComponent implements OnInit {
       error: (error) => {
         console.error('Error loading persons:', error);
         // 如果 API 失敗，使用示例數據
-        this.rowData = [
-          { id: 1, name: '范立', gender: '男', birthday: '1988-06-07', nationality: '中國', mobile: '13357913171', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-          { id: 2, name: '趙威', gender: '男', birthday: '1975-04-15', nationality: '中國', mobile: '13884937455', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-          { id: 3, name: '項依潔', gender: '女', birthday: '1975-10-29', nationality: '中國', mobile: '13573590064', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-        ];
+        this.rowData = AppConstants.SAMPLE_PERSONS;
       }
     });
   }

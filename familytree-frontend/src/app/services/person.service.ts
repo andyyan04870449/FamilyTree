@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { AppConstants } from '../constants/app.constants';
 
 export interface Person {
   id: number;
@@ -72,7 +73,7 @@ export interface AnalysisResultResponse {
   providedIn: 'root'
 })
 export class PersonService {
-  private apiUrl = 'http://localhost:5087/api/person';
+  private apiUrl = AppConstants.PERSON_API_URL;
 
   constructor(private http: HttpClient) { }
 
@@ -116,31 +117,31 @@ export class PersonService {
 
   // 視覺分析相關方法
   startAnalysis(personId: number): Observable<AnalysisResponse> {
-    return this.http.post<AnalysisResponse>('http://localhost:5087/api/analysis/start', { personId });
+    return this.http.post<AnalysisResponse>(`${AppConstants.ANALYSIS_API_URL}/start`, { personId });
   }
 
   getAnalysisProgress(personId: number): Observable<AnalysisResponse> {
-    return this.http.get<AnalysisResponse>(`http://localhost:5087/api/analysis/progress/${personId}`);
+    return this.http.get<AnalysisResponse>(`${AppConstants.ANALYSIS_API_URL}/progress/${personId}`);
   }
 
   getAllAnalysisJobs(): Observable<AnalysisJobsResponse> {
-    return this.http.get<AnalysisJobsResponse>('http://localhost:5087/api/analysis/jobs');
+    return this.http.get<AnalysisJobsResponse>(`${AppConstants.ANALYSIS_API_URL}/jobs`);
   }
 
   stopAnalysis(personId: number): Observable<AnalysisResponse> {
-    const url = `http://localhost:5087/api/analysis/stop/${personId}`;
+    const url = `${AppConstants.ANALYSIS_API_URL}/stop/${personId}`;
     console.log('調用終止API:', url);
     return this.http.delete<AnalysisResponse>(url);
   }
 
   resetAnalysis(personId: number): Observable<AnalysisResponse> {
-    const url = `http://localhost:5087/api/analysis/reset/${personId}`;
+    const url = `${AppConstants.ANALYSIS_API_URL}/reset/${personId}`;
     console.log('調用重置API:', url);
     return this.http.post<AnalysisResponse>(url, {});
   }
 
   getAnalysisResult(personId: number): Observable<AnalysisResultResponse> {
-    const url = `http://localhost:5087/api/analysis/result/${personId}`;
+    const url = `${AppConstants.ANALYSIS_API_URL}/result/${personId}`;
     console.log('調用獲取分析結果API:', url);
     return this.http.get<AnalysisResultResponse>(url);
   }

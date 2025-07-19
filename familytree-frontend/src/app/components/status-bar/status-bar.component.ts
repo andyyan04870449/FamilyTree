@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { AppConstants } from '../../constants/app.constants';
 
 @Component({
   selector: 'app-status-bar',
@@ -7,8 +8,8 @@ import { Component } from '@angular/core';
   standalone: true
 })
 export class StatusBarComponent {
-  userName = '王小明';
-  countdown = 600; // 10 分鐘
+  userName = AppConstants.DEFAULT_USER_NAME;
+  countdown = AppConstants.SESSION_TIMEOUT_SECONDS;
   timer: any;
 
   constructor() {
@@ -26,7 +27,7 @@ export class StatusBarComponent {
   }
 
   resetCountdown() {
-    this.countdown = 600;
+    this.countdown = AppConstants.SESSION_TIMEOUT_SECONDS;
     this.startCountdown();
   }
 

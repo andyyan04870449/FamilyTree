@@ -6,6 +6,7 @@ import { PersonService, Person } from '../../services/person.service';
 import { EventService } from '../../services/event.service';
 import { Subscription } from 'rxjs';
 import * as d3 from 'd3';
+import { AppConstants } from '../../constants/app.constants';
 
 interface PersonNode {
   id: string;
@@ -336,14 +337,7 @@ export class FamilyTreeComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedPerson: Person | null = null;
   currentPersonId: number = 0;
   centerNodeInitialized: boolean = false;
-  searchCriteria: SearchCriteria = {
-    idNumber: '',
-    passportNumber: '',
-    birthday: '',
-    name: '黃心田',
-    mobile: '',
-    gender: '女'
-  };
+  searchCriteria: SearchCriteria = { ...AppConstants.DEFAULT_SEARCH_CRITERIA };
 
   private eventSubscription?: Subscription;
 
@@ -455,14 +449,7 @@ export class FamilyTreeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   resetSearch() {
-    this.searchCriteria = {
-      idNumber: '',
-      passportNumber: '',
-      birthday: '',
-      name: '黃心田',
-      mobile: '',
-      gender: '女'
-    };
+    this.searchCriteria = { ...AppConstants.DEFAULT_SEARCH_CRITERIA };
     this.searchResults = [];
   }
 

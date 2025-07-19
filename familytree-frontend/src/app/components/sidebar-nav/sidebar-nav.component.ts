@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { RouterModule } from '@angular/router';
@@ -12,7 +12,6 @@ import { CommonModule } from '@angular/common';
   imports: [RouterModule, CommonModule]
 })
 export class SidebarNavComponent implements OnInit {
-  @Input() isGraphView: boolean = false;
   @Output() keywordSearchClick = new EventEmitter<void>();
   activeRoute: string = 'home';
 
@@ -57,6 +56,4 @@ export class SidebarNavComponent implements OnInit {
       this.router.navigate(['/family-tree']);
     }
   }
-
-
 } 
