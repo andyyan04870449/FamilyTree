@@ -2,12 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AgGridModule } from 'ag-grid-angular';
 import { ColDef, GridOptions } from 'ag-grid-community';
-import { PersonService, Person } from '../services/person.service';
+import { PersonService, Person } from '../../services/person.service';
 
 @Component({
   selector: 'app-person-table',
-  templateUrl: './person-table.html',
-  styleUrls: ['./person-table.scss'],
+  templateUrl: './person-table.component.html',
+  styleUrls: ['./person-table.component.scss'],
   standalone: true,
   imports: [CommonModule, AgGridModule]
 })

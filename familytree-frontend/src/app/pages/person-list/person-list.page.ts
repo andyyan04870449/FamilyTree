@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PersonService, AnalysisProgress } from '../services/person.service';
+import { PersonService, AnalysisProgress } from '../../services/person.service';
 import { Router } from '@angular/router';
 
 @Component({
@@ -89,7 +89,7 @@ import { Router } from '@angular/router';
       </div>
     </div>
   `,
-  styleUrls: ['./person-list.scss']
+  styleUrls: ['./person-list.page.scss']
 })
 export class PersonListComponent implements OnInit, OnDestroy {
   analysisJobs: AnalysisJob[] = [];

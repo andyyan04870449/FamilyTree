@@ -2,8 +2,8 @@ import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, OnDestroy, Cha
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { PersonService, Person } from '../services/person.service';
-import { EventService } from '../services/event.service';
+import { PersonService, Person } from '../../services/person.service';
+import { EventService } from '../../services/event.service';
 import { Subscription } from 'rxjs';
 import * as d3 from 'd3';
 
@@ -314,7 +314,7 @@ interface SearchCriteria {
       </div>
     </div>
   `,
-  styleUrls: ['./family-tree.scss']
+  styleUrls: ['./family-tree.page.scss']
 })
 export class FamilyTreeComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('graphContainer', { static: false }) graphContainer!: ElementRef;

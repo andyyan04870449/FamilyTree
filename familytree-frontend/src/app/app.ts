@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterModule, Router } from '@angular/router';
-import { StatusBarComponent } from './components/status-bar';
-import { SidebarNavComponent } from './components/sidebar-nav';
+import { StatusBarComponent } from './components/status-bar/status-bar.component';
+import { SidebarNavComponent } from './components/sidebar-nav/sidebar-nav.component';
 import { EventService } from './services/event.service';
 
 @Component({

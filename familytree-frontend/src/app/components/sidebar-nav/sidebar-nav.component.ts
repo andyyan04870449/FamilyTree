@@ -6,8 +6,8 @@ import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-sidebar-nav',
-  templateUrl: './sidebar-nav.html',
-  styleUrls: ['./sidebar-nav.scss'],
+  templateUrl: './sidebar-nav.component.html',
+  styleUrls: ['./sidebar-nav.component.scss'],
   standalone: true,
   imports: [RouterModule, CommonModule]
 })
