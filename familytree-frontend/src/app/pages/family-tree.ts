@@ -170,30 +170,6 @@ interface SearchCriteria {
       
       <!-- 圖譜顯示區域 -->
       <div class="tree-container" *ngIf="showGraph">
-        <div class="tree-controls">
-          <div class="control-left">
-            <button class="btn btn-outline" (click)="showSearchView()">
-              🔍 返回查詢
-            </button>
-          <button class="btn btn-primary" (click)="loadTreeData()">
-            🔄 載入資料
-          </button>
-          <button class="btn btn-secondary" (click)="saveTree()">
-            💾 儲存圖譜
-          </button>
-          <button class="btn btn-info" (click)="exportImage()">
-            📷 匯出圖片
-          </button>
-          </div>
-          <div class="control-right">
-            <button class="btn btn-outline" (click)="resetView()">
-              🔄 重設視圖
-            </button>
-            <button class="btn btn-outline" (click)="toggleFullscreen()">
-              ⛶ 全螢幕
-            </button>
-          </div>
-        </div>
         
         <div class="tree-viewport" #treeViewport>
           <div class="graph-container" #graphContainer></div>
@@ -722,10 +698,20 @@ export class FamilyTreeComponent implements OnInit, AfterViewInit, OnDestroy {
                 return;
               }
               
+              // 嘗試從分析結果中獲取性別，如果沒有則使用預設值
+              let targetGender: 'male' | 'female' = 'male'; // 預設為男性
+              if (relation.target_gender) {
+                targetGender = relation.target_gender === '女' ? 'female' : 'male';
+              } else if (relation.target_person_id) {
+                // 如果有 person_id，嘗試從數據庫獲取性別信息
+                // 這裡可以添加邏輯來獲取性別信息
+                console.log('需要從數據庫獲取性別信息:', relation.target_person_id);
+              }
+              
               const targetNode: PersonNode = {
                 id: relation.target_person_id ? relation.target_person_id.toString() : `node_${index}`,
                 name: relation.target_name,
-                gender: 'male', // 預設性別，可以根據需要調整
+                gender: targetGender,
                 isExpanded: false
               };
               
@@ -761,7 +747,7 @@ export class FamilyTreeComponent implements OnInit, AfterViewInit, OnDestroy {
             
             console.log('轉換完成 - 節點數量:', this.nodes.length);
             console.log('轉換完成 - 連線數量:', this.links.length);
-            console.log('轉換後的節點:', this.nodes);
+            console.log('轉換後的節點:', this.nodes.map(n => ({ name: n.name, gender: n.gender })));
             console.log('轉換後的連線:', this.links);
             
             // 保存所有連線的原始資料
@@ -1049,13 +1035,17 @@ export class FamilyTreeComponent implements OnInit, AfterViewInit, OnDestroy {
       .style('fill', (d: any) => {
         // 主角節點特殊顏色
         if (d.id === this.currentPersonId.toString()) {
+          console.log('主角節點顏色:', d.name, '#FFD700');
           return '#FFD700'; // 金色
         }
+        let color;
         if (d.gender === 'male') {
-          return d.isExpanded ? '#42A5F5' : '#1976d2';
+          color = d.isExpanded ? '#42A5F5' : '#1976d2';
         } else {
-          return d.isExpanded ? '#F48FB1' : '#e91e63';
+          color = d.isExpanded ? '#F48FB1' : '#e91e63';
         }
+        console.log('節點顏色:', d.name, d.gender, color);
+        return color;
       })
       .style('stroke', (d: any) => {
         // 主角節點特殊邊框
@@ -1365,7 +1355,7 @@ export class FamilyTreeComponent implements OnInit, AfterViewInit, OnDestroy {
         // 保存所有連線的原始資料
         this.allLinks = [...this.links];
 
-        console.log('載入的節點:', this.nodes);
+        console.log('載入的節點:', this.nodes.map(n => ({ name: n.name, gender: n.gender })));
         console.log('載入的連線:', this.links);
         
         this.updateGraph();
@@ -1480,15 +1470,7 @@ export class FamilyTreeComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  saveTree() {
-    console.log('儲存關聯圖譜');
-    // TODO: 實作儲存功能
-  }
 
-  exportImage() {
-    console.log('匯出圖片');
-    // TODO: 實作匯出功能
-  }
 
   loadAnalysisResult(personId: number) {
     console.log('載入分析結果，personId:', personId);

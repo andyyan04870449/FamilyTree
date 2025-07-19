@@ -280,66 +280,7 @@
     overflow: hidden;
     border: 1px solid $border-color;
 
-    .tree-controls {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 30px;
-      background: $background;
-      border-bottom: 1px solid $border-color;
 
-      .control-left, .control-right {
-        display: flex;
-        gap: 15px;
-      }
-
-      .btn {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 6px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-
-        &.btn-primary {
-          background: $primary;
-          color: white;
-
-          &:hover {
-            background: darken($primary, 10%);
-          }
-        }
-
-        &.btn-secondary {
-          background: $secondary;
-          color: white;
-
-          &:hover {
-            background: darken($secondary, 10%);
-          }
-        }
-
-        &.btn-info {
-          background: $info;
-          color: white;
-
-          &:hover {
-            background: darken($info, 10%);
-          }
-        }
-
-        &.btn-outline {
-          background: transparent;
-          color: $text-primary;
-          border: 2px solid $border-color;
-
-          &:hover {
-            background: $light-bg;
-            border-color: $primary;
-          }
-        }
-      }
-    }
 
     .tree-viewport {
       position: relative;
@@ -384,11 +325,11 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 
             &.male {
-              background: #1976d2;
+              background: #42A5F5; // 與節點顏色一致
             }
 
             &.female {
-              background: #e91e63;
+              background: #F48FB1; // 與節點顏色一致
             }
           }
 
