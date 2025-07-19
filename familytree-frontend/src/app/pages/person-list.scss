@@ -1,0 +1,328 @@
+@import '../../styles/variables';
+
+.analysis-jobs-page {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: $background;
+  min-height: 100vh;
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 25px;
+
+    h1 {
+      color: $primary;
+      font-size: 2rem;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    p {
+      color: $text-secondary;
+      font-size: 1rem;
+      margin: 0;
+    }
+  }
+
+  .jobs-container {
+    background: $card-bg;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    border: 1px solid $border-color;
+  }
+
+  .jobs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid $border-color;
+
+          .stats {
+        display: flex;
+        gap: 20px;
+
+        .stat-item {
+          text-align: center;
+
+          .stat-number {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: $primary;
+          }
+
+          .stat-label {
+            font-size: 0.85rem;
+            color: $text-secondary;
+            margin-top: 3px;
+          }
+        }
+      }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: $primary;
+      color: white;
+
+      &:hover {
+        background: darken($primary, 10%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba($primary, 0.3);
+      }
+    }
+  }
+
+  .jobs-list {
+            .empty-placeholder {
+          text-align: center;
+          padding: 40px 20px;
+          color: $text-muted;
+
+          .placeholder-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.7;
+          }
+
+          h3 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            color: $text-primary;
+          }
+
+          p {
+            opacity: 0.8;
+            margin-bottom: 15px;
+          }
+        }
+
+    .job-item {
+      background: $background;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 15px;
+      border: 1px solid $border-color;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      &.completed {
+        border-left: 4px solid $success;
+        background: rgba($success, 0.05);
+      }
+
+      &.failed {
+        border-left: 4px solid $error;
+        background: rgba($error, 0.05);
+      }
+
+      &.processing {
+        border-left: 4px solid $primary;
+        background: rgba($primary, 0.05);
+      }
+
+              .job-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 15px;
+
+          .job-info {
+            h4 {
+              margin: 0 0 6px 0;
+              font-size: 1.1rem;
+              color: $text-primary;
+              font-weight: 600;
+            }
+
+                      .job-status {
+              padding: 4px 12px;
+              border-radius: 16px;
+              font-size: 0.8rem;
+              font-weight: 600;
+              text-transform: uppercase;
+
+              &.status-processing {
+                background: rgba($primary, 0.1);
+                color: $primary;
+                border: 1px solid rgba($primary, 0.3);
+              }
+
+              &.status-completed {
+                background: rgba($success, 0.1);
+                color: $success;
+                border: 1px solid rgba($success, 0.3);
+              }
+
+              &.status-failed {
+                background: rgba($error, 0.1);
+                color: $error;
+                border: 1px solid rgba($error, 0.3);
+              }
+            }
+        }
+
+                  .job-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+
+            .btn {
+              padding: 6px 12px;
+              border: none;
+              border-radius: 6px;
+              font-size: 0.8rem;
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.3s ease;
+              min-width: 70px;
+              white-space: nowrap;
+
+              &.btn-sm {
+                padding: 5px 10px;
+                font-size: 0.75rem;
+                min-width: 60px;
+              }
+
+            &.btn-secondary {
+              background: $secondary;
+              color: white;
+
+              &:hover {
+                background: darken($secondary, 10%);
+                transform: translateY(-1px);
+              }
+            }
+
+            &.btn-success {
+              background: $success;
+              color: white;
+
+              &:hover {
+                background: darken($success, 10%);
+                transform: translateY(-1px);
+              }
+            }
+
+            &.btn-danger {
+              background: $error;
+              color: white;
+
+              &:hover {
+                background: darken($error, 10%);
+                transform: translateY(-1px);
+              }
+            }
+
+            &.btn-warning {
+              background: $warning;
+              color: white;
+
+              &:hover {
+                background: darken($warning, 10%);
+                transform: translateY(-1px);
+              }
+            }
+          }
+        }
+      }
+
+              .job-progress {
+          margin-bottom: 15px;
+
+          .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba($text-muted, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 6px;
+
+            .progress-fill {
+              height: 100%;
+              background: linear-gradient(90deg, $primary, $success);
+              border-radius: 4px;
+              transition: width 0.3s ease;
+            }
+          }
+
+          .progress-text {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: $primary;
+          }
+        }
+
+              .job-details {
+          .detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+
+            .detail-label {
+              color: $text-secondary;
+              font-weight: 500;
+            }
+
+            .detail-value {
+              font-weight: 600;
+              color: $text-primary;
+
+              &.error {
+                color: $error;
+              }
+            }
+          }
+        }
+    }
+  }
+}
+
+// 響應式設計
+@media (max-width: 768px) {
+  .analysis-jobs-page {
+    padding: 15px;
+
+    .page-header h1 {
+      font-size: 1.8rem;
+    }
+
+    .jobs-header {
+      flex-direction: column;
+      gap: 15px;
+
+      .stats {
+        gap: 15px;
+
+        .stat-item .stat-number {
+          font-size: 1.3rem;
+        }
+      }
+    }
+
+    .job-item .job-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+
+      .job-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+  }
+} 

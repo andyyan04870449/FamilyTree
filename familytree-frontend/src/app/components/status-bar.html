@@ -1,0 +1,11 @@
+<div class="status-bar">
+  <div class="user-info">
+    <span class="user-icon">👤</span>
+    <span class="user-name">{{ userName }}</span>
+  </div>
+  <div class="countdown">
+    <span>倒數：{{ countdownDisplay }}</span>
+    <button class="reset-btn" (click)="resetCountdown()" title="重設倒數">⟳</button>
+  </div>
+  <button class="logout-btn" (click)="logout()">登出</button>
+</div>

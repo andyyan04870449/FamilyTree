@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: familytree
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database-backup:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - familytree-network
+
+  familytree-backend:
+    build: ./familytree-backend
+    ports:
+      - "5088:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=familytree;Username=user;Password=password123
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - familytree-network
+
+  familytree-frontend:
+    build: ./familytree-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - familytree-backend
+    restart: unless-stopped
+    networks:
+      - familytree-network
+
+volumes:
+  postgres_data:
+
+networks:
+  familytree-network:
+    driver: bridge 

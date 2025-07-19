@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI關聯分析系統</title>
+    <style>
+        /* 變數定義 */
+        :root {
+            --primary: #3b82f6;
+            --secondary: #60a5fa;
+            --background: #0f172a;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #64748b;
+            --border: #334155;
+            --light-bg: #1e293b;
+            --accent: #f97316;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+            --dark-bg: #020617;
+            --sidebar-bg: #1e293b;
+            --card-bg: #1e293b;
+            --hover-bg: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .welcome-page {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .welcome-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .welcome-header h1 {
+            color: var(--primary);
+            font-size: 3rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .welcome-header p {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            margin: 0;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            border-color: var(--primary);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .feature-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .feature-link:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .quick-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            min-width: 120px;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .welcome-page {
+                padding: 20px;
+            }
+
+            .welcome-header h1 {
+                font-size: 2.5rem;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .quick-stats {
+                gap: 20px;
+            }
+
+            .stat-item {
+                min-width: 100px;
+                padding: 20px;
+            }
+        }
+
+        /* 載入動畫 */
+        .loading {
+            opacity: 0;
+            animation: fadeIn 0.5s ease-in forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .feature-card {
+            animation-delay: calc(var(--i) * 0.1s);
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-page loading">
+        <div class="welcome-header">
+            <h1>🧬 AI關聯分析系統</h1>
+            <p>歡迎使用AI關聯分析系統，請選擇下方功能開始使用</p>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feature-card" style="--i: 1;">
+                <div class="feature-icon">🔍</div>
+                <h3>關鍵字查詢</h3>
+                <p>透過關鍵字搜尋成員資料，支援姓名、身分證、電話等多種搜尋方式</p>
+                <a href="#" class="feature-link" onclick="showComingSoon('關鍵字查詢')">
+                    開始搜尋 →
+                </a>
+            </div>
+
+            <div class="feature-card" style="--i: 2;">
+                <div class="feature-icon">🌳</div>
+                <h3>視覺化分析</h3>
+                <p>以關聯圖譜方式視覺化顯示成員關係，支援互動式操作</p>
+                <a href="#" class="feature-link" onclick="showComingSoon('視覺化分析')">
+                    查看圖譜 →
+                </a>
+            </div>
+
+            <div class="feature-card" style="--i: 3;">
+                <div class="feature-icon">📋</div>
+                <h3>資料管理</h3>
+                <p>管理成員基本資料，包含個人資訊、關係連結等</p>
+                <a href="#" class="feature-link" onclick="showComingSoon('資料管理')">
+                    查看資料 →
+                </a>
+            </div>
+
+            <div class="feature-card" style="--i: 4;">
+                <div class="feature-icon">⭐</div>
+                <h3>收藏管理</h3>
+                <p>收藏重要的成員資料，方便快速查看和管理</p>
+                <a href="#" class="feature-link" onclick="showComingSoon('收藏管理')">
+                    管理收藏 →
+                </a>
+            </div>
+        </div>
+
+        <div class="quick-stats">
+            <div class="stat-item">
+                <div class="stat-number">0</div>
+                <div class="stat-label">總成員數</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">0</div>
+                <div class="stat-label">收藏數量</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">0</div>
+                <div class="stat-label">查詢次數</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 顯示即將推出訊息
+        function showComingSoon(feature) {
+            alert(`${feature} 功能即將推出，敬請期待！`);
+        }
+
+        // 頁面載入動畫
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.feature-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+        });
+    </script>
+</body>
+</html> 

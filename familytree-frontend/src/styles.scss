@@ -1,0 +1,8 @@
+@import 'styles/variables';
+
+body {
+  background: $background;
+  color: $text-primary;
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  margin: 0;
+}

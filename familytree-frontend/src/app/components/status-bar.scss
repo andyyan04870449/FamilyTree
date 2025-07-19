@@ -1,0 +1,61 @@
+@import '../../styles/variables';
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: $dark-bg;
+  color: $text-primary;
+  padding: 0.5rem 1.5rem;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  border-bottom: 1px solid $border-color;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  .user-icon {
+    margin-right: 0.5rem;
+    font-size: 1.3rem;
+  }
+  .user-name {
+    font-weight: bold;
+  }
+}
+
+.countdown {
+  display: flex;
+  align-items: center;
+  span {
+    margin-right: 0.5rem;
+  }
+  .reset-btn {
+    background: $secondary;
+    border: none;
+    color: $primary;
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: background 0.2s;
+    &:hover {
+      background: lighten($secondary, 10%);
+    }
+  }
+}
+
+.logout-btn {
+  background: $error;
+  border: none;
+  color: #fff;
+  padding: 0.4rem 1.2rem;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+  &:hover {
+    background: darken($error, 10%);
+  }
+}
