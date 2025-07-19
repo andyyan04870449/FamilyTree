@@ -29,10 +29,15 @@ namespace familytree_backend.Controllers
         {
             try
             {
+                _logger.LogInformation("=== 收到分析啟動請求 ===");
+                _logger.LogInformation("請求參數: PersonId = {PersonId}, MaxDepth = {MaxDepth}", request.PersonId, request.MaxDepth);
+                _logger.LogInformation("請求時間: {RequestTime}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                
                 var success = await _analysisService.StartAnalysis(request.PersonId, request.MaxDepth);
                 
                 if (success)
                 {
+                    _logger.LogInformation("✅ 分析啟動成功: PersonId = {PersonId}, MaxDepth = {MaxDepth}", request.PersonId, request.MaxDepth);
                     return Ok(new { 
                         success = true, 
                         message = $"遞迴分析已開始（最大深度：{request.MaxDepth}層），請稍後查看進度",
@@ -42,6 +47,7 @@ namespace familytree_backend.Controllers
                 }
                 else
                 {
+                    _logger.LogWarning("⚠️ 分析啟動失敗: 該人員已有進行中的分析任務, PersonId = {PersonId}", request.PersonId);
                     return BadRequest(new { 
                         success = false, 
                         message = "該人員已有進行中的分析任務" 
@@ -50,7 +56,8 @@ namespace familytree_backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "啟動遞迴分析失敗: PersonId = {PersonId}, MaxDepth = {MaxDepth}", request.PersonId, request.MaxDepth);
+                _logger.LogError(ex, "❌ 啟動遞迴分析失敗: PersonId = {PersonId}, MaxDepth = {MaxDepth}", request.PersonId, request.MaxDepth);
+                _logger.LogError("錯誤詳情: {ErrorMessage}", ex.Message);
                 return StatusCode(500, new { 
                     success = false, 
                     message = "啟動遞迴分析時發生錯誤" 
@@ -63,16 +70,24 @@ namespace familytree_backend.Controllers
         {
             try
             {
+                _logger.LogInformation("=== 收到進度查詢請求 ===");
+                _logger.LogInformation("查詢參數: PersonId = {PersonId}", personId);
+                _logger.LogInformation("查詢時間: {QueryTime}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                
                 var progress = await _analysisService.GetAnalysisProgress(personId);
                 
                 if (progress == null)
                 {
+                    _logger.LogWarning("⚠️ 找不到分析記錄: PersonId = {PersonId}", personId);
                     return NotFound(new { 
                         success = false, 
                         message = "找不到該人員的分析記錄" 
                     });
                 }
 
+                _logger.LogInformation("✅ 進度查詢成功: PersonId = {PersonId}, Status = {Status}, Progress = {Progress}%", 
+                    personId, progress.Status, progress.ProgressPercentage);
+                
                 return Ok(new { 
                     success = true, 
                     data = progress 
@@ -80,7 +95,8 @@ namespace familytree_backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "查詢分析進度失敗: PersonId = {PersonId}", personId);
+                _logger.LogError(ex, "❌ 查詢分析進度失敗: PersonId = {PersonId}", personId);
+                _logger.LogError("錯誤詳情: {ErrorMessage}", ex.Message);
                 return StatusCode(500, new { 
                     success = false, 
                     message = "查詢進度時發生錯誤" 

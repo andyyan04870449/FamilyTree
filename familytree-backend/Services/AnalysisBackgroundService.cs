@@ -455,19 +455,26 @@ namespace familytree_backend.Services
         {
             try
             {
-                _logger.LogInformation("=== 開始執行遞迴分析任務: PersonId = {PersonId}, MaxDepth = {MaxDepth} ===", _personId, _maxDepth);
+                _logger.LogInformation("=== 開始執行遞迴分析任務 ===");
+                _logger.LogInformation("分析參數: PersonId = {PersonId}, SessionId = {SessionId}, MaxDepth = {MaxDepth}", _personId, _sessionId, _maxDepth);
+                _logger.LogInformation("分析開始時間: {StartTime}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                
                 await UpdateProgress(5, "開始遞迴分析...");
 
                 // 開始遞迴分析
+                _logger.LogInformation("開始遞迴分析根節點: PersonId = {PersonId}", _personId);
                 await AnalyzePersonRecursively(_personId, 1);
 
                 // 更新會話狀態為完成
+                _logger.LogInformation("分析完成，開始統計結果...");
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
                 
                 var totalRelationships = await connection.QueryFirstOrDefaultAsync<int>(
                     "SELECT COUNT(*) FROM relationship_layers WHERE analysis_session_id = @SessionId",
                     new { SessionId = _sessionId });
+
+                _logger.LogInformation("統計結果: 總共找到 {Count} 個關係", totalRelationships);
 
                 await connection.ExecuteAsync(@"
                     UPDATE analysis_sessions 
@@ -476,11 +483,20 @@ namespace familytree_backend.Services
                     new { SessionId = _sessionId, TotalRelationships = totalRelationships });
 
                 await UpdateProgress(100, "遞迴分析完成");
-                _logger.LogInformation("=== 遞迴分析任務完成: PersonId = {PersonId}, 總共找到 {Count} 個關係 ===", _personId, totalRelationships);
+                
+                _logger.LogInformation("=== 遞迴分析任務完成 ===");
+                _logger.LogInformation("完成時間: {EndTime}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                _logger.LogInformation("總共分析 {AnalyzedCount} 個人員", _analyzedPersons.Count);
+                _logger.LogInformation("總共找到 {Count} 個關係", totalRelationships);
+                _logger.LogInformation("分析深度: 1-{MaxDepth} 層", _maxDepth);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "=== 遞迴分析執行失敗: PersonId = {PersonId} ===", _personId);
+                _logger.LogError(ex, "=== 遞迴分析執行失敗 ===");
+                _logger.LogError("失敗時間: {ErrorTime}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                _logger.LogError("失敗原因: {ErrorMessage}", ex.Message);
+                _logger.LogError("堆疊追蹤: {StackTrace}", ex.StackTrace);
+                
                 await UpdateStatus("failed", ex.Message);
                 
                 // 更新會話狀態為失敗
@@ -494,6 +510,9 @@ namespace familytree_backend.Services
 
         private async Task AnalyzePersonRecursively(int personId, int currentDepth)
         {
+            _logger.LogInformation("=== 開始分析人員 (深度 {Depth}) ===", currentDepth);
+            _logger.LogInformation("分析目標: PersonId = {PersonId}", personId);
+            
             if (_cancellationTokenSource.Token.IsCancellationRequested)
             {
                 _logger.LogInformation("分析被取消: PersonId = {PersonId}", personId);
@@ -502,152 +521,237 @@ namespace familytree_backend.Services
 
             if (currentDepth > _maxDepth)
             {
-                _logger.LogInformation("達到最大深度限制: PersonId = {PersonId}, Depth = {Depth}", personId, currentDepth);
+                _logger.LogInformation("達到最大深度限制: PersonId = {PersonId}, Depth = {Depth}, MaxDepth = {MaxDepth}", personId, currentDepth, _maxDepth);
                 return;
             }
 
             if (_analyzedPersons.Contains(personId))
             {
-                _logger.LogInformation("人員已分析過: PersonId = {PersonId}", personId);
+                _logger.LogInformation("人員已分析過，跳過: PersonId = {PersonId}", personId);
                 return;
             }
 
             _analyzedPersons.Add(personId);
-            _logger.LogInformation("開始分析人員: PersonId = {PersonId}, Depth = {Depth}", personId, currentDepth);
+            _logger.LogInformation("✅ 開始分析人員: PersonId = {PersonId}, 當前深度 = {Depth}, 已分析人數 = {AnalyzedCount}", 
+                personId, currentDepth, _analyzedPersons.Count);
 
             // 查詢人員資料
+            _logger.LogInformation("正在查詢人員資料...");
             var personData = await GetPersonData(personId);
             if (personData == null)
             {
-                _logger.LogWarning("找不到人員資料: PersonId = {PersonId}", personId);
+                _logger.LogWarning("❌ 找不到人員資料: PersonId = {PersonId}", personId);
                 return;
             }
 
-            _logger.LogInformation("獲取到人員資料: PersonId = {PersonId}, 家庭關係: '{FamilyRelationships}', 朋友: '{Friends}', 活動: '{Activities}'", 
-                personId, personData.family_relationships ?? "無", personData.friends ?? "無", personData.activities ?? "無");
+            _logger.LogInformation("📋 人員資料概覽:");
+            _logger.LogInformation("  - 家庭關係: '{FamilyRelationships}'", personData.family_relationships ?? "無");
+            _logger.LogInformation("  - 朋友關係: '{Friends}'", personData.friends ?? "無");
+            _logger.LogInformation("  - 參與活動: '{Activities}'", personData.activities ?? "無");
 
             var discoveredPersons = new List<int>();
+            var totalRelationsFound = 0;
 
             // 分析家庭關係
             if (!string.IsNullOrEmpty(personData.family_relationships))
             {
-                _logger.LogInformation("分析家庭關係: PersonId = {PersonId}, Depth = {Depth}", personId, currentDepth);
+                _logger.LogInformation("🔍 開始分析家庭關係...");
                 using var scope = _serviceProvider.CreateScope();
                 var aiService = scope.ServiceProvider.GetRequiredService<AIService>();
                 
                 var familyRelations = await aiService.ExtractNameRelationsWithAIAsync(personData.family_relationships);
-                _logger.LogInformation("家庭關係分析完成，找到 {Count} 個關係", familyRelations.Count);
+                _logger.LogInformation("✅ 家庭關係分析完成，找到 {Count} 個關係", familyRelations.Count);
+                totalRelationsFound += familyRelations.Count;
                 
                 foreach (var relation in familyRelations)
                 {
+                    _logger.LogInformation("  - 關係: {Name} ({Relation})", relation.Name, relation.Relation);
                     var targetId = await FindPersonIdByName(relation.Name);
                     if (targetId.HasValue)
                     {
                         await SaveRelationship(personId, targetId.Value, relation.Relation, "family_relationships", currentDepth);
                         discoveredPersons.Add(targetId.Value);
+                        _logger.LogInformation("    ✅ 找到對應人員: {Name} (ID: {TargetId})", relation.Name, targetId.Value);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("    ⚠️ 找不到對應人員: {Name}", relation.Name);
                     }
                 }
+            }
+            else
+            {
+                _logger.LogInformation("ℹ️ 跳過家庭關係分析（無資料）");
             }
 
             // 分析朋友關係
             if (!string.IsNullOrEmpty(personData.friends))
             {
-                _logger.LogInformation("分析朋友關係: PersonId = {PersonId}, Depth = {Depth}", personId, currentDepth);
+                _logger.LogInformation("🔍 開始分析朋友關係...");
                 using var scope = _serviceProvider.CreateScope();
                 var aiService = scope.ServiceProvider.GetRequiredService<AIService>();
                 
                 var friendRelations = await aiService.ExtractNameRelationsWithAIAsync(personData.friends);
-                _logger.LogInformation("朋友關係分析完成，找到 {Count} 個關係", friendRelations.Count);
+                _logger.LogInformation("✅ 朋友關係分析完成，找到 {Count} 個關係", friendRelations.Count);
+                totalRelationsFound += friendRelations.Count;
                 
                 foreach (var relation in friendRelations)
                 {
+                    _logger.LogInformation("  - 關係: {Name} ({Relation})", relation.Name, relation.Relation);
                     var targetId = await FindPersonIdByName(relation.Name);
                     if (targetId.HasValue)
                     {
                         await SaveRelationship(personId, targetId.Value, relation.Relation, "friends", currentDepth);
                         discoveredPersons.Add(targetId.Value);
+                        _logger.LogInformation("    ✅ 找到對應人員: {Name} (ID: {TargetId})", relation.Name, targetId.Value);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("    ⚠️ 找不到對應人員: {Name}", relation.Name);
                     }
                 }
+            }
+            else
+            {
+                _logger.LogInformation("ℹ️ 跳過朋友關係分析（無資料）");
             }
 
             // 分析參與活動關係
             if (!string.IsNullOrEmpty(personData.activities))
             {
-                _logger.LogInformation("分析參與活動關係: PersonId = {PersonId}, Depth = {Depth}", personId, currentDepth);
+                _logger.LogInformation("🔍 開始分析參與活動關係...");
                 using var scope = _serviceProvider.CreateScope();
                 var aiService = scope.ServiceProvider.GetRequiredService<AIService>();
                 
                 var activityRelations = await aiService.ExtractNameRelationsWithAIAsync(personData.activities);
-                _logger.LogInformation("活動關係分析完成，找到 {Count} 個關係", activityRelations.Count);
+                _logger.LogInformation("✅ 活動關係分析完成，找到 {Count} 個關係", activityRelations.Count);
+                totalRelationsFound += activityRelations.Count;
                 
                 foreach (var relation in activityRelations)
                 {
+                    _logger.LogInformation("  - 關係: {Name} ({Relation})", relation.Name, relation.Relation);
                     var targetId = await FindPersonIdByName(relation.Name);
                     if (targetId.HasValue)
                     {
                         await SaveRelationship(personId, targetId.Value, relation.Relation, "activities", currentDepth);
                         discoveredPersons.Add(targetId.Value);
+                        _logger.LogInformation("    ✅ 找到對應人員: {Name} (ID: {TargetId})", relation.Name, targetId.Value);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("    ⚠️ 找不到對應人員: {Name}", relation.Name);
                     }
                 }
             }
+            else
+            {
+                _logger.LogInformation("ℹ️ 跳過活動關係分析（無資料）");
+            }
+
+            _logger.LogInformation("📊 本層分析統計:");
+            _logger.LogInformation("  - 總共找到關係: {TotalRelations} 個", totalRelationsFound);
+            _logger.LogInformation("  - 發現新人員: {DiscoveredCount} 個", discoveredPersons.Count);
 
             // 更新進度
             var progress = Math.Min(95, 5 + (currentDepth * 90 / _maxDepth));
             await UpdateProgress(progress, $"分析第 {currentDepth} 層關係...");
 
             // 遞迴分析發現的人員
-            foreach (var discoveredPersonId in discoveredPersons)
+            if (discoveredPersons.Count > 0)
             {
-                if (!_analyzedPersons.Contains(discoveredPersonId))
+                _logger.LogInformation("🔄 開始遞迴分析發現的人員...");
+                foreach (var discoveredPersonId in discoveredPersons)
                 {
-                    await AnalyzePersonRecursively(discoveredPersonId, currentDepth + 1);
+                    if (!_analyzedPersons.Contains(discoveredPersonId))
+                    {
+                        _logger.LogInformation("  - 遞迴分析: PersonId = {DiscoveredPersonId} (深度 {NextDepth})", discoveredPersonId, currentDepth + 1);
+                        await AnalyzePersonRecursively(discoveredPersonId, currentDepth + 1);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("  - 跳過已分析: PersonId = {DiscoveredPersonId}", discoveredPersonId);
+                    }
                 }
             }
+            else
+            {
+                _logger.LogInformation("ℹ️ 沒有發現新人員，結束遞迴");
+            }
+
+            _logger.LogInformation("=== 人員分析完成 (深度 {Depth}) ===", currentDepth);
         }
 
         private async Task SaveRelationship(int sourceId, int targetId, string relation, string sourceField, int layerDepth)
         {
             try
             {
+                _logger.LogInformation("💾 正在保存關係到資料庫...");
+                _logger.LogInformation("  - 來源人員: {SourceId}", sourceId);
+                _logger.LogInformation("  - 目標人員: {TargetId}", targetId);
+                _logger.LogInformation("  - 關係類型: {Relation}", relation);
+                _logger.LogInformation("  - 來源欄位: {SourceField}", sourceField);
+                _logger.LogInformation("  - 層級深度: {LayerDepth}", layerDepth);
+                _logger.LogInformation("  - 分析會話: {SessionId}", _sessionId);
+
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                await connection.ExecuteAsync(@"
+                var result = await connection.ExecuteAsync(@"
                     INSERT INTO relationship_layers (source_person_id, target_person_id, relation_type, source_field, layer_depth, analysis_session_id)
                     VALUES (@SourceId, @TargetId, @Relation, @SourceField, @LayerDepth, @SessionId)
                     ON CONFLICT (source_person_id, target_person_id, analysis_session_id) DO NOTHING",
                     new { SourceId = sourceId, TargetId = targetId, Relation = relation, SourceField = sourceField, LayerDepth = layerDepth, SessionId = _sessionId });
 
-                _logger.LogInformation("保存關係: {SourceId} -> {TargetId} ({Relation}) at layer {LayerDepth}", sourceId, targetId, relation, layerDepth);
+                if (result > 0)
+                {
+                    _logger.LogInformation("✅ 關係保存成功: {SourceId} -> {TargetId} ({Relation}) at layer {LayerDepth}", sourceId, targetId, relation, layerDepth);
+                }
+                else
+                {
+                    _logger.LogInformation("ℹ️ 關係已存在，跳過重複保存: {SourceId} -> {TargetId}", sourceId, targetId);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "保存關係失敗: {SourceId} -> {TargetId}", sourceId, targetId);
+                _logger.LogError(ex, "❌ 保存關係失敗: {SourceId} -> {TargetId}", sourceId, targetId);
+                _logger.LogError("錯誤詳情: {ErrorMessage}", ex.Message);
             }
         }
 
         private async Task<PersonData?> GetPersonData(int personId)
         {
-            _logger.LogInformation("查詢人員資料: PersonId = {PersonId}", personId);
+            _logger.LogInformation("📋 正在查詢人員資料: PersonId = {PersonId}", personId);
             
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
 
-            var result = await connection.QueryFirstOrDefaultAsync<PersonData>(
-                "SELECT id, family_relationships, friends, activities FROM person_profile WHERE id = @PersonId",
-                new { PersonId = personId });
-            
-            if (result != null)
-            {
-                _logger.LogInformation("資料庫查詢結果: ID={Id}, 家庭關係='{FamilyRelationships}', 朋友='{Friends}'", 
-                    result.Id, result.family_relationships ?? "NULL", result.friends ?? "NULL");
+                var result = await connection.QueryFirstOrDefaultAsync<PersonData>(
+                    "SELECT id, family_relationships, friends, activities FROM person_profile WHERE id = @PersonId",
+                    new { PersonId = personId });
+                
+                if (result != null)
+                {
+                    _logger.LogInformation("✅ 成功獲取人員資料:");
+                    _logger.LogInformation("  - ID: {Id}", result.Id);
+                    _logger.LogInformation("  - 家庭關係: '{FamilyRelationships}'", result.family_relationships ?? "無");
+                    _logger.LogInformation("  - 朋友關係: '{Friends}'", result.friends ?? "無");
+                    _logger.LogInformation("  - 參與活動: '{Activities}'", result.activities ?? "無");
+                }
+                else
+                {
+                    _logger.LogWarning("❌ 資料庫查詢無結果: PersonId = {PersonId}", personId);
+                }
+                
+                return result;
             }
-            else
+            catch (Exception ex)
             {
-                _logger.LogWarning("資料庫查詢無結果: PersonId = {PersonId}", personId);
+                _logger.LogError(ex, "❌ 查詢人員資料失敗: PersonId = {PersonId}", personId);
+                _logger.LogError("錯誤詳情: {ErrorMessage}", ex.Message);
+                return null;
             }
-            
-            return result;
         }
 
         private async Task<PersonData?> GetPersonData()
