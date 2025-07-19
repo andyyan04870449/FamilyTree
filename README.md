@@ -35,7 +35,7 @@ ng serve
 
 4. **訪問應用程式**
 - 前端: http://localhost:4200
-- 後端: http://localhost:5088
+- 後端: http://localhost:5087
 
 ### 自動部署
 

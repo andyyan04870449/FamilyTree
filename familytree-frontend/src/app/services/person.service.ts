@@ -72,7 +72,7 @@ export interface AnalysisResultResponse {
   providedIn: 'root'
 })
 export class PersonService {
-  private apiUrl = 'http://localhost:5088/api/person';
+  private apiUrl = 'http://localhost:5087/api/person';
 
   constructor(private http: HttpClient) { }
 
@@ -116,31 +116,31 @@ export class PersonService {
 
   // 視覺分析相關方法
   startAnalysis(personId: number): Observable<AnalysisResponse> {
-    return this.http.post<AnalysisResponse>('http://localhost:5088/api/analysis/start', { personId });
+    return this.http.post<AnalysisResponse>('http://localhost:5087/api/analysis/start', { personId });
   }
 
-                    getAnalysisProgress(personId: number): Observable<AnalysisResponse> {
-                    return this.http.get<AnalysisResponse>(`http://localhost:5088/api/analysis/progress/${personId}`);
-                  }
+  getAnalysisProgress(personId: number): Observable<AnalysisResponse> {
+    return this.http.get<AnalysisResponse>(`http://localhost:5087/api/analysis/progress/${personId}`);
+  }
 
-                  getAllAnalysisJobs(): Observable<AnalysisJobsResponse> {
-                    return this.http.get<AnalysisJobsResponse>('http://localhost:5088/api/analysis/jobs');
-                  }
+  getAllAnalysisJobs(): Observable<AnalysisJobsResponse> {
+    return this.http.get<AnalysisJobsResponse>('http://localhost:5087/api/analysis/jobs');
+  }
 
-                  stopAnalysis(personId: number): Observable<AnalysisResponse> {
-                    const url = `http://localhost:5088/api/analysis/stop/${personId}`;
-                    console.log('調用終止API:', url);
-                    return this.http.delete<AnalysisResponse>(url);
-                  }
+  stopAnalysis(personId: number): Observable<AnalysisResponse> {
+    const url = `http://localhost:5087/api/analysis/stop/${personId}`;
+    console.log('調用終止API:', url);
+    return this.http.delete<AnalysisResponse>(url);
+  }
 
   resetAnalysis(personId: number): Observable<AnalysisResponse> {
-    const url = `http://localhost:5088/api/analysis/reset/${personId}`;
+    const url = `http://localhost:5087/api/analysis/reset/${personId}`;
     console.log('調用重置API:', url);
     return this.http.post<AnalysisResponse>(url, {});
   }
 
   getAnalysisResult(personId: number): Observable<AnalysisResultResponse> {
-    const url = `http://localhost:5088/api/analysis/result/${personId}`;
+    const url = `http://localhost:5087/api/analysis/result/${personId}`;
     console.log('調用獲取分析結果API:', url);
     return this.http.get<AnalysisResultResponse>(url);
   }
