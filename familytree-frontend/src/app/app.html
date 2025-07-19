@@ -1,0 +1,53 @@
+<app-status-bar></app-status-bar>
+
+<app-sidebar-nav (keywordSearchClick)="onKeywordSearchClick()"></app-sidebar-nav>
+
+<main class="main">
+  <div class="content">
+    <router-outlet></router-outlet>
+  </div>
+</main>
+
+<style>
+  :host {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+      "Segoe UI Symbol";
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  main {
+    width: calc(100vw - max(180px, min(240px, 12vw)));
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 2rem;
+    box-sizing: border-box;
+    position: relative;
+    margin-left: max(180px, min(240px, 12vw));
+  }
+
+  .content {
+    width: 100%;
+    max-width: 1200px;
+    box-sizing: border-box;
+    word-break: break-word;
+    padding: 0 8px;
+  }
+
+  /* 響應式設計 */
+  @media (max-width: 768px) {
+    main {
+      width: 100vw;
+      margin-left: 0;
+      padding: 1rem;
+    }
+    .content {
+      max-width: 100vw;
+      padding: 0 2px;
+    }
+  }
+</style>

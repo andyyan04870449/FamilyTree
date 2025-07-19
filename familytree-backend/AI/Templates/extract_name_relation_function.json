@@ -1,0 +1,27 @@
+{
+  "name": "extract_name_relation",
+  "description": "根據提供的文字，抽取其中所有的人名與其關係",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "pairs": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "人物的名字"
+            },
+            "relation": {
+              "type": "string",
+              "description": "此人與文本中主角或敘述者的關係"
+            }
+          },
+          "required": ["name", "relation"]
+        }
+      }
+    },
+    "required": ["pairs"]
+  }
+} 

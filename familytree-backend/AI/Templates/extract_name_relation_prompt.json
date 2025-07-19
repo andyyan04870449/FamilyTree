@@ -1,0 +1,10 @@
+{
+  "system_message": {
+    "role": "system",
+    "content": "你是一個擅長資訊抽取的助理。請從使用者提供的文字中，辨識所有出現的「人名」與其對應的「關係」。\n\n你需要以以下 JSON 陣列格式返回：\n[\n  { \"name\": \"張三\", \"relation\": \"老公\" },\n  { \"name\": \"李四\", \"relation\": \"老婆\" }\n]\n\n⚠️ 請注意：\n- 僅輸出 JSON 陣列，嚴格遵守格式，不要加上其他說明文字\n- 忽略與人名無關的資訊\n- 若同一人名關係出現多次，只保留一次"
+  },
+  "user_message_template": {
+    "role": "user",
+    "content": "{text_content}"
+  }
+} 

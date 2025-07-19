@@ -1,0 +1,89 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  INSTANCE_IP: 16.176.220.138
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+        
+    - name: Add host to known_hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ env.INSTANCE_IP }} >> ~/.ssh/known_hosts
+        
+    - name: Upload deployment script
+      run: |
+        scp scripts/deploy-on-server.sh ubuntu@${{ env.INSTANCE_IP }}:/home/ubuntu/
+        ssh ubuntu@${{ env.INSTANCE_IP }} "chmod +x /home/ubuntu/deploy-on-server.sh"
+        
+    - name: Create deployment package
+      run: |
+        # 創建部署包
+        tar -czf deploy.tar.gz \
+          --exclude='node_modules' \
+          --exclude='bin' \
+          --exclude='obj' \
+          --exclude='.git' \
+          --exclude='*.log' \
+          --exclude='dist' \
+          familytree-backend/ \
+          familytree-frontend/ \
+          docker-compose.yml
+          
+        # 上傳部署包
+        scp deploy.tar.gz ubuntu@${{ env.INSTANCE_IP }}:/home/ubuntu/FamilyTree/
+        
+        # 解壓部署包
+        ssh ubuntu@${{ env.INSTANCE_IP }} "cd /home/ubuntu/FamilyTree && tar -xzf deploy.tar.gz && rm deploy.tar.gz"
+        
+    - name: Execute deployment
+      run: |
+        ssh ubuntu@${{ env.INSTANCE_IP }} "/home/ubuntu/deploy-on-server.sh"
+        
+    - name: Final health check
+      run: |
+        echo "🏥 最終健康檢查..."
+        
+        # 等待服務完全啟動
+        sleep 10
+        
+        # 檢查後端
+        if curl -f http://${{ env.INSTANCE_IP }}:5088/ping; then
+            echo "✅ 後端服務正常"
+        else
+            echo "❌ 後端服務異常"
+            exit 1
+        fi
+        
+        # 檢查前端
+        if curl -f http://${{ env.INSTANCE_IP }}:4200; then
+            echo "✅ 前端服務正常"
+        else
+            echo "❌ 前端服務異常"
+            exit 1
+        fi
+        
+    - name: Deployment success
+      run: |
+        echo "🎉 自動部署成功！"
+        echo "🌐 前端: http://${{ env.INSTANCE_IP }}:4200"
+        echo "🔧 後端: http://${{ env.INSTANCE_IP }}:5088"
+        echo ""
+        echo "📋 部署時間: $(date)"
+        echo "📋 提交: ${{ github.sha }}"
+        echo "📋 分支: ${{ github.ref_name }}" 
