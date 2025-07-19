@@ -117,4 +117,10 @@ obj/
 
 # AI Blueprint files (local only, not tracked in git)
 ai_blueprint_tasks_full.md
-ai_blueprint_ai_step_plan.md 
+ai_blueprint_ai_step_plan.md
+
+# Local development directories (not tracked in git)
+docs/
+scripts/
+config/
+tests/ 
