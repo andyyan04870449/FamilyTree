@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using OpenAI_API;
+using OpenAI_API.Chat;
 
 namespace familytree_backend.Services
 {
@@ -7,11 +9,25 @@ namespace familytree_backend.Services
     {
         private readonly IConfiguration _configuration;
         private readonly ILogger<AIService> _logger;
+        private readonly OpenAIAPI _openAIClient;
 
         public AIService(IConfiguration configuration, ILogger<AIService> logger)
         {
             _configuration = configuration;
             _logger = logger;
+            
+            // 初始化 OpenAI 客戶端
+            var apiKey = _configuration["OpenAI:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                _logger.LogWarning("OpenAI API Key 未配置，將使用簡單解析模式");
+                _openAIClient = null!;
+            }
+            else
+            {
+                _openAIClient = new OpenAIAPI(apiKey);
+                _logger.LogInformation("OpenAI 客戶端已初始化");
+            }
         }
 
         /// <summary>
@@ -55,7 +71,108 @@ namespace familytree_backend.Services
         }
 
         /// <summary>
-        /// 抽取人名關係 (簡單解析版本)
+        /// 使用 OpenAI 4o Mini 模型抽取人名關係
+        /// </summary>
+        /// <param name="textContent">要分析的文字內容</param>
+        /// <returns>人名關係配對列表</returns>
+        public async Task<List<NameRelationPair>> ExtractNameRelationsWithAIAsync(string textContent)
+        {
+            try
+            {
+                _logger.LogInformation("=== 開始使用 OpenAI 4o Mini 模型解析人名關係 ===");
+                _logger.LogInformation("輸入文字內容: {TextContent}", textContent);
+                
+                if (_openAIClient == null)
+                {
+                    _logger.LogWarning("OpenAI 客戶端未初始化，回退到簡單解析模式");
+                    return await ExtractNameRelationsAsync(textContent);
+                }
+                
+                if (string.IsNullOrEmpty(textContent))
+                {
+                    _logger.LogInformation("文字內容為空，返回空結果");
+                    return new List<NameRelationPair>();
+                }
+                
+                // 載入提示詞模板
+                var promptTemplate = await LoadPromptTemplateAsync("extract_name_relation");
+                if (promptTemplate == null)
+                {
+                    _logger.LogError("無法載入提示詞模板");
+                    throw new InvalidOperationException("無法載入提示詞模板");
+                }
+                
+                // 載入函數定義
+                var functionSchema = await LoadFunctionSchemaAsync("extract_name_relation");
+                if (functionSchema == null)
+                {
+                    _logger.LogError("無法載入函數定義");
+                    throw new InvalidOperationException("無法載入函數定義");
+                }
+                
+                // 準備消息
+                var systemMessage = promptTemplate["system_message"]?["content"]?.ToString() ?? "";
+                var userMessage = promptTemplate["user_message_template"]?["content"]?.ToString()?.Replace("{text_content}", textContent) ?? textContent;
+                
+                var chatRequest = new ChatRequest
+                {
+                    Model = "gpt-4o-mini",
+                    Messages = new List<ChatMessage>
+                    {
+                        new ChatMessage(ChatMessageRole.System, systemMessage),
+                        new ChatMessage(ChatMessageRole.User, userMessage)
+                    },
+                    MaxTokens = 1000,
+                    Temperature = 0.1f
+                };
+                
+                _logger.LogInformation("發送請求到 OpenAI 4o Mini 模型...");
+                
+                // 調用 OpenAI API
+                var response = await _openAIClient.Chat.CreateChatCompletionAsync(chatRequest);
+                
+                if (response.Choices.Count > 0)
+                {
+                    var choice = response.Choices[0];
+                    var content = choice.Message.Content;
+                    
+                    _logger.LogInformation("AI 回應內容: {Content}", content);
+                    
+                    // 嘗試解析 JSON 格式的回應
+                    try
+                    {
+                        var result = JsonSerializer.Deserialize<ExtractNameRelationResult>(content);
+                        
+                        _logger.LogInformation("AI 解析結果: {ResultCount} 個關係配對", result?.Pairs?.Count ?? 0);
+                        foreach (var pair in result?.Pairs ?? new List<NameRelationPair>())
+                        {
+                            _logger.LogInformation("  - {Name}: {Relation}", pair.Name, pair.Relation);
+                        }
+                        
+                        _logger.LogInformation("=== AI 解析完成 ===");
+                        return result?.Pairs ?? new List<NameRelationPair>();
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogWarning("AI 回應不是有效的 JSON 格式: {Error}", ex.Message);
+                        _logger.LogInformation("回退到簡單解析模式");
+                        return await ExtractNameRelationsAsync(textContent);
+                    }
+                }
+                
+                _logger.LogWarning("AI 模型未返回函數調用結果，回退到簡單解析");
+                return await ExtractNameRelationsAsync(textContent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "AI 解析人名關係失敗: {TextContent}", textContent);
+                _logger.LogInformation("回退到簡單解析模式");
+                return await ExtractNameRelationsAsync(textContent);
+            }
+        }
+
+        /// <summary>
+        /// 抽取人名關係 (簡單解析版本 - 回退方案)
         /// </summary>
         /// <param name="textContent">要分析的文字內容</param>
         /// <returns>人名關係配對列表</returns>

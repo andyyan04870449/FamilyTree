@@ -1,21 +1,22 @@
 {
   "name": "extract_name_relation",
-  "description": "根據提供的文字，抽取其中所有的人名與其關係",
+  "description": "根據提供的文字，抽取其中所有的人名與其關係。支持多種關係類型，包括家族關係、朋友關係、工作關係等。",
   "parameters": {
     "type": "object",
     "properties": {
       "pairs": {
         "type": "array",
+        "description": "人名與關係的配對列表",
         "items": {
           "type": "object",
           "properties": {
             "name": {
               "type": "string",
-              "description": "人物的名字"
+              "description": "人物的完整姓名"
             },
             "relation": {
               "type": "string",
-              "description": "此人與文本中主角或敘述者的關係"
+              "description": "此人與文本中主角或敘述者的關係，例如：父親、母親、兒子、女兒、朋友、同事、同學等"
             }
           },
           "required": ["name", "relation"]

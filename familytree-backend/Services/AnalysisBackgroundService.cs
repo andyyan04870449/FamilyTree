@@ -422,6 +422,7 @@ namespace familytree_backend.Services
         public int Id { get; set; }
         public string? family_relationships { get; set; }
         public string? friends { get; set; }
+        public string? activities { get; set; } // 新增參與活動欄位
     }
 
     public class RecursiveAnalysisTask
@@ -522,8 +523,8 @@ namespace familytree_backend.Services
                 return;
             }
 
-            _logger.LogInformation("獲取到人員資料: PersonId = {PersonId}, 家庭關係: '{FamilyRelationships}', 朋友: '{Friends}'", 
-                personId, personData.family_relationships ?? "無", personData.friends ?? "無");
+            _logger.LogInformation("獲取到人員資料: PersonId = {PersonId}, 家庭關係: '{FamilyRelationships}', 朋友: '{Friends}', 活動: '{Activities}'", 
+                personId, personData.family_relationships ?? "無", personData.friends ?? "無", personData.activities ?? "無");
 
             var discoveredPersons = new List<int>();
 
@@ -534,7 +535,7 @@ namespace familytree_backend.Services
                 using var scope = _serviceProvider.CreateScope();
                 var aiService = scope.ServiceProvider.GetRequiredService<AIService>();
                 
-                var familyRelations = await aiService.ExtractNameRelationsAsync(personData.family_relationships);
+                var familyRelations = await aiService.ExtractNameRelationsWithAIAsync(personData.family_relationships);
                 _logger.LogInformation("家庭關係分析完成，找到 {Count} 個關係", familyRelations.Count);
                 
                 foreach (var relation in familyRelations)
@@ -555,7 +556,7 @@ namespace familytree_backend.Services
                 using var scope = _serviceProvider.CreateScope();
                 var aiService = scope.ServiceProvider.GetRequiredService<AIService>();
                 
-                var friendRelations = await aiService.ExtractNameRelationsAsync(personData.friends);
+                var friendRelations = await aiService.ExtractNameRelationsWithAIAsync(personData.friends);
                 _logger.LogInformation("朋友關係分析完成，找到 {Count} 個關係", friendRelations.Count);
                 
                 foreach (var relation in friendRelations)
@@ -564,6 +565,27 @@ namespace familytree_backend.Services
                     if (targetId.HasValue)
                     {
                         await SaveRelationship(personId, targetId.Value, relation.Relation, "friends", currentDepth);
+                        discoveredPersons.Add(targetId.Value);
+                    }
+                }
+            }
+
+            // 分析參與活動關係
+            if (!string.IsNullOrEmpty(personData.activities))
+            {
+                _logger.LogInformation("分析參與活動關係: PersonId = {PersonId}, Depth = {Depth}", personId, currentDepth);
+                using var scope = _serviceProvider.CreateScope();
+                var aiService = scope.ServiceProvider.GetRequiredService<AIService>();
+                
+                var activityRelations = await aiService.ExtractNameRelationsWithAIAsync(personData.activities);
+                _logger.LogInformation("活動關係分析完成，找到 {Count} 個關係", activityRelations.Count);
+                
+                foreach (var relation in activityRelations)
+                {
+                    var targetId = await FindPersonIdByName(relation.Name);
+                    if (targetId.HasValue)
+                    {
+                        await SaveRelationship(personId, targetId.Value, relation.Relation, "activities", currentDepth);
                         discoveredPersons.Add(targetId.Value);
                     }
                 }
@@ -612,7 +634,7 @@ namespace familytree_backend.Services
             await connection.OpenAsync();
 
             var result = await connection.QueryFirstOrDefaultAsync<PersonData>(
-                "SELECT id, family_relationships, friends FROM person_profile WHERE id = @PersonId",
+                "SELECT id, family_relationships, friends, activities FROM person_profile WHERE id = @PersonId",
                 new { PersonId = personId });
             
             if (result != null)
