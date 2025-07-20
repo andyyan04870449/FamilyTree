@@ -18,6 +18,10 @@ export const routes: Routes = [
     path: 'person-management',
     loadComponent: () => import('./pages/person-management/person-management.page').then(m => m.PersonManagementComponent)
   },
+  {
+    path: 'person-list',
+    loadComponent: () => import('./pages/person-list/person-list.page').then(m => m.PersonListComponent)
+  },
   // 全文檢索模組
   {
     path: 'family-tree',

@@ -40,6 +40,15 @@ export interface UploadProgress {
   total: number;
 }
 
+export interface DeleteImpactResponse {
+  success: boolean;
+  message: string;
+  personCount: number;
+  personNames: string[];
+  fileName: string;
+  hasMorePersons: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -95,6 +104,11 @@ export class FileUploadService {
         return response;
       })
     );
+  }
+
+  // 取得刪除檔案的影響資訊
+  getDeleteImpact(fileId: number): Observable<DeleteImpactResponse> {
+    return this.http.get<DeleteImpactResponse>(`${this.apiUrl}/${fileId}/impact`);
   }
 
   // 刪除檔案

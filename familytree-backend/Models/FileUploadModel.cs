@@ -55,4 +55,14 @@ namespace familytree_backend.Models
         public List<FileUploadModel> Files { get; set; } = new();
         public int TotalCount { get; set; }
     }
+
+    public class DeleteImpactResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public int PersonCount { get; set; }
+        public List<string> PersonNames { get; set; } = new();
+        public string FileName { get; set; } = string.Empty;
+        public bool HasMorePersons { get; set; }
+    }
 } 

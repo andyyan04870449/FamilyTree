@@ -1,261 +1,235 @@
+// 人員列表頁面 - 顯示所有資料庫中的人員資料，提供分頁和搜尋功能
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PersonService, AnalysisProgress } from '../../services/person.service';
-import { Router } from '@angular/router';
-import { AppConstants } from '../../constants/app.constants';
+import { Subscription } from 'rxjs';
+import { PersonDataService, PersonDataModel } from '../../services/person-data.service';
+import { PersonDetailDialogComponent } from '../../components/person-detail-dialog/person-detail-dialog.component';
 
 @Component({
   selector: 'app-person-list',
+  templateUrl: './person-list.page.html',
+  styleUrls: ['./person-list.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  template: `
-    <div class="analysis-jobs-page">
-      <div class="page-header">
-        <h1>🌳 關聯圖譜分析工作</h1>
-        <p>監控和管理正在執行的圖譜分析任務</p>
-      </div>
-      
-      <div class="jobs-container">
-        <div class="jobs-header">
-          <div class="stats">
-            <div class="stat-item">
-              <span class="stat-number">{{ activeJobsCount }}</span>
-              <span class="stat-label">進行中</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">{{ completedJobsCount }}</span>
-              <span class="stat-label">已完成</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">{{ failedJobsCount }}</span>
-              <span class="stat-label">失敗</span>
-            </div>
-          </div>
-          <div class="auto-refresh-info">
-            <span class="refresh-indicator">🔄 即時更新中</span>
-          </div>
-        </div>
-        
-        <div class="jobs-list">
-          <div *ngIf="analysisJobs.length === 0" class="empty-placeholder">
-            <div class="placeholder-icon">🌳</div>
-            <h3>目前沒有分析工作</h3>
-            <p>前往人物清單開始新的圖譜分析</p>
-          </div>
-          
-          <div *ngFor="let job of analysisJobs" class="job-item" [class.completed]="job.status === 'completed'" [class.failed]="job.status === 'failed'" [class.processing]="job.status === 'processing'">
-            <div class="job-header">
-              <div class="job-info">
-                <h4>{{ job.personName || '未知人員' }}</h4>
-                <span class="job-status" [class]="'status-' + job.status">
-                  {{ getStatusText(job.status) }}
-                </span>
-              </div>
-              <div class="job-actions">
-                <button *ngIf="job.status === 'processing'" class="btn btn-sm btn-warning" (click)="stopJob(job.personId)">
-                  ⏹️ 終止
-                </button>
-                <button *ngIf="job.status === 'completed'" class="btn btn-sm btn-success" (click)="viewResults(job.personId)">
-                  👁️ 查看結果
-                </button>
-              </div>
-            </div>
-            
-            <div class="job-progress" *ngIf="job.status === 'processing'">
-              <div class="progress-bar">
-                <div class="progress-fill" [style.width.%]="job.progressPercentage"></div>
-              </div>
-              <span class="progress-text">{{ job.progressPercentage }}%</span>
-            </div>
-            
-            <div class="job-details">
-              <div class="detail-item" *ngIf="job.status === 'completed'">
-                <span class="detail-label">完成時間:</span>
-                <span class="detail-value">{{ job.completedTime | date:'yyyy-MM-dd HH:mm:ss' }}</span>
-              </div>
-              <div class="detail-item" *ngIf="job.status === 'failed'">
-                <span class="detail-label">錯誤訊息:</span>
-                <span class="detail-value error">{{ job.errorMessage || '未知錯誤' }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `,
-  styleUrls: ['./person-list.page.scss']
+  imports: [CommonModule, FormsModule, PersonDetailDialogComponent]
 })
 export class PersonListComponent implements OnInit, OnDestroy {
-  analysisJobs: AnalysisJob[] = [];
-  private refreshInterval: any;
+  personDataList: PersonDataModel[] = [];
+  loading = false;
+  error = '';
+  searchName = '';
+  
+  // 分頁相關
+  currentPage = 1;
+  pageSize = 20;
+  totalCount = 0;
+  totalPages = 0;
+  
+  // 對話框相關
+  showDetailDialog = false;
+  selectedPersonId: number | null = null;
+  
+  private subscription = new Subscription();
 
-  get activeJobsCount(): number {
-    return this.analysisJobs.filter(job => job.status === 'processing').length;
+  constructor(private personDataService: PersonDataService) {
+    console.log('[PersonListPage] 組件已建立');
   }
 
-  get completedJobsCount(): number {
-    return this.analysisJobs.filter(job => job.status === 'completed').length;
+  ngOnInit(): void {
+    console.log('[PersonListPage] ngOnInit - 開始載入人員資料');
+    this.loadPersonData();
   }
 
-  get failedJobsCount(): number {
-    return this.analysisJobs.filter(job => job.status === 'failed').length;
+  ngOnDestroy(): void {
+    console.log('[PersonListPage] 組件銷毀');
+    this.subscription.unsubscribe();
   }
 
-  constructor(private personService: PersonService, private router: Router) {}
+  loadPersonData(): void {
+    console.log('[PersonListPage] loadPersonData - 頁面:', this.currentPage, '每頁數量:', this.pageSize);
+    this.loading = true;
+    this.error = '';
 
-  ngOnInit() {
-    this.loadAnalysisJobs();
-    // 自動重新整理，實現即時更新
-    this.refreshInterval = setInterval(() => {
-      this.loadAnalysisJobs();
-    }, AppConstants.REFRESH_INTERVAL_MS);
+    this.subscription.add(
+      this.personDataService.getPersonDataList(this.currentPage, this.pageSize).subscribe({
+        next: (response: any) => {
+          console.log('[PersonListPage] 載入人員資料成功:', response);
+          this.loading = false;
+          if (response.success) {
+            this.personDataList = response.personDataList;
+            this.totalCount = response.totalCount;
+            this.totalPages = response.totalPages;
+            this.currentPage = response.pageNumber;
+            console.log('[PersonListPage] 人員資料列表:', this.personDataList);
+          } else {
+            this.error = response.message;
+            console.error('[PersonListPage] 載入人員資料失敗:', response.message);
+          }
+        },
+        error: (err: any) => {
+          console.error('[PersonListPage] 載入人員資料API錯誤:', err);
+          this.loading = false;
+          this.error = '載入人員資料失敗';
+        }
+      })
+    );
   }
 
-  ngOnDestroy() {
-    if (this.refreshInterval) {
-      clearInterval(this.refreshInterval);
+  searchPersonData(): void {
+    console.log('[PersonListPage] searchPersonData - 搜尋條件:', this.searchName);
+    this.currentPage = 1; // 重置到第一頁
+    this.loading = true;
+    this.error = '';
+
+    this.subscription.add(
+      this.personDataService.searchPersonData(this.searchName, this.currentPage, this.pageSize).subscribe({
+        next: (response: any) => {
+          console.log('[PersonListPage] 搜尋人員資料成功:', response);
+          this.loading = false;
+          if (response.success) {
+            this.personDataList = response.personDataList;
+            this.totalCount = response.totalCount;
+            this.totalPages = response.totalPages;
+            this.currentPage = response.pageNumber;
+          } else {
+            this.error = response.message;
+            console.error('[PersonListPage] 搜尋人員資料失敗:', response.message);
+          }
+        },
+        error: (err: any) => {
+          console.error('[PersonListPage] 搜尋人員資料API錯誤:', err);
+          this.loading = false;
+          this.error = '搜尋人員資料失敗';
+        }
+      })
+    );
+  }
+
+  clearSearch(): void {
+    console.log('[PersonListPage] clearSearch - 清除搜尋條件');
+    this.searchName = '';
+    this.currentPage = 1;
+    this.loadPersonData();
+  }
+
+  goToPage(page: number): void {
+    console.log('[PersonListPage] goToPage - 目標頁面:', page);
+    if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
+      this.currentPage = page;
+      if (this.searchName.trim()) {
+        this.searchPersonData();
+      } else {
+        this.loadPersonData();
+      }
     }
   }
 
-  loadAnalysisJobs() {
-    this.personService.getAllAnalysisJobs().subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.analysisJobs = response.data.map(job => ({
-            personId: job.personId,
-            personName: job.personName,
-            status: job.status,
-            progressPercentage: job.progressPercentage,
-            completedTime: job.completedTime ? new Date(job.completedTime) : null,
-            errorMessage: job.errorMessage || null
-          }));
-        } else {
-          console.error('載入分析工作失敗:', response.message);
-          this.analysisJobs = [];
-        }
-      },
-      error: (error) => {
-        console.error('載入分析工作錯誤:', error);
-        this.analysisJobs = [];
-      }
-    });
-  }
-
-  getStatusText(status: string): string {
-    return AppConstants.STATUS_TEXTS[status as keyof typeof AppConstants.STATUS_TEXTS] || AppConstants.STATUS_TEXTS.unknown;
-  }
-
-  viewResults(personId: number) {
-    console.log('查看結果:', personId);
-    // 導航到家系圖頁面並傳遞人員ID
-    this.router.navigate(['/family-tree'], { 
-      queryParams: { 
-        viewResults: 'true', 
-        personId: personId.toString() 
-      } 
-    });
-  }
-
-  stopJob(personId: number) {
-    const job = this.analysisJobs.find(j => j.personId === personId);
-    const personName = job?.personName || `人物ID ${personId}`;
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxVisiblePages = 5;
     
-    if (confirm(`確定要終止 ${personName} 的分析工作嗎？此操作無法撤銷。`)) {
-      console.log('開始終止工作:', personId);
-      this.retryStopAnalysis(personId, AppConstants.MAX_RETRY_COUNT);
+    if (this.totalPages <= maxVisiblePages) {
+      // 如果總頁數不多，顯示所有頁數
+      for (let i = 1; i <= this.totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // 如果總頁數很多，顯示當前頁附近的頁數
+      let start = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
+      let end = Math.min(this.totalPages, start + maxVisiblePages - 1);
+      
+      if (end - start + 1 < maxVisiblePages) {
+        start = Math.max(1, end - maxVisiblePages + 1);
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  }
+
+  editPersonData(person: PersonDataModel): void {
+    console.log('[PersonListPage] editPersonData - 選中的人員:', person);
+    console.log('[PersonListPage] 人員ID:', person.id, '姓名:', person.name);
+    
+    // 立即測試API調用
+    console.log('[PersonListPage] 立即測試API調用...');
+    this.personDataService.getPersonData(person.id).subscribe({
+      next: (response: any) => {
+        console.log('[PersonListPage] 測試API調用成功:', response);
+      },
+      error: (err: any) => {
+        console.error('[PersonListPage] 測試API調用失敗:', err);
+      }
+    });
+    
+    this.selectedPersonId = person.id;
+    this.showDetailDialog = true;
+    
+    console.log('[PersonListPage] 對話框狀態設定完成 - selectedPersonId:', this.selectedPersonId, 'showDetailDialog:', this.showDetailDialog);
+    
+    // 延遲一下再次確認狀態
+    setTimeout(() => {
+      console.log('[PersonListPage] 延遲檢查 - selectedPersonId:', this.selectedPersonId, 'showDetailDialog:', this.showDetailDialog);
+    }, 100);
+  }
+
+  closeDetailDialog(): void {
+    console.log('[PersonListPage] closeDetailDialog - 關閉詳細資料對話框');
+    this.showDetailDialog = false;
+    this.selectedPersonId = null;
+    console.log('[PersonListPage] 對話框已關閉');
+  }
+
+  deletePersonData(person: PersonDataModel): void {
+    console.log('[PersonListPage] deletePersonData - 刪除人員:', person.name);
+    if (confirm(`確定要刪除人員 "${person.name}" 嗎？`)) {
+      this.subscription.add(
+        this.personDataService.deletePersonData(person.id).subscribe({
+          next: (response: any) => {
+            console.log('[PersonListPage] 刪除人員回應:', response);
+            if (response.success) {
+              console.log('[PersonListPage] 人員資料刪除成功');
+              // 重新載入資料
+              if (this.searchName.trim()) {
+                this.searchPersonData();
+              } else {
+                this.loadPersonData();
+              }
+            } else {
+              alert(`刪除失敗: ${response.message}`);
+            }
+          },
+          error: (err: any) => {
+            console.error('[PersonListPage] 刪除人員API錯誤:', err);
+            alert('刪除人員資料時發生錯誤');
+          }
+        })
+      );
     }
   }
 
-  private retryStopAnalysis(personId: number, retryCount: number) {
-    this.personService.stopAnalysis(personId).subscribe({
-      next: (response) => {
-        console.log('終止工作回應:', response);
-        if (response.success) {
-          this.showNotification('分析工作已終止', AppConstants.NOTIFICATION_TYPES.success);
-          this.loadAnalysisJobs();
-        } else {
-          this.removeJobFromList(personId);
-        }
-      },
-      error: (error) => {
-        console.error('終止工作錯誤:', error);
-        if (retryCount > 0) {
-          console.log(`重試終止工作，剩餘重試次數: ${retryCount - 1}`);
-          setTimeout(() => {
-            this.retryStopAnalysis(personId, retryCount - 1);
-          }, 1000);
-        } else {
-          this.showNotification('終止工作失敗', AppConstants.NOTIFICATION_TYPES.error);
-          this.removeJobFromList(personId);
-        }
-      }
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleString('zh-TW', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   }
 
-  private removeJobFromList(personId: number) {
-    this.analysisJobs = this.analysisJobs.filter(job => job.personId !== personId);
+  getGenderText(gender: string | null): string {
+    if (!gender) return '-';
+    return gender === 'M' ? '男' : gender === 'F' ? '女' : gender;
   }
 
-  private showNotification(message: string, type: 'success' | 'error' | 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-      <div class="notification-content">
-        <span class="notification-icon">${this.getNotificationIcon(type)}</span>
-        <span class="notification-message">${message}</span>
-      </div>
-    `;
-
-    // 添加樣式
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 12px 20px;
-      border-radius: 8px;
-      color: white;
-      font-weight: 500;
-      z-index: 10000;
-      background: ${this.getNotificationColor(type)};
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      animation: slideIn 0.3s ease-out;
-    `;
-
-    document.body.appendChild(notification);
-
-    // 3秒後自動移除
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
-    }, 3000);
+  getBirthdayText(birthday: string | null): string {
+    if (!birthday) return '-';
+    const date = new Date(birthday);
+    return date.toLocaleDateString('zh-TW');
   }
-
-  private getNotificationIcon(type: 'success' | 'error' | 'info'): string {
-    switch (type) {
-      case 'success': return '✅';
-      case 'error': return '❌';
-      case 'info': return 'ℹ️';
-      default: return 'ℹ️';
-    }
-  }
-
-  private getNotificationColor(type: 'success' | 'error' | 'info'): string {
-    switch (type) {
-      case 'success': return '#10b981';
-      case 'error': return '#ef4444';
-      case 'info': return '#3b82f6';
-      default: return '#3b82f6';
-    }
-  }
-}
-
-interface AnalysisJob {
-  personId: number;
-  personName: string;
-  status: 'processing' | 'completed' | 'failed';
-  progressPercentage: number;
-  completedTime: Date | null;
-  errorMessage: string | null;
 } 

@@ -43,6 +43,9 @@ builder.Services.AddSingleton<familytree_backend.Services.AIService>();
 builder.Services.AddSingleton<familytree_backend.Services.AnalysisBackgroundService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<familytree_backend.Services.AnalysisBackgroundService>());
 
+// Add Excel Processing Service
+builder.Services.AddScoped<familytree_backend.Services.ExcelProcessingService>();
+
 // Add File Upload Service
 builder.Services.AddScoped<familytree_backend.Services.FileUploadService>();
 

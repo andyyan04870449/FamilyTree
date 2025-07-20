@@ -56,23 +56,71 @@ export class FileListComponent implements OnInit, OnDestroy {
   }
 
   deleteFile(file: FileUploadModel): void {
-    if (confirm(`確定要刪除檔案 "${file.originalFilename}" 嗎？`)) {
-      this.subscription.add(
-        this.fileUploadService.deleteFile(file.id).subscribe({
-          next: (response) => {
-            if (response.success) {
-              console.log('檔案刪除成功');
-            } else {
-              alert(`刪除失敗: ${response.message}`);
-            }
-          },
-          error: (err) => {
-            alert('刪除檔案時發生錯誤');
-            console.error('刪除檔案錯誤:', err);
+    // 先查詢刪除影響
+    this.subscription.add(
+      this.fileUploadService.getDeleteImpact(file.id).subscribe({
+        next: (impactResponse) => {
+          if (!impactResponse.success) {
+            alert(`無法取得刪除影響資訊: ${impactResponse.message}`);
+            return;
           }
-        })
-      );
-    }
+
+          // 建構確認訊息
+          let confirmMessage = `確定要刪除檔案 "${impactResponse.fileName}" 嗎？\n\n`;
+          
+          if (impactResponse.personCount > 0) {
+            confirmMessage += `⚠️ 警告：刪除此檔案將同時刪除 ${impactResponse.personCount} 筆人員資料！\n\n`;
+            confirmMessage += '將被刪除的人員包括：\n';
+            
+            impactResponse.personNames.forEach((name, index) => {
+              confirmMessage += `${index + 1}. ${name}\n`;
+            });
+            
+            if (impactResponse.hasMorePersons) {
+              confirmMessage += `...還有 ${impactResponse.personCount - impactResponse.personNames.length} 筆\n`;
+            }
+            
+            confirmMessage += '\n此操作無法復原，請確認是否繼續？';
+          } else {
+            confirmMessage += '此檔案沒有相關的人員資料，可以安全刪除。';
+          }
+
+          // 顯示確認對話框
+          if (confirm(confirmMessage)) {
+            this.performDelete(file);
+          }
+        },
+        error: (err) => {
+          console.error('查詢刪除影響錯誤:', err);
+          // 如果查詢失敗，仍然允許刪除但給予警告
+          if (confirm(`無法確認刪除影響（${err.message || '網路錯誤'}），確定要刪除檔案 "${file.originalFilename}" 嗎？`)) {
+            this.performDelete(file);
+          }
+        }
+      })
+    );
+  }
+
+  private performDelete(file: FileUploadModel): void {
+    this.subscription.add(
+      this.fileUploadService.deleteFile(file.id).subscribe({
+        next: (response) => {
+          if (response.success) {
+            console.log('檔案刪除成功:', response.message);
+            // 可以選擇顯示成功訊息
+            if (response.message.includes('人員資料')) {
+              alert(`刪除成功：${response.message}`);
+            }
+          } else {
+            alert(`刪除失敗: ${response.message}`);
+          }
+        },
+        error: (err) => {
+          alert('刪除檔案時發生錯誤');
+          console.error('刪除檔案錯誤:', err);
+        }
+      })
+    );
   }
 
   formatFileSize(bytes: number): string {

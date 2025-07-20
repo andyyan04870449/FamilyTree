@@ -13,10 +13,13 @@ namespace familytree_backend.Services
         private readonly string _uploadDirectory;
         private readonly ILogger<FileUploadService> _logger;
 
-        public FileUploadService(IConfiguration configuration, ILogger<FileUploadService> logger)
+        private readonly ExcelProcessingService _excelProcessingService;
+
+        public FileUploadService(IConfiguration configuration, ILogger<FileUploadService> logger, ExcelProcessingService excelProcessingService)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException(nameof(configuration));
             _logger = logger;
+            _excelProcessingService = excelProcessingService;
             
             // 設定上傳目錄
             _uploadDirectory = Path.Combine(Directory.GetCurrentDirectory(), "user_upload");
@@ -82,6 +85,27 @@ namespace familytree_backend.Services
                 var savedFile = await SaveFileToDatabaseAsync(fileInfo);
 
                 _logger.LogInformation("檔案上傳成功: {OriginalFilename} -> {Filename}", file.FileName, fileName);
+
+                // 自動處理Excel檔案
+                try
+                {
+                    _logger.LogInformation("開始處理Excel檔案: {FilePath}", filePath);
+                    var processingResult = await _excelProcessingService.ProcessExcelFileAsync(filePath, md5Hash);
+                    
+                    if (processingResult.Success)
+                    {
+                        _logger.LogInformation("Excel檔案處理成功: 成功處理 {SuccessRows} 行，失敗 {FailedRows} 行", 
+                            processingResult.SuccessRows, processingResult.FailedRows);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Excel檔案處理失敗: {Message}", processingResult.Message);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "處理Excel檔案時發生錯誤: {FilePath}", filePath);
+                }
 
                 return new FileUploadResponse
                 {
@@ -155,6 +179,89 @@ namespace familytree_backend.Services
             }
         }
 
+        public async Task<FileUploadResponse> ProcessFileAsync(int fileId)
+        {
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                // 取得檔案資訊
+                var file = await connection.QueryFirstOrDefaultAsync<FileUploadModel>(
+                    @"SELECT id, filename, original_filename as OriginalFilename, file_path as FilePath, 
+                             file_size as FileSize, md5_hash as Md5Hash, upload_time as UploadTime, 
+                             is_merged as IsMerged, merge_time as MergeTime, status, 
+                             created_at as CreatedAt, updated_at as UpdatedAt 
+                      FROM user_update_file WHERE id = @id", new { id = fileId });
+
+                if (file == null)
+                {
+                    _logger.LogWarning("找不到檔案ID: {FileId}", fileId);
+                    return new FileUploadResponse
+                    {
+                        Success = false,
+                        Message = "檔案不存在"
+                    };
+                }
+
+                _logger.LogInformation("取得檔案資訊: ID={FileId}, FileName={FileName}, FilePath={FilePath}, Status={Status}", 
+                    file.Id, file.Filename, file.FilePath, file.Status);
+
+                if (file.Status == "merged")
+                {
+                    return new FileUploadResponse
+                    {
+                        Success = true,
+                        Message = "檔案已經處理過"
+                    };
+                }
+
+                if (string.IsNullOrWhiteSpace(file.FilePath))
+                {
+                    _logger.LogError("檔案路徑為空: FileId={FileId}", fileId);
+                    return new FileUploadResponse
+                    {
+                        Success = false,
+                        Message = "檔案路徑無效"
+                    };
+                }
+
+                // 處理Excel檔案
+                _logger.LogInformation("開始處理Excel檔案: {FilePath}", file.FilePath);
+                var processingResult = await _excelProcessingService.ProcessExcelFileAsync(file.FilePath, file.Md5Hash);
+                
+                if (processingResult.Success)
+                {
+                    _logger.LogInformation("Excel檔案處理成功: 成功處理 {SuccessRows} 行，失敗 {FailedRows} 行", 
+                        processingResult.SuccessRows, processingResult.FailedRows);
+                    
+                    return new FileUploadResponse
+                    {
+                        Success = true,
+                        Message = $"檔案處理成功，成功處理 {processingResult.SuccessRows} 行，失敗 {processingResult.FailedRows} 行"
+                    };
+                }
+                else
+                {
+                    _logger.LogWarning("Excel檔案處理失敗: {Message}", processingResult.Message);
+                    return new FileUploadResponse
+                    {
+                        Success = false,
+                        Message = $"檔案處理失敗: {processingResult.Message}"
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "檔案處理失敗: {FileId}", fileId);
+                return new FileUploadResponse
+                {
+                    Success = false,
+                    Message = $"檔案處理失敗: {ex.Message}"
+                };
+            }
+        }
+
         public async Task<FileUploadResponse> DeleteFileAsync(int fileId)
         {
             try
@@ -164,7 +271,11 @@ namespace familytree_backend.Services
 
                 // 取得檔案資訊
                 var file = await connection.QueryFirstOrDefaultAsync<FileUploadModel>(
-                    "SELECT * FROM user_update_file WHERE id = @id", new { id = fileId });
+                    @"SELECT id, filename, original_filename as OriginalFilename, file_path as FilePath, 
+                             file_size as FileSize, md5_hash as Md5Hash, upload_time as UploadTime, 
+                             is_merged as IsMerged, merge_time as MergeTime, status, 
+                             created_at as CreatedAt, updated_at as UpdatedAt 
+                      FROM user_update_file WHERE id = @id", new { id = fileId });
 
                 if (file == null)
                 {
@@ -173,6 +284,22 @@ namespace familytree_backend.Services
                         Success = false,
                         Message = "檔案不存在"
                     };
+                }
+
+                // 檢查會影響的人員資料數量
+                var personDataCount = await connection.QuerySingleAsync<int>(
+                    "SELECT COUNT(*) FROM person_data WHERE file_md5 = @md5", new { md5 = file.Md5Hash });
+
+                _logger.LogInformation("準備刪除檔案: {Filename}, 將同時刪除 {PersonCount} 筆相關人員資料", 
+                    file.Filename, personDataCount);
+
+                // 刪除相關人員資料
+                if (personDataCount > 0)
+                {
+                    var deletedPersons = await connection.ExecuteAsync(
+                        "DELETE FROM person_data WHERE file_md5 = @md5", new { md5 = file.Md5Hash });
+                    
+                    _logger.LogInformation("已刪除 {DeletedCount} 筆人員資料", deletedPersons);
                 }
 
                 // 刪除實體檔案
@@ -185,12 +312,15 @@ namespace familytree_backend.Services
                 await connection.ExecuteAsync(
                     "DELETE FROM user_update_file WHERE id = @id", new { id = fileId });
 
-                _logger.LogInformation("檔案刪除成功: {Filename}", file.Filename);
+                _logger.LogInformation("檔案刪除成功: {Filename}, 同時刪除了 {PersonCount} 筆人員資料", 
+                    file.Filename, personDataCount);
 
                 return new FileUploadResponse
                 {
                     Success = true,
-                    Message = "檔案刪除成功"
+                    Message = personDataCount > 0 
+                        ? $"檔案刪除成功，同時刪除了 {personDataCount} 筆相關人員資料" 
+                        : "檔案刪除成功"
                 };
             }
             catch (Exception ex)
@@ -200,6 +330,59 @@ namespace familytree_backend.Services
                 {
                     Success = false,
                     Message = $"檔案刪除失敗: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<DeleteImpactResponse> GetDeleteImpactAsync(int fileId)
+        {
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                // 取得檔案資訊
+                var file = await connection.QueryFirstOrDefaultAsync<FileUploadModel>(
+                    @"SELECT id, filename, original_filename as OriginalFilename, file_path as FilePath, 
+                             file_size as FileSize, md5_hash as Md5Hash, upload_time as UploadTime, 
+                             is_merged as IsMerged, merge_time as MergeTime, status, 
+                             created_at as CreatedAt, updated_at as UpdatedAt 
+                      FROM user_update_file WHERE id = @id", new { id = fileId });
+
+                if (file == null)
+                {
+                    return new DeleteImpactResponse
+                    {
+                        Success = false,
+                        Message = "檔案不存在"
+                    };
+                }
+
+                // 檢查會影響的人員資料數量
+                var personDataCount = await connection.QuerySingleAsync<int>(
+                    "SELECT COUNT(*) FROM person_data WHERE file_md5 = @md5", new { md5 = file.Md5Hash });
+
+                // 取得會被刪除的人員姓名列表（最多顯示前10個）
+                var personNames = await connection.QueryAsync<string>(
+                    "SELECT name FROM person_data WHERE file_md5 = @md5 LIMIT 10", new { md5 = file.Md5Hash });
+
+                return new DeleteImpactResponse
+                {
+                    Success = true,
+                    Message = $"刪除檔案 '{file.OriginalFilename}' 將同時刪除 {personDataCount} 筆人員資料",
+                    PersonCount = personDataCount,
+                    PersonNames = personNames.ToList(),
+                    FileName = file.OriginalFilename,
+                    HasMorePersons = personDataCount > 10
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "取得刪除影響資訊失敗: {FileId}", fileId);
+                return new DeleteImpactResponse
+                {
+                    Success = false,
+                    Message = $"取得刪除影響資訊失敗: {ex.Message}"
                 };
             }
         }

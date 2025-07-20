@@ -1,0 +1,334 @@
+<div class="dialog-overlay" *ngIf="isVisible" (click)="onOverlayClick($event)">
+  <div class="dialog-container">
+    <!-- 關閉按鈕 -->
+    <button class="close-btn" (click)="onClose()">✕</button>
+    
+    <!-- 載入中 -->
+    <div *ngIf="loading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>載入人員詳細資料中...</p>
+    </div>
+
+    <!-- 錯誤訊息 -->
+    <div *ngIf="error && !loading" class="error-message">
+      <span class="error-icon">❌</span>
+      <p>{{ error }}</p>
+    </div>
+
+    <!-- 主要內容 -->
+    <div *ngIf="personData && !loading && !error" class="dialog-content">
+      <!-- 上方區塊：基本資料 -->
+      <div class="basic-info-section">
+        <!-- 左側：照片 -->
+        <div class="photo-section">
+          <div class="photo-container">
+            <img *ngIf="personData.photo" [src]="personData.photo" [alt]="personData.name" class="person-photo">
+            <div *ngIf="!personData.photo" class="placeholder-photo">
+              <span class="placeholder-text">{{ personData.name.charAt(0) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右側：基本資料 -->
+        <div class="basic-info">
+          <div class="collapsible-section">
+            <div class="section-header">
+              <h3>基本資料</h3>
+              <button class="toggle-btn">▼</button>
+            </div>
+            <div class="section-content">
+              <div class="info-grid">
+                <div class="info-row">
+                  <div class="info-item">
+                    <label>姓名</label>
+                    <span>{{ personData.name }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>性別</label>
+                    <span>{{ getGenderText(personData.gender) }}</span>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-item">
+                    <label>生日</label>
+                    <span>{{ formatDate(personData.birthday) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>身分證號碼</label>
+                    <span>{{ personData.idNumber || '--' }}</span>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-item">
+                    <label>國籍</label>
+                    <span>{{ personData.nationality || '--' }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>民族</label>
+                    <span>{{ personData.ethnicity || '--' }}</span>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-item">
+                    <label>護照號碼</label>
+                    <span>{{ personData.passportNumber || '--' }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>電話</label>
+                    <span>{{ personData.phone || '--' }}</span>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-item">
+                    <label>行動電話</label>
+                    <span>{{ personData.mobile || '--' }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>電子信箱</label>
+                    <span>{{ personData.email || '--' }}</span>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-item">
+                    <label>現居地址</label>
+                    <span>{{ personData.currentAddress || '--' }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>通訊地址</label>
+                    <span>{{ personData.mailingAddress || '--' }}</span>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-item">
+                    <label>黨派</label>
+                    <span>{{ personData.politicalParty || '--' }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>籍貫</label>
+                    <span>{{ personData.ancestralHome || '--' }}</span>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-item full-width">
+                    <label>發掘經過</label>
+                    <span>{{ personData.discoveryProcess || '--' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 下方區塊：標籤頁 -->
+      <div class="tabs-section">
+        <!-- 標籤頁導航 -->
+        <div class="tabs-nav">
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab === 'relationships'"
+            (click)="setActiveTab('relationships')"
+          >
+            親屬關係({{ getTabCount('relationships') }})
+          </button>
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab === 'friends'"
+            (click)="setActiveTab('friends')"
+          >
+            重要友人({{ getTabCount('friends') }})
+          </button>
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab === 'experience'"
+            (click)="setActiveTab('experience')"
+          >
+            工作經歷({{ getTabCount('experience') }})
+          </button>
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab === 'education'"
+            (click)="setActiveTab('education')"
+          >
+            就學經歷({{ getTabCount('education') }})
+          </button>
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab === 'accounts'"
+            (click)="setActiveTab('accounts')"
+          >
+            網路帳號({{ getTabCount('accounts') }})
+          </button>
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab === 'travel'"
+            (click)="setActiveTab('travel')"
+          >
+            出國紀錄({{ getTabCount('travel') }})
+          </button>
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab === 'activities'"
+            (click)="setActiveTab('activities')"
+          >
+            參與活動({{ getTabCount('activities') }})
+          </button>
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab === 'places'"
+            (click)="setActiveTab('places')"
+          >
+            經常出入場所({{ getTabCount('places') }})
+          </button>
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab === 'publications'"
+            (click)="setActiveTab('publications')"
+          >
+            著作({{ getTabCount('publications') }})
+          </button>
+        </div>
+
+        <!-- 標籤頁內容 -->
+        <div class="tabs-content">
+          <!-- 親屬關係 -->
+          <div *ngIf="activeTab === 'relationships'" class="tab-content">
+            <div *ngIf="relationshipItems.length === 0" class="empty-content">
+              目前沒有親屬關係資料
+            </div>
+            <div *ngIf="relationshipItems.length > 0" class="relationships-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>項次</th>
+                    <th>姓名</th>
+                    <th>生日</th>
+                    <th>性別</th>
+                    <th>關係</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of relationshipItems">
+                    <td>{{ item.index }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.birthday }}</td>
+                    <td>
+                      <span class="gender-badge" [class]="item.gender === '男' ? 'male' : 'female'">
+                        {{ item.gender }}
+                      </span>
+                    </td>
+                    <td>{{ item.relationship }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 重要友人 -->
+          <div *ngIf="activeTab === 'friends'" class="tab-content">
+            <div *ngIf="importantFriends.length === 0" class="empty-content">
+              目前沒有重要友人資料
+            </div>
+            <div *ngIf="importantFriends.length > 0" class="list-content">
+              <div *ngFor="let friend of importantFriends; let i = index" class="list-item">
+                <span class="item-index">{{ i + 1 }}.</span>
+                <span class="item-text">{{ friend }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 工作經歷 -->
+          <div *ngIf="activeTab === 'experience'" class="tab-content">
+            <div *ngIf="experiences.length === 0" class="empty-content">
+              目前沒有工作經歷資料
+            </div>
+            <div *ngIf="experiences.length > 0" class="list-content">
+              <div *ngFor="let exp of experiences; let i = index" class="list-item">
+                <span class="item-index">{{ i + 1 }}.</span>
+                <span class="item-text">{{ exp }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 就學經歷 -->
+          <div *ngIf="activeTab === 'education'" class="tab-content">
+            <div *ngIf="educations.length === 0" class="empty-content">
+              目前沒有就學經歷資料
+            </div>
+            <div *ngIf="educations.length > 0" class="list-content">
+              <div *ngFor="let edu of educations; let i = index" class="list-item">
+                <span class="item-index">{{ i + 1 }}.</span>
+                <span class="item-text">{{ edu }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 網路帳號 -->
+          <div *ngIf="activeTab === 'accounts'" class="tab-content">
+            <div *ngIf="onlineAccounts.length === 0" class="empty-content">
+              目前沒有網路帳號資料
+            </div>
+            <div *ngIf="onlineAccounts.length > 0" class="list-content">
+              <div *ngFor="let account of onlineAccounts; let i = index" class="list-item">
+                <span class="item-index">{{ i + 1 }}.</span>
+                <span class="item-text">{{ account }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 出國紀錄 -->
+          <div *ngIf="activeTab === 'travel'" class="tab-content">
+            <div *ngIf="travelRecords.length === 0" class="empty-content">
+              目前沒有出國紀錄資料
+            </div>
+            <div *ngIf="travelRecords.length > 0" class="list-content">
+              <div *ngFor="let travel of travelRecords; let i = index" class="list-item">
+                <span class="item-index">{{ i + 1 }}.</span>
+                <span class="item-text">{{ travel }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 參與活動 -->
+          <div *ngIf="activeTab === 'activities'" class="tab-content">
+            <div *ngIf="activities.length === 0" class="empty-content">
+              目前沒有參與活動資料
+            </div>
+            <div *ngIf="activities.length > 0" class="list-content">
+              <div *ngFor="let activity of activities; let i = index" class="list-item">
+                <span class="item-index">{{ i + 1 }}.</span>
+                <span class="item-text">{{ activity }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 經常出入場所 -->
+          <div *ngIf="activeTab === 'places'" class="tab-content">
+            <div *ngIf="frequentPlaces.length === 0" class="empty-content">
+              目前沒有經常出入場所資料
+            </div>
+            <div *ngIf="frequentPlaces.length > 0" class="list-content">
+              <div *ngFor="let place of frequentPlaces; let i = index" class="list-item">
+                <span class="item-index">{{ i + 1 }}.</span>
+                <span class="item-text">{{ place }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 著作 -->
+          <div *ngIf="activeTab === 'publications'" class="tab-content">
+            <div *ngIf="publications.length === 0" class="empty-content">
+              目前沒有著作資料
+            </div>
+            <div *ngIf="publications.length > 0" class="list-content">
+              <div *ngFor="let publication of publications; let i = index" class="list-item">
+                <span class="item-index">{{ i + 1 }}.</span>
+                <span class="item-text">{{ publication }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

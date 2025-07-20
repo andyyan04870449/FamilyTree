@@ -1,0 +1,145 @@
+<div class="person-list-page">
+  <div class="page-header">
+    <h1>👥 人員列表</h1>
+    <p>管理所有資料庫中的人員資料</p>
+  </div>
+
+  <!-- 搜尋區域 -->
+  <div class="search-section">
+    <div class="search-box">
+      <input 
+        type="text" 
+        [(ngModel)]="searchName" 
+        placeholder="搜尋姓名..." 
+        (keyup.enter)="searchPersonData()"
+        class="search-input"
+      >
+      <button (click)="searchPersonData()" class="search-btn" [disabled]="loading">
+        🔍 搜尋
+      </button>
+      <button (click)="clearSearch()" class="clear-btn" [disabled]="loading">
+        🗑️ 清除
+      </button>
+    </div>
+  </div>
+
+  <!-- 統計資訊 -->
+  <div class="stats-section">
+    <div class="stat-item">
+      <span class="stat-number">{{ totalCount }}</span>
+      <span class="stat-label">總人數</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number">{{ currentPage }}</span>
+      <span class="stat-label">當前頁面</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number">{{ totalPages }}</span>
+      <span class="stat-label">總頁數</span>
+    </div>
+  </div>
+
+  <!-- 載入中 -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>載入人員資料中...</p>
+  </div>
+
+  <!-- 錯誤訊息 -->
+  <div *ngIf="error && !loading" class="error-message">
+    <span class="error-icon">❌</span>
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- 人員列表 -->
+  <div *ngIf="!loading && !error" class="person-list-container">
+    <div *ngIf="personDataList.length === 0" class="empty-placeholder">
+      <div class="placeholder-icon">👥</div>
+      <h3>目前沒有人員資料</h3>
+      <p>上傳Excel檔案或手動新增人員資料</p>
+    </div>
+
+    <div *ngFor="let person of personDataList" class="person-item">
+      <div class="person-info">
+        <div class="person-avatar">
+          <span class="avatar-text">{{ person.name.charAt(0) }}</span>
+        </div>
+        <div class="person-details">
+          <div class="person-name">{{ person.name }}</div>
+          <div class="person-meta">
+            <span *ngIf="person.gender" class="meta-item">
+              <span class="meta-label">性別:</span>
+              <span class="meta-value">{{ getGenderText(person.gender) }}</span>
+            </span>
+            <span *ngIf="person.birthday" class="meta-item">
+              <span class="meta-label">生日:</span>
+              <span class="meta-value">{{ getBirthdayText(person.birthday) }}</span>
+            </span>
+            <span *ngIf="person.nationality" class="meta-item">
+              <span class="meta-label">國籍:</span>
+              <span class="meta-value">{{ person.nationality }}</span>
+            </span>
+            <span *ngIf="person.mobile" class="meta-item">
+              <span class="meta-label">手機:</span>
+              <span class="meta-value">{{ person.mobile }}</span>
+            </span>
+          </div>
+          <div class="person-address" *ngIf="person.currentAddress">
+            <span class="address-label">現居地址:</span>
+            <span class="address-value">{{ person.currentAddress }}</span>
+          </div>
+          <div class="person-workplace" *ngIf="person.currentWorkplace">
+            <span class="workplace-label">現職單位:</span>
+            <span class="workplace-value">{{ person.currentWorkplace }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="person-actions">
+        <button class="edit-btn" (click)="editPersonData(person)" title="編輯">
+          ✏️
+        </button>
+        <button class="delete-btn" (click)="deletePersonData(person)" title="刪除">
+          🗑️
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分頁控制 -->
+  <div *ngIf="!loading && !error && totalPages > 1" class="pagination">
+    <button 
+      class="page-btn" 
+      [disabled]="currentPage === 1"
+      (click)="goToPage(currentPage - 1)"
+    >
+      ← 上一頁
+    </button>
+    
+    <div class="page-numbers">
+      <button 
+        *ngFor="let page of getPageNumbers()" 
+        class="page-btn" 
+        [class.active]="page === currentPage"
+        (click)="goToPage(page)"
+      >
+        {{ page }}
+      </button>
+    </div>
+    
+    <button 
+      class="page-btn" 
+      [disabled]="currentPage === totalPages"
+      (click)="goToPage(currentPage + 1)"
+    >
+      下一頁 →
+    </button>
+  </div>
+
+  <!-- 個人詳細資料對話框 -->
+  <app-person-detail-dialog
+    [personId]="selectedPersonId"
+    [isVisible]="showDetailDialog"
+    (close)="closeDetailDialog()"
+  ></app-person-detail-dialog>
+</div> 

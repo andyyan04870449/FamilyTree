@@ -97,10 +97,48 @@ namespace familytree_backend.Controllers
             }
         }
 
+        [HttpGet("{id}/impact")]
+        public async Task<IActionResult> GetDeleteImpact(int id)
+        {
+            try
+            {
+                var result = await _fileUploadService.GetDeleteImpactAsync(id);
+                
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+                else
+                {
+                    return BadRequest(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "取得刪除影響資訊錯誤: {FileId}", id);
+                return StatusCode(500, new { success = false, message = "取得刪除影響資訊過程中發生錯誤" });
+            }
+        }
+
         [HttpGet("health")]
         public IActionResult HealthCheck()
         {
             return Ok(new { success = true, message = "檔案上傳服務正常運作", timestamp = DateTime.UtcNow });
+        }
+
+        [HttpPost("process/{id}")]
+        public async Task<IActionResult> ProcessFile(int id)
+        {
+            try
+            {
+                var result = await _fileUploadService.ProcessFileAsync(id);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "檔案處理控制器錯誤: {FileId}", id);
+                return StatusCode(500, new { success = false, message = "檔案處理過程中發生錯誤" });
+            }
         }
     }
 } 

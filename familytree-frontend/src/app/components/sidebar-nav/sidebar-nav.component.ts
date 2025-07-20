@@ -38,6 +38,8 @@ export class SidebarNavComponent implements OnInit {
       this.activeRoute = 'file-management';
     } else if (url.includes('/person-management')) {
       this.activeRoute = 'person-management';
+    } else if (url.includes('/person-list')) {
+      this.activeRoute = 'person-list';
     } else if (url.includes('/full-text-search')) {
       this.activeRoute = 'full-text-search';
     } else if (url.includes('/relationship-graph')) {

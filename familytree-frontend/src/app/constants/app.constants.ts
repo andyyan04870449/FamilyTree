@@ -1,9 +1,29 @@
 // 應用程式常數定義
 export class AppConstants {
-  // API 相關 - 使用相對路徑，讓前端自動使用當前網址的域名
-  static readonly API_BASE_URL = '/api';
+  // API 相關 - 根據環境自動選擇正確的API URL
+  static readonly API_BASE_URL = AppConstants.getApiBaseUrl();
   static readonly PERSON_API_URL = `${AppConstants.API_BASE_URL}/person`;
   static readonly ANALYSIS_API_URL = `${AppConstants.API_BASE_URL}/analysis`;
+
+  // 動態取得API基礎URL
+  private static getApiBaseUrl(): string {
+    const hostname = window.location.hostname;
+    const port = window.location.port;
+    
+    // 如果是通過ngrok訪問（包含.ngrok.io）
+    if (hostname.includes('.ngrok.io')) {
+      // 使用後端的ngrok URL
+      return 'https://familytree-backend-dev.ngrok.io/api';
+    }
+    
+    // 如果是本地開發環境
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return '/api'; // 使用代理
+    }
+    
+    // 其他環境
+    return '/api';
+  }
 
   // 狀態欄相關
   static readonly SESSION_TIMEOUT_SECONDS = 600; // 10分鐘
