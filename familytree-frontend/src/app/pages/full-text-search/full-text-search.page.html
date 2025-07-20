@@ -119,13 +119,6 @@
           <h3>結果列表 ({{ totalResults }})</h3>
           <div class="header-actions">
             <button 
-              *ngIf="getSelectedCount() > 0"
-              class="btn btn-primary"
-              (click)="showRelationshipGraph()"
-            >
-              🔗 關聯圖譜 ({{ getSelectedCount() }})
-            </button>
-            <button 
               *ngIf="searchResults.length > 0"
               class="btn btn-success"
               (click)="exportResults()"
@@ -230,8 +223,9 @@
       </div>
     </div>
 
-    <!-- 右側收藏夾區域 -->
+    <!-- 右側收藏夾和分析清單區域 -->
     <div class="right-panel">
+      <!-- 收藏夾 -->
       <div class="favorites-card">
         <div class="favorites-header">
           <h3>收藏夾</h3>
@@ -266,6 +260,58 @@
               class="btn-icon btn-delete"
               (click)="removeFavorite(favorite)"
               title="移除收藏"
+            >
+              🗑️
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分析清單 -->
+      <div class="analysis-card">
+        <div class="analysis-header">
+          <h3>分析清單</h3>
+          <div class="header-actions">
+            <button 
+              *ngIf="analysisList.length > 0"
+              class="btn btn-primary btn-sm"
+              (click)="showRelationshipGraph()"
+            >
+              🔗 關聯圖分析
+            </button>
+            <button 
+              *ngIf="analysisList.length > 0"
+              class="btn btn-warning btn-sm"
+              (click)="clearAnalysisList()"
+            >
+              清空
+            </button>
+          </div>
+        </div>
+
+        <!-- 空分析清單 -->
+        <div *ngIf="analysisList.length === 0" class="empty-analysis">
+          <div class="empty-icon">📊</div>
+          <p>目前沒有分析項目</p>
+          <small>在搜索結果中勾選人員即可加入分析清單</small>
+        </div>
+
+        <!-- 分析列表 -->
+        <div *ngIf="analysisList.length > 0" class="analysis-list">
+          <div 
+            *ngFor="let item of analysisList" 
+            class="analysis-item"
+          >
+            <span 
+              class="analysis-name"
+              (click)="viewAnalysisItemDetails(item)"
+            >
+              {{ item.name }}
+            </span>
+            <button 
+              class="btn-icon btn-delete"
+              (click)="removeFromAnalysisList(item)"
+              title="移除分析項目"
             >
               🗑️
             </button>

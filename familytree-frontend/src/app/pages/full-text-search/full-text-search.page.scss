@@ -618,6 +618,7 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
   padding: $section-padding;
   position: sticky;
   top: 2rem;
+  margin-bottom: $spacing-xl;
   
   @include mobile {
     position: static;
@@ -700,6 +701,108 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
   }
 }
 
+// 分析清單區域
+.analysis-card {
+  background: $bg-dark-secondary;
+  border: 1px solid $border-dark;
+  border-radius: $border-radius-lg;
+  padding: $section-padding;
+  position: sticky;
+  top: calc(2rem + 300px); // 在收藏夾下方
+  
+  @include mobile {
+    position: static;
+    margin-top: $spacing-xl;
+  }
+}
+
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-xl;
+  
+  h3 {
+    color: $text-primary;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-semibold;
+    margin: 0;
+  }
+  
+  .header-actions {
+    display: flex;
+    gap: $spacing-sm;
+    align-items: center;
+    
+    .btn-sm {
+      padding: $spacing-xs $spacing-sm;
+      font-size: $font-size-sm;
+    }
+  }
+}
+
+.empty-analysis {
+  text-align: center;
+  padding: $spacing-4xl $spacing-xl;
+  
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: $spacing-md;
+  }
+  
+  p {
+    color: $text-secondary;
+    margin: 0 0 $spacing-sm 0;
+  }
+  
+  small {
+    color: $text-quaternary;
+    font-size: $font-size-sm;
+  }
+}
+
+.analysis-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.analysis-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-md;
+  background: $bg-dark-tertiary;
+  border: 1px solid $border-dark-light;
+  border-radius: $border-radius-sm;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: $bg-dark-quaternary;
+    border-color: $border-dark;
+  }
+  
+  .analysis-name {
+    color: $text-primary;
+    font-size: $font-size-base;
+    cursor: pointer;
+    flex: 1;
+    
+    &:hover {
+      color: $primary-blue-light;
+    }
+  }
+  
+  .btn-delete {
+    background: rgba($error-red, 0.1);
+    color: $error-red-light;
+    
+    &:hover {
+      background: rgba($error-red, 0.2);
+    }
+  }
+}
+
 // 響應式設計
 @media (max-width: 768px) {
   .full-text-search-page {
@@ -712,7 +815,8 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
   
   .search-card,
   .results-section,
-  .favorites-card {
+  .favorites-card,
+  .analysis-card {
     padding: $spacing-lg;
   }
   
@@ -739,6 +843,15 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
       order: -1;
     }
   }
+  
+  .analysis-header .header-actions {
+    flex-direction: column;
+    gap: $spacing-sm;
+    
+    .btn {
+      width: 100%;
+    }
+  }
 }
 
 @media (max-width: 480px) {
@@ -748,7 +861,8 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
   
   .search-card,
   .results-section,
-  .favorites-card {
+  .favorites-card,
+  .analysis-card {
     padding: $spacing-md;
   }
   

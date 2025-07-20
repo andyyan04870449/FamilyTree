@@ -36,6 +36,12 @@ interface Favorite {
   addedAt: string;
 }
 
+interface AnalysisItem {
+  id: number;
+  name: string;
+  addedAt: string;
+}
+
 @Component({
   selector: 'app-full-text-search',
   standalone: true,
@@ -65,6 +71,9 @@ export class FullTextSearchPage implements OnInit {
 
   // 收藏相關
   favorites: Favorite[] = [];
+
+  // 分析清單相關
+  analysisList: AnalysisItem[] = [];
 
   // 對話框控制
   showDetailDialog: boolean = false;
@@ -99,7 +108,7 @@ export class FullTextSearchPage implements OnInit {
     try {
       const response = await this.fullTextSearchService.getSearchHistory().toPromise();
       if (response?.success && response.data) {
-        this.searchHistory = response.data.map((keyword, index) => ({
+        this.searchHistory = response.data.map((keyword: string, index: number) => ({
           keyword,
           count: 1,
           lastUsed: new Date().toISOString()
@@ -115,7 +124,7 @@ export class FullTextSearchPage implements OnInit {
     try {
       const response = await this.fullTextSearchService.getPopularKeywords().toPromise();
       if (response?.success && response.data) {
-        this.popularKeywords = response.data.map((keyword, index) => ({
+        this.popularKeywords = response.data.map((keyword: string, index: number) => ({
           keyword,
           count: 10 - index
         }));
@@ -125,28 +134,31 @@ export class FullTextSearchPage implements OnInit {
     }
   }
 
-  // 載入收藏
+  // 載入收藏列表
   private async loadFavorites(): Promise<void> {
     try {
-      this.favorites = await this.favoritesService.getFavorites();
+      const response = await this.favoritesService.getFavorites();
+      this.favorites = response.map((item: any) => ({
+        id: item.personId || item.id,
+        name: item.personName || item.name,
+        addedAt: item.favoritedAt || item.addedAt
+      }));
     } catch (error) {
-      console.error('載入收藏失敗:', error);
+      console.error('載入收藏列表失敗:', error);
     }
   }
 
   // 執行搜索
   async performSearch(): Promise<void> {
     if (!this.searchKeyword.trim()) {
+      this.error = '請輸入搜索關鍵字';
       return;
     }
 
     this.loading = true;
     this.error = '';
-    this.hasSearched = true;
 
     try {
-      // 執行搜索（搜索時會自動記錄關鍵字）
-      // 執行搜索
       const response = await this.fullTextSearchService.search({
         keyword: this.searchKeyword.trim(),
         type: this.searchType,
@@ -155,39 +167,35 @@ export class FullTextSearchPage implements OnInit {
       }).toPromise();
 
       if (response?.success && response.data) {
-        this.searchResults = response.data.results.map((result: any) => ({
-          id: result.id,
-          name: result.name,
-          gender: result.gender,
-          source: result.source,
-          createdAt: result.createdAt,
+        this.searchResults = response.data.results.map((item: any) => ({
+          ...item,
           selected: false,
-          isFavorited: this.favorites.some(fav => fav.id === result.id)
+          isFavorited: this.favorites.some(f => f.id === item.id)
         }));
-
         this.totalResults = response.data.totalCount;
         this.totalPages = Math.ceil(this.totalResults / this.pageSize);
+        this.hasSearched = true;
+        
+        // 更新搜索結果的選中狀態，保持與分析清單的同步
+        this.syncSearchResultsWithAnalysisList();
       } else {
-        this.searchResults = [];
-        this.totalResults = 0;
-        this.totalPages = 1;
+        this.error = response?.message || '搜索失敗';
       }
-
-      // 重新載入歷史記錄和熱門關鍵字
-      await Promise.all([
-        this.loadSearchHistory(),
-        this.loadPopularKeywords()
-      ]);
-
     } catch (error) {
       console.error('搜索失敗:', error);
       this.error = '搜索失敗，請稍後再試';
-      this.searchResults = [];
-      this.totalResults = 0;
-      this.totalPages = 1;
     } finally {
       this.loading = false;
     }
+  }
+
+  // 同步搜索結果與分析清單的選中狀態
+  private syncSearchResultsWithAnalysisList(): void {
+    this.searchResults.forEach(result => {
+      // 如果該人員在分析清單中，則設為選中狀態
+      result.selected = this.analysisList.some(item => item.id === result.id);
+    });
+    this.updateSelectAll();
   }
 
   // 使用歷史關鍵字
@@ -215,40 +223,94 @@ export class FullTextSearchPage implements OnInit {
     this.selectAll = false;
   }
 
-  // 切換全選
+  // 全選/取消全選
   toggleSelectAll(): void {
     this.searchResults.forEach(result => {
       result.selected = this.selectAll;
     });
+    this.updateAnalysisList();
   }
 
   // 更新全選狀態
   updateSelectAll(): void {
     this.selectAll = this.searchResults.length > 0 && 
                     this.searchResults.every(result => result.selected);
+    // 當全選狀態改變時，同步更新分析清單
+    this.updateAnalysisList();
   }
 
-  // 切換收藏
-  async toggleFavorite(result: SearchResult): Promise<void> {
-    try {
-      if (result.isFavorited) {
-        await this.favoritesService.removeFavorite(result.id);
-        result.isFavorited = false;
-        this.favorites = this.favorites.filter(fav => fav.id !== result.id);
-      } else {
-        await this.favoritesService.addFavorite({
-          personId: result.id,
-          personName: result.name
-        });
-        result.isFavorited = true;
-        this.favorites.push({
+  // 更新分析清單
+  private updateAnalysisList(): void {
+    const selectedResults = this.searchResults.filter(result => result.selected);
+    
+    // 將選中的結果加入分析清單（避免重複）
+    selectedResults.forEach(result => {
+      const existingItem = this.analysisList.find(item => item.id === result.id);
+      if (!existingItem) {
+        this.analysisList.push({
           id: result.id,
           name: result.name,
           addedAt: new Date().toISOString()
         });
       }
+    });
+
+    // 移除未選中的項目（僅限於當前搜索結果中的人員）
+    this.analysisList = this.analysisList.filter(item => {
+      const isInCurrentResults = this.searchResults.some(result => result.id === item.id);
+      if (isInCurrentResults) {
+        // 如果在當前搜索結果中，檢查是否仍然被選中
+        return selectedResults.some(result => result.id === item.id);
+      }
+      // 如果不在當前搜索結果中，保留在分析清單中
+      return true;
+    });
+  }
+
+  // 從分析清單移除項目
+  removeFromAnalysisList(item: AnalysisItem): void {
+    this.analysisList = this.analysisList.filter(analysisItem => analysisItem.id !== item.id);
+    
+    // 同時取消對應搜索結果的選中狀態（如果該人員在當前搜索結果中）
+    const searchResult = this.searchResults.find(result => result.id === item.id);
+    if (searchResult) {
+      searchResult.selected = false;
+      this.updateSelectAll();
+    }
+  }
+
+  // 清空分析清單
+  clearAnalysisList(): void {
+    this.analysisList = [];
+    
+    // 取消所有當前搜索結果的選中狀態
+    this.searchResults.forEach(result => {
+      result.selected = false;
+    });
+    this.selectAll = false;
+  }
+
+  // 切換收藏狀態
+  async toggleFavorite(result: SearchResult): Promise<void> {
+    try {
+      if (result.isFavorited) {
+        await this.favoritesService.removeFavorite(result.id);
+        this.favorites = this.favorites.filter(f => f.id !== result.id);
+        result.isFavorited = false;
+      } else {
+        await this.favoritesService.addFavorite({
+          personId: result.id,
+          personName: result.name
+        });
+        this.favorites.push({
+          id: result.id,
+          name: result.name,
+          addedAt: new Date().toISOString()
+        });
+        result.isFavorited = true;
+      }
     } catch (error) {
-      console.error('切換收藏失敗:', error);
+      console.error('切換收藏狀態失敗:', error);
       this.error = '收藏操作失敗，請稍後再試';
     }
   }
@@ -257,12 +319,12 @@ export class FullTextSearchPage implements OnInit {
   async removeFavorite(favorite: Favorite): Promise<void> {
     try {
       await this.favoritesService.removeFavorite(favorite.id);
-      this.favorites = this.favorites.filter(fav => fav.id !== favorite.id);
+      this.favorites = this.favorites.filter(f => f.id !== favorite.id);
       
       // 更新搜索結果中的收藏狀態
-      const result = this.searchResults.find(r => r.id === favorite.id);
-      if (result) {
-        result.isFavorited = false;
+      const searchResult = this.searchResults.find(result => result.id === favorite.id);
+      if (searchResult) {
+        searchResult.isFavorited = false;
       }
     } catch (error) {
       console.error('移除收藏失敗:', error);
@@ -272,10 +334,6 @@ export class FullTextSearchPage implements OnInit {
 
   // 清空所有收藏
   async clearAllFavorites(): Promise<void> {
-    if (!confirm('確定要清空所有收藏嗎？')) {
-      return;
-    }
-
     try {
       await this.favoritesService.clearAllFavorites();
       this.favorites = [];
@@ -299,6 +357,12 @@ export class FullTextSearchPage implements OnInit {
   // 查看收藏詳情
   viewFavoriteDetails(favorite: Favorite): void {
     this.selectedPersonId = favorite.id;
+    this.showDetailDialog = true;
+  }
+
+  // 查看分析項目詳情
+  viewAnalysisItemDetails(item: AnalysisItem): void {
+    this.selectedPersonId = item.id;
     this.showDetailDialog = true;
   }
 
@@ -372,16 +436,17 @@ export class FullTextSearchPage implements OnInit {
       .map(result => result.id);
   }
 
+  // 從分析清單跳轉到關聯圖譜
   showRelationshipGraph(): void {
-    if (this.getSelectedCount() === 0) {
+    if (this.analysisList.length === 0) {
       return;
     }
     
-    // 獲取選中的人員ID並跳轉到關聯圖譜頁面
-    const selectedIds = this.getSelectedPersonIds();
+    // 獲取分析清單中的人員ID並跳轉到關聯圖譜頁面
+    const selectedIds = this.analysisList.map(item => item.id);
     const personIdsParam = selectedIds.join(',');
     
-    console.log('🔗 跳轉到關聯圖譜頁面，選中人員ID:', selectedIds);
+    console.log('🔗 跳轉到關聯圖譜頁面，分析清單人員ID:', selectedIds);
     this.router.navigate(['/relationship-graph', personIdsParam]);
   }
 } 
