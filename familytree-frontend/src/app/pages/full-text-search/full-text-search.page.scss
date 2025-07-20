@@ -757,4 +757,34 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
     padding: $spacing-sm;
     font-size: $font-size-sm;
   }
+}
+
+// 關聯圖譜對話框樣式
+.graph-dialog {
+  width: 95vw !important;
+  max-width: 1400px !important;
+  height: 90vh !important;
+  max-height: 90vh !important;
+
+  .dialog-content {
+    padding: 0;
+    height: calc(90vh - 80px);
+    overflow: hidden;
+  }
+}
+
+// 結果標題操作按鈕
+.header-actions {
+  display: flex;
+  gap: $spacing-md;
+  align-items: center;
+
+  @include mobile {
+    flex-direction: column;
+    width: 100%;
+    
+    .btn {
+      width: 100%;
+    }
+  }
 } 

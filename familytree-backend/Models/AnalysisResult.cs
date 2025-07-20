@@ -6,7 +6,7 @@ namespace familytree_backend.Models
     {
         public int Id { get; set; }
         public int PersonId { get; set; }
-        public JsonDocument AnalysisResultData { get; set; }
+        public JsonDocument AnalysisResultData { get; set; } = null!;
         public DateTime AnalysisDate { get; set; }
         public int ProgressPercentage { get; set; }
         public string Status { get; set; } = "pending";
@@ -54,7 +54,7 @@ namespace familytree_backend.Models
     {
         public int PersonId { get; set; }
         public string PersonName { get; set; } = "";
-        public JsonDocument AnalysisResult { get; set; }
+        public JsonDocument AnalysisResult { get; set; } = null!;
         public DateTime AnalysisDate { get; set; }
         public string Status { get; set; } = "";
     }

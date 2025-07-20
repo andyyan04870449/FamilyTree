@@ -5,6 +5,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PersonDetailDialogComponent } from '../../components/person-detail-dialog/person-detail-dialog.component';
+import { RelationshipGraphComponent } from '../../components/relationship-graph/relationship-graph.component';
 import { FullTextSearchService } from '../../services/fulltext-search.service';
 import { FavoritesService } from '../../services/favorites.service';
 
@@ -38,7 +39,7 @@ interface Favorite {
 @Component({
   selector: 'app-full-text-search',
   standalone: true,
-  imports: [CommonModule, FormsModule, PersonDetailDialogComponent],
+  imports: [CommonModule, FormsModule, PersonDetailDialogComponent, RelationshipGraphComponent],
   templateUrl: './full-text-search.page.html',
   styleUrls: ['./full-text-search.page.scss']
 })
@@ -68,6 +69,7 @@ export class FullTextSearchPage implements OnInit {
   // 對話框控制
   showDetailDialog: boolean = false;
   selectedPersonId: number | null = null;
+  showGraphDialog: boolean = false;
 
   constructor(
     private fullTextSearchService: FullTextSearchService,
@@ -357,5 +359,27 @@ export class FullTextSearchPage implements OnInit {
     } catch {
       return '--';
     }
+  }
+
+  // 關聯圖譜相關方法
+  getSelectedCount(): number {
+    return this.searchResults.filter(result => result.selected).length;
+  }
+
+  getSelectedPersonIds(): number[] {
+    return this.searchResults
+      .filter(result => result.selected)
+      .map(result => result.id);
+  }
+
+  showRelationshipGraph(): void {
+    if (this.getSelectedCount() === 0) {
+      return;
+    }
+    this.showGraphDialog = true;
+  }
+
+  closeGraphDialog(): void {
+    this.showGraphDialog = false;
   }
 } 

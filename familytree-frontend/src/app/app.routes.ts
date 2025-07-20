@@ -34,7 +34,7 @@ export const routes: Routes = [
   // 視覺化分析模組
   {
     path: 'relationship-graph',
-    loadComponent: () => import('./pages/relationship-graph/relationship-graph.page').then(m => m.RelationshipGraphComponent)
+    loadComponent: () => import('./pages/relationship-graph/relationship-graph.page').then(m => m.RelationshipGraphPage)
   },
   {
     path: 'organization-chart',

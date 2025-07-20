@@ -117,13 +117,22 @@
       <div *ngIf="!loading && !error" class="results-section">
         <div class="results-header">
           <h3>結果列表 ({{ totalResults }})</h3>
-          <button 
-            *ngIf="searchResults.length > 0"
-            class="btn btn-success"
-            (click)="exportResults()"
-          >
-            📊 匯出
-          </button>
+          <div class="header-actions">
+            <button 
+              *ngIf="getSelectedCount() > 0"
+              class="btn btn-primary"
+              (click)="showRelationshipGraph()"
+            >
+              🔗 關聯圖譜 ({{ getSelectedCount() }})
+            </button>
+            <button 
+              *ngIf="searchResults.length > 0"
+              class="btn btn-success"
+              (click)="exportResults()"
+            >
+              📊 匯出
+            </button>
+          </div>
         </div>
 
         <!-- 空結果 -->
@@ -272,4 +281,20 @@
     [isVisible]="showDetailDialog"
     (close)="closeDetailDialog()"
   ></app-person-detail-dialog>
+
+  <!-- 關聯圖譜對話框 -->
+  <div class="dialog-overlay" *ngIf="showGraphDialog" (click)="closeGraphDialog()">
+    <div class="dialog-container graph-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h3>🔗 關聯圖譜分析</h3>
+        <button class="close-btn" (click)="closeGraphDialog()">×</button>
+      </div>
+      <div class="dialog-content">
+        <app-relationship-graph
+          [autoAnalyze]="true"
+          [selectedPersonIds]="getSelectedPersonIds()">
+        </app-relationship-graph>
+      </div>
+    </div>
+  </div>
 </div> 
