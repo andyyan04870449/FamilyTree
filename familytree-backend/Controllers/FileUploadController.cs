@@ -30,7 +30,12 @@ namespace familytree_backend.Controllers
 
                 var result = await _fileUploadService.UploadFileAsync(file);
 
+                // 對於重複檔案，返回 200 狀態碼但包含錯誤訊息
                 if (result.Success)
+                {
+                    return Ok(result);
+                }
+                else if (result.IsDuplicate)
                 {
                     return Ok(result);
                 }
