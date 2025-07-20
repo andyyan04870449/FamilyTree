@@ -129,3 +129,12 @@ tests/
 familytree-backend/user_upload/
 familytree-frontend/test*.xlsx
 familytree-frontend/.angular/cache/ 
+
+# Test files and scripts
+*.py
+test-*.sh
+test-files/
+
+# Test Excel files (Chinese filenames)
+*客戶基資表*.xlsx
+分公司*.xlsx 
