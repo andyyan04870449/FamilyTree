@@ -74,8 +74,8 @@ namespace familytree_backend.Controllers
                     FamilyRelationships = r.family_relationships,
                     Friends = r.friends,
                     ProfileData = BuildProfileData(r),
-                    CreatedAt = r.created_at ?? DateTime.Now,
-                    UpdatedAt = r.updated_at ?? DateTime.Now,
+                    CreatedAt = DateTime.TryParse(r.created_at?.ToString(), out DateTime createdDate) ? createdDate : DateTime.Now,
+                    UpdatedAt = DateTime.TryParse(r.updated_at?.ToString(), out DateTime updatedDate) ? updatedDate : DateTime.Now,
                     IsFavorited = false,
                     Source = r.source ?? "檔案上傳",
                     MatchedFields = GetMatchedFields(r, request.Keyword, request.SearchType)
@@ -333,7 +333,8 @@ namespace familytree_backend.Controllers
                      online_accounts = @keyword OR
                      frequent_locations = @keyword OR
                      travel_history = @keyword OR
-                     discovery_process = @keyword OR
+                     discovery_source = @keyword OR
+                     important_friends = @keyword OR
                      remarks = @keyword)";
             }
             else
@@ -360,7 +361,8 @@ namespace familytree_backend.Controllers
                      online_accounts ILIKE @fuzzyKeyword OR
                      frequent_locations ILIKE @fuzzyKeyword OR
                      travel_history ILIKE @fuzzyKeyword OR
-                     discovery_process ILIKE @fuzzyKeyword OR
+                     discovery_source ILIKE @fuzzyKeyword OR
+                     important_friends ILIKE @fuzzyKeyword OR
                      remarks ILIKE @fuzzyKeyword)";
             }
         }
@@ -376,9 +378,9 @@ namespace familytree_backend.Controllers
                        current_employer, education, activities, experience, publications,
                        email, address, mailing_address, birthplace, ethnicity, 
                        ancestral_origin, political_party, online_accounts, 
-                       frequent_locations, travel_history, discovery_process, remarks,
+                       frequent_locations, travel_history,                        discovery_source, remarks,
                        file_md5, created_at, updated_at,
-                       'person_profile' as source_table, COALESCE(discovery_process, '檔案上傳') as source
+                       'person_profile' as source_table, COALESCE(discovery_source, '檔案上傳') as source
                 FROM person_profile 
                 WHERE ";
 
@@ -406,7 +408,8 @@ namespace familytree_backend.Controllers
                      online_accounts = @keyword OR
                      frequent_locations = @keyword OR
                      travel_history = @keyword OR
-                     discovery_process = @keyword OR
+                     discovery_source = @keyword OR
+                     important_friends = @keyword OR
                      remarks = @keyword)
                     ORDER BY name, gender";
             }
@@ -434,7 +437,8 @@ namespace familytree_backend.Controllers
                      online_accounts ILIKE @fuzzyKeyword OR
                      frequent_locations ILIKE @fuzzyKeyword OR
                      travel_history ILIKE @fuzzyKeyword OR
-                     discovery_process ILIKE @fuzzyKeyword OR
+                     discovery_source ILIKE @fuzzyKeyword OR
+                     important_friends ILIKE @fuzzyKeyword OR
                      remarks ILIKE @fuzzyKeyword)
                     ORDER BY 
                         CASE WHEN name ILIKE @fuzzyKeyword THEN 1 ELSE 2 END,
@@ -490,7 +494,7 @@ namespace familytree_backend.Controllers
             if (IsMatch(r.online_accounts)) matchedFields.Add("線上帳號");
             if (IsMatch(r.frequent_locations)) matchedFields.Add("常訪地點");
             if (IsMatch(r.travel_history)) matchedFields.Add("旅行歷史");
-            if (IsMatch(r.discovery_process)) matchedFields.Add("發現過程");
+            if (IsMatch(r.discovery_source)) matchedFields.Add("發現過程");
             if (IsMatch(r.remarks)) matchedFields.Add("備註");
 
             return string.Join(", ", matchedFields);
@@ -714,7 +718,7 @@ namespace familytree_backend.Controllers
             if (!string.IsNullOrEmpty(r.online_accounts)) sb.AppendLine($"線上帳號: {r.online_accounts}");
             if (!string.IsNullOrEmpty(r.frequent_locations)) sb.AppendLine($"常訪地點: {r.frequent_locations}");
             if (!string.IsNullOrEmpty(r.travel_history)) sb.AppendLine($"旅行歷史: {r.travel_history}");
-            if (!string.IsNullOrEmpty(r.discovery_process)) sb.AppendLine($"發現過程: {r.discovery_process}");
+            if (!string.IsNullOrEmpty(r.discovery_source)) sb.AppendLine($"發現過程: {r.discovery_source}");
             if (!string.IsNullOrEmpty(r.remarks)) sb.AppendLine($"備註: {r.remarks}");
             return sb.ToString().TrimEnd();
         }

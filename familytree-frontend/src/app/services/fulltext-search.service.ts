@@ -9,7 +9,7 @@ import { AppConstants } from '../constants/app.constants';
 // 搜索請求接口
 export interface SearchRequest {
   keyword: string;
-  searchType: 'exact' | 'fuzzy';
+  type: 'exact' | 'fuzzy';
   page?: number;
   pageSize?: number;
 }
@@ -180,7 +180,7 @@ export class FullTextSearchService {
     
     const searchRequest = {
       keyword: request.keyword,
-      searchType: request.searchType,
+      searchType: request.type,
       page: request.page || 1,
       pageSize: request.pageSize || 10
     };
@@ -218,6 +218,24 @@ export class FullTextSearchService {
   getSearchStatistics(): Observable<ApiResponse<SearchStatistics>> {
     console.log('📊 獲取搜索統計');
     return this.http.get<ApiResponse<SearchStatistics>>(`${this.searchUrl}/statistics`);
+  }
+
+  /**
+   * 記錄搜索關鍵字
+   * 注意：搜索時會自動記錄關鍵字，此方法僅為相容性保留
+   */
+  recordSearch(keyword: string): Promise<void> {
+    console.log('📝 搜索關鍵字會自動記錄，無需單獨調用');
+    return Promise.resolve();
+  }
+
+  /**
+   * 匯出搜索結果
+   * 注意：後端暫未實現匯出功能，此方法僅為相容性保留
+   */
+  exportResults(results: any[]): Promise<void> {
+    console.log('📊 匯出功能暫未實現');
+    return Promise.reject(new Error('匯出功能暫未實現'));
   }
 
   // ============ 收藏功能 ============

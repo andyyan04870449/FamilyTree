@@ -1,0 +1,275 @@
+<!-- 全文檢索頁面 -->
+<div class="full-text-search-page">
+  <!-- 頁面標題 -->
+  <div class="page-header">
+    <h1>🔍 全文檢索</h1>
+    <p>關鍵字搜索人員資料，支援精準和模糊查詢</p>
+  </div>
+
+  <!-- 主要內容區域 -->
+  <div class="main-content">
+    <!-- 左側搜索和結果區域 -->
+    <div class="left-panel">
+      <!-- 搜索區域 -->
+      <div class="search-section">
+        <div class="search-card">
+          <h3>查詢條件</h3>
+          
+          <!-- 關鍵字輸入 -->
+          <div class="search-input-group">
+            <label for="keyword">關鍵字</label>
+            <input 
+              type="text" 
+              id="keyword"
+              [(ngModel)]="searchKeyword" 
+              placeholder="請輸入搜索關鍵字..."
+              (keyup.enter)="performSearch()"
+              class="search-input"
+            >
+          </div>
+
+          <!-- 歷史記錄 -->
+          <div class="history-section" *ngIf="searchHistory.length > 0">
+            <label>歷史紀錄</label>
+            <div class="history-tags">
+              <span 
+                *ngFor="let history of searchHistory" 
+                class="history-tag"
+                (click)="useHistoryKeyword(history.keyword)"
+              >
+                {{ history.keyword }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 查詢方式選擇 -->
+          <div class="search-type-section">
+            <label>查詢方式</label>
+            <div class="radio-group">
+              <label class="radio-item">
+                <input 
+                  type="radio" 
+                  [(ngModel)]="searchType" 
+                  value="fuzzy"
+                  name="searchType"
+                >
+                <span class="radio-label">模糊查詢</span>
+              </label>
+              <label class="radio-item">
+                <input 
+                  type="radio" 
+                  [(ngModel)]="searchType" 
+                  value="exact"
+                  name="searchType"
+                >
+                <span class="radio-label">精準查詢</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 熱門關鍵字 -->
+          <div class="popular-keywords-section" *ngIf="popularKeywords.length > 0">
+            <label>熱門關鍵字</label>
+            <div class="popular-tags">
+              <button 
+                *ngFor="let keyword of popularKeywords" 
+                class="popular-tag"
+                (click)="usePopularKeyword(keyword.keyword)"
+              >
+                {{ keyword.keyword }}
+              </button>
+            </div>
+          </div>
+
+          <!-- 操作按鈕 -->
+          <div class="search-actions">
+            <button 
+              class="btn btn-warning" 
+              (click)="resetSearch()"
+              [disabled]="loading"
+            >
+              🗑️ 重置
+            </button>
+            <button 
+              class="btn btn-primary" 
+              (click)="performSearch()"
+              [disabled]="loading || !searchKeyword.trim()"
+            >
+              🔍 查詢
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 載入中 -->
+      <div *ngIf="loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>搜尋中...</p>
+      </div>
+
+      <!-- 錯誤訊息 -->
+      <div *ngIf="error && !loading" class="error-message">
+        <span class="error-icon">❌</span>
+        <p>{{ error }}</p>
+      </div>
+
+      <!-- 結果列表區域 -->
+      <div *ngIf="!loading && !error" class="results-section">
+        <div class="results-header">
+          <h3>結果列表 ({{ totalResults }})</h3>
+          <button 
+            *ngIf="searchResults.length > 0"
+            class="btn btn-success"
+            (click)="exportResults()"
+          >
+            📊 匯出
+          </button>
+        </div>
+
+        <!-- 空結果 -->
+        <div *ngIf="searchResults.length === 0 && hasSearched" class="empty-results">
+          <div class="empty-icon">🔍</div>
+          <h3>沒有找到相關結果</h3>
+          <p>請嘗試使用不同的關鍵字或查詢方式</p>
+        </div>
+
+        <!-- 結果表格 -->
+        <div *ngIf="searchResults.length > 0" class="results-table">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>
+                  <input 
+                    type="checkbox" 
+                    [(ngModel)]="selectAll"
+                    (change)="toggleSelectAll()"
+                  >
+                </th>
+                <th>處理</th>
+                <th>姓名</th>
+                <th>性別</th>
+                <th>時間來源</th>
+                <th>建檔日期</th>
+                <th>功能</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let result of searchResults; let i = index">
+                <td>
+                  <input 
+                    type="checkbox" 
+                    [(ngModel)]="result.selected"
+                    (change)="updateSelectAll()"
+                  >
+                </td>
+                <td>{{ i + 1 }}</td>
+                <td>{{ result.name }}</td>
+                <td>{{ result.gender }}</td>
+                <td>{{ result.source }}</td>
+                <td>{{ formatDate(result.createdAt) }}</td>
+                <td class="action-buttons">
+                  <button 
+                    class="btn-icon"
+                    (click)="viewDetails(result)"
+                    title="檢視詳情"
+                  >
+                    👁️
+                  </button>
+                  <button 
+                    class="btn-icon"
+                    [class.favorited]="result.isFavorited"
+                    (click)="toggleFavorite(result)"
+                    [title]="result.isFavorited ? '取消收藏' : '加入收藏'"
+                  >
+                    {{ result.isFavorited ? '⭐' : '☆' }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 分頁控制 -->
+        <div *ngIf="totalPages > 1" class="pagination">
+          <button 
+            class="page-btn" 
+            [disabled]="currentPage === 1"
+            (click)="goToPage(currentPage - 1)"
+          >
+            ← 上一頁
+          </button>
+          
+          <div class="page-numbers">
+            <button 
+              *ngFor="let page of getPageNumbers()" 
+              class="page-btn" 
+              [class.active]="page === currentPage"
+              (click)="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+          
+          <button 
+            class="page-btn" 
+            [disabled]="currentPage === totalPages"
+            (click)="goToPage(currentPage + 1)"
+          >
+            下一頁 →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右側收藏夾區域 -->
+    <div class="right-panel">
+      <div class="favorites-card">
+        <div class="favorites-header">
+          <h3>收藏夾</h3>
+          <button 
+            *ngIf="favorites.length > 0"
+            class="btn btn-warning btn-sm"
+            (click)="clearAllFavorites()"
+          >
+            清空
+          </button>
+        </div>
+
+        <!-- 空收藏夾 -->
+        <div *ngIf="favorites.length === 0" class="empty-favorites">
+          <div class="empty-icon">⭐</div>
+          <p>目前沒有收藏項目</p>
+        </div>
+
+        <!-- 收藏列表 -->
+        <div *ngIf="favorites.length > 0" class="favorites-list">
+          <div 
+            *ngFor="let favorite of favorites" 
+            class="favorite-item"
+          >
+            <span 
+              class="favorite-name"
+              (click)="viewFavoriteDetails(favorite)"
+            >
+              {{ favorite.name }}
+            </span>
+            <button 
+              class="btn-icon btn-delete"
+              (click)="removeFavorite(favorite)"
+              title="移除收藏"
+            >
+              🗑️
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 人員詳細資料對話框 -->
+  <app-person-detail-dialog
+    [personId]="selectedPersonId"
+    [isVisible]="showDetailDialog"
+    (close)="closeDetailDialog()"
+  ></app-person-detail-dialog>
+</div> 

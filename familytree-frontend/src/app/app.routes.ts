@@ -24,6 +24,10 @@ export const routes: Routes = [
   },
   // 全文檢索模組
   {
+    path: 'full-text-search',
+    loadComponent: () => import('./pages/full-text-search/full-text-search.page').then(m => m.FullTextSearchPage)
+  },
+  {
     path: 'family-tree',
     loadComponent: () => import('./pages/family-tree/family-tree.page').then(m => m.FamilyTreeComponent)
   },

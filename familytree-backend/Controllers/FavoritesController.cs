@@ -397,6 +397,41 @@ namespace familytree_backend.Controllers
         }
 
         /// <summary>
+        /// 清空所有收藏
+        /// </summary>
+        /// <returns>操作結果</returns>
+        [HttpDelete("clear")]
+        public async Task<IActionResult> ClearAllFavorites()
+        {
+            _logger.LogInformation("📋 清空所有收藏請求");
+
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                var deletedRows = await connection.ExecuteAsync("DELETE FROM user_favorites");
+
+                _logger.LogInformation("✅ 清空所有收藏成功: 刪除數量={deletedRows}", deletedRows);
+
+                return Ok(new FavoriteResult
+                {
+                    Success = true,
+                    Message = $"成功清空所有收藏，共刪除 {deletedRows} 筆記錄"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ 清空所有收藏失敗: {error}", ex.Message);
+                return StatusCode(500, new FavoriteResult
+                {
+                    Success = false,
+                    Message = "清空收藏時發生錯誤，請稍後再試"
+                });
+            }
+        }
+
+        /// <summary>
         /// 獲取收藏統計
         /// </summary>
         /// <returns>收藏統計資料</returns>

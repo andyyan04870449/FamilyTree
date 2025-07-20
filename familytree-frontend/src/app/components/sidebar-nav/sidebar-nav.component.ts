@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
   imports: [RouterModule, CommonModule]
 })
 export class SidebarNavComponent implements OnInit {
-  @Output() fullTextSearchClick = new EventEmitter<void>();
+
   activeRoute: string = 'home';
 
   constructor(private router: Router) {}
@@ -53,13 +53,5 @@ export class SidebarNavComponent implements OnInit {
     }
   }
 
-  onFullTextSearchClick() {
-    // 如果當前在 family-tree 路由，發送事件給父組件
-    if (this.activeRoute === 'family-tree') {
-      this.fullTextSearchClick.emit();
-    } else {
-      // 否則導航到 family-tree 頁面
-      this.router.navigate(['/family-tree']);
-    }
-  }
+
 } 

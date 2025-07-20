@@ -1,7 +1,7 @@
-@import 'styles/variables';
+@import 'app/styles/_variables';
 
 body {
-  background: $background;
+  background: $bg-dark;
   color: $text-primary;
   font-family: 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
   margin: 0;
