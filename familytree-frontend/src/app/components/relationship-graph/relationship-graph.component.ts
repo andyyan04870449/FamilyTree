@@ -5,12 +5,13 @@ import { Component, Input, OnInit, ElementRef, ViewChild, AfterViewInit, OnDestr
 import { CommonModule } from '@angular/common';
 import { RelationshipGraphService, GraphData, GraphNode, GraphLink } from '../../services/relationship-graph.service';
 import { LogService } from '../../services/log.service';
+import { PersonDetailDialogComponent } from '../person-detail-dialog/person-detail-dialog.component';
 import * as d3 from 'd3';
 
 @Component({
   selector: 'app-relationship-graph',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PersonDetailDialogComponent],
   template: `
     <div class="relationship-graph-container">
       <!-- 圖譜標題和統計 -->
@@ -119,6 +120,48 @@ import * as d3 from 'd3';
           </div>
         </div>
       </div>
+
+      <!-- 節點操作選單 -->
+      <div class="node-menu-overlay" *ngIf="showNodeMenu" (click)="closeNodeMenu()">
+        <div class="node-menu" 
+             [style.left.px]="nodeMenuPosition.x" 
+             [style.top.px]="nodeMenuPosition.y"
+             [class.dragging]="isDraggingMenu"
+             (click)="$event.stopPropagation()"
+             (mousedown)="$event.stopPropagation()">
+          <div class="node-menu-header" 
+               (mousedown)="startMenuDrag($event)"
+               (mousemove)="onMenuDrag($event)"
+               (mouseup)="stopMenuDrag($event)"
+               (mouseleave)="stopMenuDrag($event)">
+            <h4>{{ selectedNodeForMenu?.name }}</h4>
+            <button class="close-btn" (click)="closeNodeMenu()">×</button>
+          </div>
+          <div class="node-menu-content">
+            <div class="node-menu-actions">
+              <button class="btn btn-primary node-menu-btn" (click)="handleViewData()">
+                <span class="btn-icon">👁️</span>
+                <span class="btn-text">檢視資料</span>
+              </button>
+              <button class="btn btn-success node-menu-btn" (click)="handleCreateRelationship()">
+                <span class="btn-icon">➕</span>
+                <span class="btn-text">建立關係</span>
+              </button>
+              <button class="btn btn-warning node-menu-btn" (click)="handleMerge()">
+                <span class="btn-icon">🔗</span>
+                <span class="btn-text">合併</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 人員詳細資料對話框 -->
+      <app-person-detail-dialog
+        [personId]="selectedPersonIdForDetail"
+        [isVisible]="showPersonDetailDialog"
+        (close)="closePersonDetailDialog()">
+      </app-person-detail-dialog>
     </div>
   `,
   styleUrls: ['./relationship-graph.component.scss']
@@ -145,6 +188,21 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
     friendLinks: 0,
     averageConnections: '0'
   };
+
+  // 節點互動相關
+  isDraggingNode = false;
+  draggedNode: GraphNode | null = null;
+  showNodeMenu = false;
+  nodeMenuPosition = { x: 0, y: 0 };
+  selectedNodeForMenu: GraphNode | null = null;
+
+  // 選單拖動相關
+  isDraggingMenu = false;
+  menuDragOffset = { x: 0, y: 0 };
+
+  // 人員詳細資料對話框相關
+  showPersonDetailDialog = false;
+  selectedPersonIdForDetail: number | null = null;
 
   constructor(
     private relationshipGraphService: RelationshipGraphService,
@@ -412,7 +470,8 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
     const node = graphGroup.selectAll('.node')
       .data(visibleNodes)
       .join('g')
-      .attr('class', 'node')
+      .attr('class', 'node graph-node')
+      .attr('data-node-id', (d: any) => d.id)
       .call(this.dragBehavior());
 
     // 節點圓圈
@@ -428,11 +487,23 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
           return '#F48FB1';
         }
       })
-      .style('stroke', '#fff')
-      .style('stroke-width', 3)
+      .style('stroke', (d: any) => {
+        // 如果節點被選中，使用高亮邊框
+        if (this.selectedNodeForMenu && this.selectedNodeForMenu.id === d.id) {
+          return '#FFD700'; // 金色高亮
+        }
+        return '#fff';
+      })
+      .style('stroke-width', (d: any) => {
+        // 如果節點被選中，使用更粗的邊框
+        if (this.selectedNodeForMenu && this.selectedNodeForMenu.id === d.id) {
+          return 5;
+        }
+        return 3;
+      })
       .style('cursor', 'pointer')
       .on('click', (event: any, d: any) => {
-        this.viewPersonDetails(d);
+        this.handleNodeClick(event, d);
       });
 
     // 節點頭像
@@ -522,21 +593,50 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
   private dragBehavior(): any {
     return d3.drag()
       .on('start', (event: any, d: any) => {
+        // 如果沒有啟用拖曳模式，則不允許拖曳
         if (!this.isDragging) return;
-        if (!event.active) this.simulation.alphaTarget(0.3).restart();
+        
+        this.logService.debug('RelationshipGraphComponent', '開始拖曳節點', { nodeName: d.name });
+        
+        // 設置節點固定位置
         d.fx = d.x;
         d.fy = d.y;
+        
+        // 重新啟動模擬
+        if (this.simulation) {
+          this.simulation.alphaTarget(0.3).restart();
+        }
       })
       .on('drag', (event: any, d: any) => {
+        // 如果沒有啟用拖曳模式，則不允許拖曳
         if (!this.isDragging) return;
+        
+        // 更新節點位置到滑鼠位置
         d.fx = event.x;
         d.fy = event.y;
+        
+        this.logService.debug('RelationshipGraphComponent', '拖曳節點中', { 
+          nodeName: d.name, 
+          position: { x: d.fx, y: d.fy } 
+        });
       })
       .on('end', (event: any, d: any) => {
+        // 如果沒有啟用拖曳模式，則不允許拖曳
         if (!this.isDragging) return;
-        if (!event.active) this.simulation.alphaTarget(0);
+        
+        this.logService.debug('RelationshipGraphComponent', '結束拖曳節點', { 
+          nodeName: d.name, 
+          finalPosition: { x: d.fx, y: d.fy } 
+        });
+        
+        // 釋放節點固定位置
         d.fx = null;
         d.fy = null;
+        
+        // 停止模擬
+        if (this.simulation) {
+          this.simulation.alphaTarget(0);
+        }
       });
   }
 
@@ -591,5 +691,174 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
     } else {
       element.requestFullscreen();
     }
+  }
+
+  /**
+   * 處理節點點擊
+   */
+  handleNodeClick(event: MouseEvent, node: GraphNode): void {
+    event.stopPropagation();
+    this.logService.info('RelationshipGraphComponent', '節點被點擊', { nodeName: node.name });
+    
+    // 顯示節點選單
+    this.selectedNodeForMenu = node;
+    this.showNodeMenu = true;
+    this.nodeMenuPosition = { x: event.clientX, y: event.clientY };
+    
+    // 更新圖譜以顯示高亮效果
+    this.updateNodeHighlight();
+    
+    // 添加全域點擊監聽器來關閉選單
+    setTimeout(() => {
+      document.addEventListener('click', this.handleGlobalClick.bind(this), { once: true });
+    }, 0);
+  }
+
+  /**
+   * 處理全域點擊事件
+   */
+  private handleGlobalClick(event: MouseEvent): void {
+    if (this.showNodeMenu) {
+      this.closeNodeMenu();
+    }
+  }
+
+  /**
+   * 關閉節點選單
+   */
+  closeNodeMenu(): void {
+    this.showNodeMenu = false;
+    this.selectedNodeForMenu = null;
+    
+    // 更新圖譜以移除高亮效果
+    this.updateNodeHighlight();
+    
+    // 移除全域點擊監聽器
+    document.removeEventListener('click', this.handleGlobalClick.bind(this));
+  }
+
+  /**
+   * 更新節點高亮效果
+   */
+  private updateNodeHighlight(): void {
+    if (!this.svg) return;
+    
+    this.logService.debug('RelationshipGraphComponent', '更新節點高亮效果', {
+      selectedNode: this.selectedNodeForMenu?.name
+    });
+    
+    // 更新所有節點的邊框樣式
+    this.svg.selectAll('.node-circle')
+      .style('stroke', (d: any) => {
+        if (this.selectedNodeForMenu && this.selectedNodeForMenu.id === d.id) {
+          return '#FFD700'; // 金色高亮
+        }
+        return '#fff';
+      })
+      .style('stroke-width', (d: any) => {
+        if (this.selectedNodeForMenu && this.selectedNodeForMenu.id === d.id) {
+          return 5;
+        }
+        return 3;
+      });
+  }
+
+  /**
+   * 處理檢視資料功能
+   */
+  handleViewData(): void {
+    if (this.selectedNodeForMenu) {
+      this.logService.info('RelationshipGraphComponent', '開啟人員詳細資料', {
+        nodeName: this.selectedNodeForMenu.name,
+        nodeId: this.selectedNodeForMenu.id
+      });
+      
+      // 設置要顯示的人員ID
+      this.selectedPersonIdForDetail = parseInt(this.selectedNodeForMenu.id);
+      this.showPersonDetailDialog = true;
+    }
+    this.closeNodeMenu();
+  }
+
+  /**
+   * 處理建立關係功能
+   */
+  handleCreateRelationship(): void {
+    this.logService.info('RelationshipGraphComponent', '建立關係功能開發中', {
+      nodeName: this.selectedNodeForMenu?.name
+    });
+    this.closeNodeMenu();
+  }
+
+  /**
+   * 處理合併功能
+   */
+  handleMerge(): void {
+    this.logService.info('RelationshipGraphComponent', '合併功能開發中', {
+      nodeName: this.selectedNodeForMenu?.name
+    });
+    this.closeNodeMenu();
+  }
+
+  /**
+   * 關閉人員詳細資料對話框
+   */
+  closePersonDetailDialog(): void {
+    this.showPersonDetailDialog = false;
+    this.selectedPersonIdForDetail = null;
+    this.logService.info('RelationshipGraphComponent', '關閉人員詳細資料對話框');
+  }
+
+  /**
+   * 開始拖動選單
+   */
+  startMenuDrag(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    this.isDraggingMenu = true;
+    this.menuDragOffset = {
+      x: event.clientX - this.nodeMenuPosition.x,
+      y: event.clientY - this.nodeMenuPosition.y
+    };
+    
+    this.logService.debug('RelationshipGraphComponent', '開始拖動選單', {
+      mousePosition: { x: event.clientX, y: event.clientY },
+      menuPosition: this.nodeMenuPosition,
+      dragOffset: this.menuDragOffset
+    });
+  }
+
+  /**
+   * 拖動選單中
+   */
+  onMenuDrag(event: MouseEvent): void {
+    if (!this.isDraggingMenu) return;
+    
+    event.preventDefault();
+    event.stopPropagation();
+    
+    this.nodeMenuPosition = {
+      x: event.clientX - this.menuDragOffset.x,
+      y: event.clientY - this.menuDragOffset.y
+    };
+    
+    this.logService.debug('RelationshipGraphComponent', '拖動選單中', {
+      mousePosition: { x: event.clientX, y: event.clientY },
+      menuPosition: this.nodeMenuPosition
+    });
+  }
+
+  /**
+   * 停止拖動選單
+   */
+  stopMenuDrag(event: MouseEvent): void {
+    if (!this.isDraggingMenu) return;
+    
+    this.isDraggingMenu = false;
+    
+    this.logService.debug('RelationshipGraphComponent', '停止拖動選單', {
+      finalPosition: this.nodeMenuPosition
+    });
   }
 } 
