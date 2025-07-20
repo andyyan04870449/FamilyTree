@@ -429,13 +429,13 @@ namespace familytree_backend.Services
 
         private async Task SavePersonDataAsync(NpgsqlConnection connection, PersonDataModel personData)
         {
-            var sql = @"INSERT INTO person_data (
-                file_md5, photo, name, discovery_process, gender, birthday, birthplace, 
-                nationality, ethnicity, ancestral_home, political_party, id_number, 
-                passport_number, phone, mobile, email, current_workplace, current_address, 
+                            var sql = @"INSERT INTO person_profile (
+                file_md5, photo_index, name, discovery_process, gender, birthday, birthplace, 
+                nationality, ethnicity, ancestral_origin, political_party, id_number, 
+                passport_number, phone, mobile, email, current_employer, address, 
                 mailing_address, family_relationships, experience, education, online_accounts, 
-                publications, activities, important_friends, frequent_places, travel_records, 
-                notes, created_at, updated_at
+                publications, activities, friends, frequent_locations, travel_history, 
+                remarks, created_at, updated_at
             ) VALUES (
                 @FileMd5, @Photo, @Name, @DiscoveryProcess, @Gender, @Birthday, @Birthplace,
                 @Nationality, @Ethnicity, @AncestralHome, @PoliticalParty, @IdNumber,

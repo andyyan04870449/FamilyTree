@@ -288,7 +288,7 @@ namespace familytree_backend.Services
 
                 // 檢查會影響的人員資料數量
                 var personDataCount = await connection.QuerySingleAsync<int>(
-                    "SELECT COUNT(*) FROM person_data WHERE file_md5 = @md5", new { md5 = file.Md5Hash });
+                    "SELECT COUNT(*) FROM person_profile WHERE file_md5 = @md5", new { md5 = file.Md5Hash });
 
                 _logger.LogInformation("準備刪除檔案: {Filename}, 將同時刪除 {PersonCount} 筆相關人員資料", 
                     file.Filename, personDataCount);
@@ -297,7 +297,7 @@ namespace familytree_backend.Services
                 if (personDataCount > 0)
                 {
                     var deletedPersons = await connection.ExecuteAsync(
-                        "DELETE FROM person_data WHERE file_md5 = @md5", new { md5 = file.Md5Hash });
+                        "DELETE FROM person_profile WHERE file_md5 = @md5", new { md5 = file.Md5Hash });
                     
                     _logger.LogInformation("已刪除 {DeletedCount} 筆人員資料", deletedPersons);
                 }
@@ -360,11 +360,11 @@ namespace familytree_backend.Services
 
                 // 檢查會影響的人員資料數量
                 var personDataCount = await connection.QuerySingleAsync<int>(
-                    "SELECT COUNT(*) FROM person_data WHERE file_md5 = @md5", new { md5 = file.Md5Hash });
+                    "SELECT COUNT(*) FROM person_profile WHERE file_md5 = @md5", new { md5 = file.Md5Hash });
 
                 // 取得會被刪除的人員姓名列表（最多顯示前10個）
                 var personNames = await connection.QueryAsync<string>(
-                    "SELECT name FROM person_data WHERE file_md5 = @md5 LIMIT 10", new { md5 = file.Md5Hash });
+                    "SELECT name FROM person_profile WHERE file_md5 = @md5 LIMIT 10", new { md5 = file.Md5Hash });
 
                 return new DeleteImpactResponse
                 {

@@ -33,18 +33,18 @@ namespace familytree_backend.Controllers
                 await connection.OpenAsync();
 
                 // 取得總數
-                var countSql = "SELECT COUNT(*) FROM person_data";
+                var countSql = "SELECT COUNT(*) FROM person_profile";
                 var totalCount = await connection.ExecuteScalarAsync<int>(countSql);
 
                 // 取得分頁資料
-                var sql = @"SELECT id, file_md5, photo, name, discovery_process, gender, birthday, 
-                                  birthplace, nationality, ethnicity, ancestral_home, political_party, 
-                                  id_number, passport_number, phone, mobile, email, current_workplace, 
-                                  current_address, mailing_address, family_relationships, experience, 
-                                  education, online_accounts, publications, activities, important_friends, 
-                                  frequent_places, travel_records, notes, created_at, created_by, 
+                var sql = @"SELECT id, file_md5, photo_index as photo, name, discovery_process, gender, birthday, 
+                                  birthplace, nationality, ethnicity, ancestral_origin as ancestral_home, political_party, 
+                                  id_number, passport_number, phone, mobile, email, current_employer as current_workplace, 
+                                  address as current_address, mailing_address, family_relationships, experience, 
+                                  education, online_accounts, publications, activities, friends as important_friends, 
+                                  frequent_locations as frequent_places, travel_history as travel_records, remarks as notes, created_at, created_by, 
                                   updated_at, updated_by
-                           FROM person_data 
+                           FROM person_profile 
                            ORDER BY created_at DESC 
                            LIMIT @pageSize OFFSET @offset";
 
@@ -86,14 +86,14 @@ namespace familytree_backend.Controllers
                 await connection.OpenAsync();
                 _logger.LogInformation("✅ 資料庫連線成功");
 
-                var sql = @"SELECT id, file_md5, photo, name, discovery_process, gender, birthday, 
+                var sql = @"SELECT id, file_md5, photo_index as photo, name, discovery_process, gender, birthday, 
                                   birthplace, nationality, ethnicity, ancestral_home, political_party, 
                                   id_number, passport_number, phone, mobile, email, current_workplace, 
                                   current_address, mailing_address, family_relationships, experience, 
                                   education, online_accounts, publications, activities, important_friends, 
                                   frequent_places, travel_records, notes, created_at, created_by, 
                                   updated_at, updated_by
-                           FROM person_data 
+                           FROM person_profile 
                            WHERE id = @id";
 
                 _logger.LogInformation("🔍 執行資料庫查詢: PersonId = {PersonId}", id);
@@ -159,15 +159,15 @@ namespace familytree_backend.Controllers
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                var sql = @"INSERT INTO person_data (
-                    file_md5, photo, name, discovery_process, gender, birthday, birthplace, 
+                var sql = @"INSERT INTO person_profile (
+                    file_md5, photo_index, name, discovery_process, gender, birthday, birthplace, 
                     nationality, ethnicity, ancestral_home, political_party, id_number, 
                     passport_number, phone, mobile, email, current_workplace, current_address, 
                     mailing_address, family_relationships, experience, education, online_accounts, 
                     publications, activities, important_friends, frequent_places, travel_records, 
                     notes, created_at, updated_at
                 ) VALUES (
-                    @fileMd5, @photo, @name, @discoveryProcess, @gender, @birthday, @birthplace,
+                    @fileMd5, @Photo, @name, @discoveryProcess, @gender, @birthday, @birthplace,
                     @nationality, @ethnicity, @ancestralHome, @politicalParty, @idNumber,
                     @passportNumber, @phone, @mobile, @email, @currentWorkplace, @currentAddress,
                     @mailingAddress, @familyRelationships, @experience, @education, @onlineAccounts,
@@ -246,8 +246,8 @@ namespace familytree_backend.Controllers
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                var sql = @"UPDATE person_data SET 
-                    photo = @photo, name = @name, discovery_process = @discoveryProcess, 
+                var sql = @"UPDATE person_profile SET 
+                    photo_index = @Photo, name = @name, discovery_process = @discoveryProcess, 
                     gender = @gender, birthday = @birthday, birthplace = @birthplace,
                     nationality = @nationality, ethnicity = @ethnicity, ancestral_home = @ancestralHome, 
                     political_party = @politicalParty, id_number = @idNumber, passport_number = @passportNumber, 
@@ -325,7 +325,7 @@ namespace familytree_backend.Controllers
                 await connection.OpenAsync();
 
                 var rowsAffected = await connection.ExecuteAsync(
-                    "DELETE FROM person_data WHERE id = @id", new { id });
+                    "DELETE FROM person_profile WHERE id = @id", new { id });
 
                 if (rowsAffected == 0)
                 {
@@ -374,18 +374,18 @@ namespace familytree_backend.Controllers
                 }
 
                 // 取得總數
-                var countSql = $"SELECT COUNT(*) FROM person_data {whereClause}";
+                var countSql = $"SELECT COUNT(*) FROM person_profile {whereClause}";
                 var totalCount = await connection.ExecuteScalarAsync<int>(countSql, parameters);
 
                 // 取得分頁資料
-                var sql = $@"SELECT id, file_md5, photo, name, discovery_process, gender, birthday, 
+                var sql = $@"SELECT id, file_md5, photo_index as photo, name, discovery_process, gender, birthday, 
                                    birthplace, nationality, ethnicity, ancestral_home, political_party, 
                                    id_number, passport_number, phone, mobile, email, current_workplace, 
                                    current_address, mailing_address, family_relationships, experience, 
                                    education, online_accounts, publications, activities, important_friends, 
                                    frequent_places, travel_records, notes, created_at, created_by, 
                                    updated_at, updated_by
-                            FROM person_data 
+                            FROM person_profile 
                             {whereClause}
                             ORDER BY created_at DESC 
                             LIMIT @pageSize OFFSET @offset";
