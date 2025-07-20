@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
   imports: [RouterModule, CommonModule]
 })
 export class SidebarNavComponent implements OnInit {
-  @Output() keywordSearchClick = new EventEmitter<void>();
+  @Output() fullTextSearchClick = new EventEmitter<void>();
   activeRoute: string = 'home';
 
   constructor(private router: Router) {}
@@ -32,29 +32,31 @@ export class SidebarNavComponent implements OnInit {
   private updateActiveRoute(url: string) {
     if (url === '/' || url === '/home') {
       this.activeRoute = 'home';
-    } else if (url.includes('/keyword-search')) {
-      this.activeRoute = 'keyword-search';
-    } else if (url.includes('/search-results')) {
-      this.activeRoute = 'search-results';
-    } else if (url.includes('/favorites')) {
-      this.activeRoute = 'favorites';
-    } else if (url.includes('/family-tree')) {
-      this.activeRoute = 'family-tree';
-    } else if (url.includes('/person-list')) {
-      this.activeRoute = 'person-list';
-    } else if (url.includes('/tree-operations')) {
-      this.activeRoute = 'tree-operations';
     } else if (url.includes('/file-upload')) {
       this.activeRoute = 'file-upload';
+    } else if (url.includes('/file-management')) {
+      this.activeRoute = 'file-management';
+    } else if (url.includes('/person-management')) {
+      this.activeRoute = 'person-management';
+    } else if (url.includes('/full-text-search')) {
+      this.activeRoute = 'full-text-search';
+    } else if (url.includes('/relationship-graph')) {
+      this.activeRoute = 'relationship-graph';
+    } else if (url.includes('/organization-chart')) {
+      this.activeRoute = 'organization-chart';
+    } else if (url.includes('/system-settings')) {
+      this.activeRoute = 'system-settings';
+    } else if (url.includes('/family-tree')) {
+      this.activeRoute = 'family-tree';
     }
   }
 
-  onKeywordSearchClick() {
+  onFullTextSearchClick() {
     // 如果當前在 family-tree 路由，發送事件給父組件
     if (this.activeRoute === 'family-tree') {
-      this.keywordSearchClick.emit();
+      this.fullTextSearchClick.emit();
     } else {
-      // 否則正常導航
+      // 否則導航到 family-tree 頁面
       this.router.navigate(['/family-tree']);
     }
   }

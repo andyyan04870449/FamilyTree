@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpEvent, HttpEventType } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { AppConstants } from '../constants/app.constants';
 
 export interface FileUploadModel {
   id: number;
@@ -43,7 +44,7 @@ export interface UploadProgress {
   providedIn: 'root'
 })
 export class FileUploadService {
-  private apiUrl = 'http://localhost:5087/api/fileupload';
+  private apiUrl = `${AppConstants.API_BASE_URL}/fileupload`;
   private filesSubject = new BehaviorSubject<FileUploadModel[]>([]);
   public files$ = this.filesSubject.asObservable();
 

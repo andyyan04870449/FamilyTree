@@ -14,11 +14,11 @@ import { EventService } from './services/event.service';
 export class App {
   constructor(private router: Router, private eventService: EventService) {}
 
-  onKeywordSearchClick() {
+  onFullTextSearchClick() {
     // 如果當前在 family-tree 路由，發送事件給該組件
     if (this.router.url.includes('/family-tree')) {
       // 使用事件服務來與 family-tree 組件通信
-      this.eventService.emitKeywordSearchClick();
+      this.eventService.emitFullTextSearchClick();
     } else {
       // 否則正常導航
       this.router.navigate(['/family-tree']);

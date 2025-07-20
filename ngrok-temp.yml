@@ -5,9 +5,9 @@ tunnels:
     addr: 4200
     proto: http
     host_header: localhost:4200
-    url: https://familytree-frontend.ngrok.io
+    url: https://familytree-frontend-dev.ngrok.io
   backend:
     addr: 5087
     proto: http
     host_header: localhost:5087
-    url: https://familytree-backend.ngrok.io
+    url: https://familytree-backend-dev.ngrok.io

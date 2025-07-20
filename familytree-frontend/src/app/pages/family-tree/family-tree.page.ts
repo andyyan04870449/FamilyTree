@@ -349,8 +349,8 @@ export class FamilyTreeComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // 訂閱關鍵字查詢點擊事件
-    this.eventSubscription = this.eventService.keywordSearchClick$.subscribe(() => {
+    // 訂閱全文檢索點擊事件
+    this.eventSubscription = this.eventService.fullTextSearchClick$.subscribe(() => {
       this.showSearchView();
     });
 

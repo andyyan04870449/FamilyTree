@@ -5,10 +5,10 @@ import { Subject } from 'rxjs';
   providedIn: 'root'
 })
 export class EventService {
-  private keywordSearchClickSource = new Subject<void>();
-  keywordSearchClick$ = this.keywordSearchClickSource.asObservable();
+  private fullTextSearchClickSource = new Subject<void>();
+  fullTextSearchClick$ = this.fullTextSearchClickSource.asObservable();
 
-  emitKeywordSearchClick() {
-    this.keywordSearchClickSource.next();
+  emitFullTextSearchClick() {
+    this.fullTextSearchClickSource.next();
   }
 } 
