@@ -13,5 +13,10 @@ export const routes: Routes = [
   {
     path: 'person-list',
     loadComponent: () => import('./pages/person-list/person-list.page').then(m => m.PersonListComponent)
+  },
+  // 檔案上傳模組
+  {
+    path: 'file-upload',
+    loadComponent: () => import('./pages/file-upload/file-upload.page').then(m => m.FileUploadComponent)
   }
 ];

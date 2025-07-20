@@ -1,0 +1,13 @@
+version: "2"
+authtoken: 2wcEhFbbW0lJlInEZPqKNzHhfFv_6EoK7JfA5h2BjoNca35yu
+tunnels:
+  frontend:
+    addr: 4200
+    proto: http
+    host_header: localhost:4200
+    url: https://familytree-frontend.ngrok.io
+  backend:
+    addr: 5087
+    proto: http
+    host_header: localhost:5087
+    url: https://familytree-backend.ngrok.io

@@ -44,6 +44,8 @@ export class SidebarNavComponent implements OnInit {
       this.activeRoute = 'person-list';
     } else if (url.includes('/tree-operations')) {
       this.activeRoute = 'tree-operations';
+    } else if (url.includes('/file-upload')) {
+      this.activeRoute = 'file-upload';
     }
   }
 
