@@ -123,4 +123,9 @@ ai_blueprint_ai_step_plan.md
 docs/
 scripts/
 config/
-tests/ 
+tests/
+
+# File upload test files and cache
+familytree-backend/user_upload/
+familytree-frontend/test*.xlsx
+familytree-frontend/.angular/cache/ 
