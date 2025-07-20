@@ -3,7 +3,8 @@
 
 import { Component, Input, OnInit, ElementRef, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RelationshipGraphService, GraphData, GraphNode, GraphLink } from '../../services/relationship-graph.service';
+import { FormsModule } from '@angular/forms';
+import { RelationshipGraphService, GraphData, GraphNode, GraphLink, CreateRelationshipResponse } from '../../services/relationship-graph.service';
 import { LogService } from '../../services/log.service';
 import { PersonDetailDialogComponent } from '../person-detail-dialog/person-detail-dialog.component';
 import * as d3 from 'd3';
@@ -11,7 +12,7 @@ import * as d3 from 'd3';
 @Component({
   selector: 'app-relationship-graph',
   standalone: true,
-  imports: [CommonModule, PersonDetailDialogComponent],
+  imports: [CommonModule, FormsModule, PersonDetailDialogComponent],
   template: `
     <div class="relationship-graph-container">
       <!-- 圖譜標題和統計 -->
@@ -162,6 +163,50 @@ import * as d3 from 'd3';
         [isVisible]="showPersonDetailDialog"
         (close)="closePersonDetailDialog()">
       </app-person-detail-dialog>
+
+      <!-- 建立關係對話框 -->
+      <div class="relationship-dialog-overlay" *ngIf="showRelationshipDialog" (click)="cancelRelationshipCreation()">
+        <div class="relationship-dialog" (click)="$event.stopPropagation()">
+          <div class="relationship-dialog-header">
+            <h3>建立關係</h3>
+            <button class="close-btn" (click)="cancelRelationshipCreation()">×</button>
+          </div>
+          <div class="relationship-dialog-content">
+            <div class="relationship-info">
+              <p><strong>{{ firstSelectedNode?.name }}</strong> 與 <strong>{{ secondSelectedNode?.name }}</strong></p>
+            </div>
+            <div class="relationship-form">
+              <label for="relationshipType">關係類型：</label>
+              <input 
+                type="text" 
+                id="relationshipType"
+                [(ngModel)]="relationshipType" 
+                placeholder="例如：父子、夫妻、朋友..."
+                class="relationship-input"
+                (keydown)="handleRelationshipInputKeydown($event)"
+                #relationshipInput
+              >
+            </div>
+            <div class="relationship-actions">
+              <button class="btn btn-primary" (click)="confirmRelationshipCreation()" [disabled]="!relationshipType.trim()">
+                確定建立
+              </button>
+              <button class="btn btn-secondary" (click)="cancelRelationshipCreation()">
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 建立關係模式提示 -->
+      <div class="relationship-mode-indicator" *ngIf="isCreatingRelationship">
+        <div class="indicator-content">
+          <span class="indicator-icon">🔗</span>
+          <span class="indicator-text">建立關係模式：請選擇第二個節點</span>
+          <button class="cancel-btn" (click)="cancelRelationshipCreation()">取消</button>
+        </div>
+      </div>
     </div>
   `,
   styleUrls: ['./relationship-graph.component.scss']
@@ -169,6 +214,7 @@ import * as d3 from 'd3';
 export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('graphContainer', { static: false }) graphContainer!: ElementRef;
   @ViewChild('graphViewport', { static: false }) graphViewport!: ElementRef;
+  @ViewChild('relationshipInput', { static: false }) relationshipInput!: ElementRef;
 
   @Input() graphData?: GraphData;
   @Input() autoAnalyze: boolean = false;
@@ -176,7 +222,7 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
 
   private svg: any;
   private simulation: any;
-  isDragging = false;
+  isDragging = true; // 預設啟用拖曳功能
   private hiddenNodes: Set<string> = new Set();
 
   loading = false;
@@ -203,6 +249,13 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
   // 人員詳細資料對話框相關
   showPersonDetailDialog = false;
   selectedPersonIdForDetail: number | null = null;
+
+  // 建立關係相關
+  isCreatingRelationship = false;
+  firstSelectedNode: GraphNode | null = null;
+  showRelationshipDialog = false;
+  relationshipType = '';
+  secondSelectedNode: GraphNode | null = null;
 
   constructor(
     private relationshipGraphService: RelationshipGraphService,
@@ -398,7 +451,7 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
     
     nodes.forEach((node, index) => {
       const angle = (index / nodes.length) * 2 * Math.PI;
-      const radius = Math.min(width, height) * 0.3;
+      const radius = Math.min(width, height) * 0.3; // 恢復原本的初始佈局半徑 0.3
       node.x = width / 2 + Math.cos(angle) * radius;
       node.y = height / 2 + Math.sin(angle) * radius;
       
@@ -411,12 +464,12 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
       });
     });
 
-    // 創建力導向模擬
+    // 創建力導向模擬 - 保持原本距離但減少力道
     this.simulation = d3.forceSimulation()
-      .force('link', d3.forceLink().id((d: any) => d.id).distance(100))
-      .force('charge', d3.forceManyBody().strength(-300))
+      .force('link', d3.forceLink().id((d: any) => d.id).distance(100)) // 恢復原本的連線距離 100
+      .force('charge', d3.forceManyBody().strength(-30)) // 進一步減少排斥力到 -30
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(30));
+      .force('collision', d3.forceCollide().radius(25)); // 恢復原本的碰撞半徑 25
 
     // 如果沒有連線，使用靜態佈局
     if (this.graphData.links.length === 0) {
@@ -443,6 +496,8 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
     }
 
     const graphGroup = this.svg.select('.graph-group');
+    const width = this.svg.node().getBoundingClientRect().width;
+    const height = this.svg.node().getBoundingClientRect().height;
     const visibleNodes = this.graphData.nodes.filter(node => !this.hiddenNodes.has(node.id));
     const visibleLinks = this.graphData.links.filter(link => {
       const sourceVisible = !this.hiddenNodes.has(link.source);
@@ -479,7 +534,7 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
       .data((d: any) => [d])
       .join('circle')
       .attr('class', 'node-circle')
-      .attr('r', 25)
+      .attr('r', 25) // 恢復原本的節點圓圈半徑 25
       .style('fill', (d: any) => {
         if (d.gender === 'male') {
           return '#42A5F5';
@@ -554,17 +609,23 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
         nodesCount: visibleNodes.length
       });
       
-      // 使用網格佈局
+      // 使用網格佈局 - 大幅減少節點間距
       const cols = Math.ceil(Math.sqrt(visibleNodes.length));
       const rows = Math.ceil(visibleNodes.length / cols);
-      const nodeSize = 80;
-      const spacing = 120;
+      const nodeSize = 80; // 恢復原本的節點大小
+      const spacing = 120; // 恢復原本的間距
+      
+      // 計算網格佈局的起始位置，讓節點群組居中
+      const totalWidth = cols * spacing;
+      const totalHeight = rows * spacing;
+      const startX = (width - totalWidth) / 2;
+      const startY = (height - totalHeight) / 2;
       
       visibleNodes.forEach((node, index) => {
         const col = index % cols;
         const row = Math.floor(index / cols);
-        node.x = (col + 1) * spacing;
-        node.y = (row + 1) * spacing;
+        node.x = startX + col * spacing + spacing / 2;
+        node.y = startY + row * spacing + spacing / 2;
         
         this.logService.debug('RelationshipGraphComponent', `節點 ${node.name} 網格位置`, {
           nodeId: node.id,
@@ -596,6 +657,9 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
         // 如果沒有啟用拖曳模式，則不允許拖曳
         if (!this.isDragging) return;
         
+        // 阻止事件冒泡，避免觸發點擊事件
+        event.sourceEvent.stopPropagation();
+        
         this.logService.debug('RelationshipGraphComponent', '開始拖曳節點', { nodeName: d.name });
         
         // 設置節點固定位置
@@ -611,18 +675,19 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
         // 如果沒有啟用拖曳模式，則不允許拖曳
         if (!this.isDragging) return;
         
+        // 阻止事件冒泡
+        event.sourceEvent.stopPropagation();
+        
         // 更新節點位置到滑鼠位置
         d.fx = event.x;
         d.fy = event.y;
-        
-        this.logService.debug('RelationshipGraphComponent', '拖曳節點中', { 
-          nodeName: d.name, 
-          position: { x: d.fx, y: d.fy } 
-        });
       })
       .on('end', (event: any, d: any) => {
         // 如果沒有啟用拖曳模式，則不允許拖曳
         if (!this.isDragging) return;
+        
+        // 阻止事件冒泡
+        event.sourceEvent.stopPropagation();
         
         this.logService.debug('RelationshipGraphComponent', '結束拖曳節點', { 
           nodeName: d.name, 
@@ -700,7 +765,13 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
     event.stopPropagation();
     this.logService.info('RelationshipGraphComponent', '節點被點擊', { nodeName: node.name });
     
-    // 顯示節點選單
+    // 如果在建立關係模式下，處理關係建立邏輯
+    if (this.isCreatingRelationship) {
+      this.handleRelationshipNodeClick(node);
+      return;
+    }
+    
+    // 正常模式：顯示節點選單
     this.selectedNodeForMenu = node;
     this.showNodeMenu = true;
     this.nodeMenuPosition = { x: event.clientX, y: event.clientY };
@@ -784,10 +855,22 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
    * 處理建立關係功能
    */
   handleCreateRelationship(): void {
-    this.logService.info('RelationshipGraphComponent', '建立關係功能開發中', {
-      nodeName: this.selectedNodeForMenu?.name
-    });
-    this.closeNodeMenu();
+    if (this.selectedNodeForMenu) {
+      this.logService.info('RelationshipGraphComponent', '開始建立關係模式', {
+        firstNodeName: this.selectedNodeForMenu.name,
+        firstNodeId: this.selectedNodeForMenu.id
+      });
+      
+      // 設置第一個選中的節點
+      this.firstSelectedNode = this.selectedNodeForMenu;
+      this.isCreatingRelationship = true;
+      
+      // 關閉選單
+      this.closeNodeMenu();
+      
+      // 更新圖譜以顯示第一個節點為半透明
+      this.updateNodeStates();
+    }
   }
 
   /**
@@ -860,5 +943,163 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
     this.logService.debug('RelationshipGraphComponent', '停止拖動選單', {
       finalPosition: this.nodeMenuPosition
     });
+  }
+
+  /**
+   * 更新節點狀態（建立關係模式）
+   */
+  private updateNodeStates(): void {
+    if (!this.svg) return;
+    
+    this.logService.debug('RelationshipGraphComponent', '更新節點狀態', {
+      isCreatingRelationship: this.isCreatingRelationship,
+      firstSelectedNode: this.firstSelectedNode?.name
+    });
+    
+    // 更新所有節點的樣式
+    this.svg.selectAll('.node-circle')
+      .style('opacity', (d: any) => {
+        if (this.isCreatingRelationship && this.firstSelectedNode && this.firstSelectedNode.id === d.id) {
+          return 0.5; // 第一個選中的節點變半透明
+        }
+        return 1.0;
+      })
+      .style('cursor', (d: any) => {
+        if (this.isCreatingRelationship) {
+          if (this.firstSelectedNode && this.firstSelectedNode.id === d.id) {
+            return 'not-allowed'; // 第一個節點不可選
+          }
+          return 'pointer'; // 其他節點可以選
+        }
+        return 'pointer';
+      });
+  }
+
+  /**
+   * 處理建立關係模式下的節點點擊
+   */
+  private handleRelationshipNodeClick(node: GraphNode): void {
+    if (!this.isCreatingRelationship || !this.firstSelectedNode) return;
+    
+    // 不能選擇同一個節點
+    if (node.id === this.firstSelectedNode.id) {
+      this.logService.warn('RelationshipGraphComponent', '不能選擇同一個節點建立關係');
+      return;
+    }
+    
+    this.logService.info('RelationshipGraphComponent', '選擇第二個節點', {
+      secondNodeName: node.name,
+      secondNodeId: node.id
+    });
+    
+    this.secondSelectedNode = node;
+    this.showRelationshipDialog = true;
+    
+    // 等待 DOM 更新後自動聚焦到輸入框
+    setTimeout(() => {
+      if (this.relationshipInput) {
+        this.relationshipInput.nativeElement.focus();
+        this.logService.debug('RelationshipGraphComponent', '自動聚焦到關係輸入框');
+      }
+    }, 100);
+  }
+
+  /**
+   * 確認建立關係
+   */
+  confirmRelationshipCreation(): void {
+    if (!this.firstSelectedNode || !this.secondSelectedNode || !this.relationshipType.trim()) {
+      this.logService.error('RelationshipGraphComponent', '缺少建立關係的必要資料');
+      return;
+    }
+    
+    this.logService.info('RelationshipGraphComponent', '確認建立關係', {
+      firstNode: this.firstSelectedNode.name,
+      secondNode: this.secondSelectedNode.name,
+      relationshipType: this.relationshipType
+    });
+    
+    // TODO: 調用後端 API 保存關係
+    // 這裡先模擬成功
+    this.saveRelationshipToDatabase();
+  }
+
+  /**
+   * 保存關係到資料庫
+   */
+  private saveRelationshipToDatabase(): void {
+    if (!this.firstSelectedNode || !this.secondSelectedNode || !this.relationshipType.trim()) {
+      this.logService.error('RelationshipGraphComponent', '缺少建立關係的必要資料');
+      return;
+    }
+
+    const request = {
+      sourcePersonId: parseInt(this.firstSelectedNode.id),
+      targetPersonId: parseInt(this.secondSelectedNode.id),
+      relationshipType: this.relationshipType.trim()
+    };
+
+    this.logService.info('RelationshipGraphComponent', '開始保存關係到資料庫', request);
+
+    this.relationshipGraphService.createRelationship(request).subscribe({
+      next: (response: CreateRelationshipResponse) => {
+        this.logService.info('RelationshipGraphComponent', '關係保存成功', {
+          success: response.success,
+          message: response.message
+        });
+        
+        if (response.success) {
+          this.logService.info('RelationshipGraphComponent', '關係保存成功，重新載入圖譜');
+          this.resetRelationshipCreation();
+          this.performAnalysis(); // 重新載入圖譜
+        } else {
+          this.logService.error('RelationshipGraphComponent', '關係保存失敗', {
+            message: response.message
+          });
+          // 可以顯示錯誤訊息給用戶
+        }
+      },
+      error: (error: any) => {
+        this.logService.error('RelationshipGraphComponent', '關係保存請求失敗', error);
+        // 可以顯示錯誤訊息給用戶
+      }
+    });
+  }
+
+  /**
+   * 取消建立關係
+   */
+  cancelRelationshipCreation(): void {
+    this.logService.info('RelationshipGraphComponent', '取消建立關係');
+    this.resetRelationshipCreation();
+  }
+
+  /**
+   * 處理關係輸入框的鍵盤事件
+   */
+  handleRelationshipInputKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (this.relationshipType.trim()) {
+        this.confirmRelationshipCreation();
+      }
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      this.cancelRelationshipCreation();
+    }
+  }
+
+  /**
+   * 重置建立關係狀態
+   */
+  private resetRelationshipCreation(): void {
+    this.isCreatingRelationship = false;
+    this.firstSelectedNode = null;
+    this.secondSelectedNode = null;
+    this.showRelationshipDialog = false;
+    this.relationshipType = '';
+    
+    // 恢復節點狀態
+    this.updateNodeStates();
   }
 } 

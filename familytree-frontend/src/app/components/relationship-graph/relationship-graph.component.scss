@@ -553,4 +553,195 @@
       }
     }
   }
-} 
+}
+
+// 建立關係對話框樣式
+.relationship-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1002;
+  backdrop-filter: blur(2px);
+}
+
+.relationship-dialog {
+  background: $background;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid $border;
+
+  .relationship-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: $card-bg;
+    border-bottom: 1px solid $border;
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: $text-muted;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: $text-primary;
+        background: $light-bg;
+      }
+    }
+  }
+
+  .relationship-dialog-content {
+    padding: 20px;
+
+    .relationship-info {
+      margin-bottom: 20px;
+      text-align: center;
+
+      p {
+        margin: 0;
+        font-size: 16px;
+        color: $text-primary;
+        line-height: 1.5;
+      }
+    }
+
+    .relationship-form {
+      margin-bottom: 20px;
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: $text-primary;
+      }
+
+      .relationship-input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid $border;
+        border-radius: 6px;
+        background: $card-bg;
+        color: $text-primary;
+        font-size: 14px;
+        transition: border-color 0.2s ease;
+
+        &:focus {
+          outline: none;
+          border-color: $primary;
+        }
+
+        &::placeholder {
+          color: $text-muted;
+        }
+      }
+    }
+
+    .relationship-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &.btn-primary {
+          background: $primary;
+          color: white;
+
+          &:hover:not(:disabled) {
+            background: darken($primary, 10%);
+          }
+
+          &:disabled {
+            background: $text-muted;
+            cursor: not-allowed;
+          }
+        }
+
+        &.btn-secondary {
+          background: $secondary;
+          color: white;
+
+          &:hover {
+            background: darken($secondary, 10%);
+          }
+        }
+      }
+    }
+  }
+}
+
+// 建立關係模式指示器
+.relationship-mode-indicator {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba($primary, 0.9);
+  border-radius: 8px;
+  padding: 12px 20px;
+  z-index: 1003;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba($primary, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+
+  .indicator-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .indicator-icon {
+      font-size: 18px;
+    }
+
+    .indicator-text {
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .cancel-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+    }
+  }
+}

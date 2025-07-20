@@ -56,9 +56,9 @@ namespace familytree_backend.Controllers
                 _logger.LogInformation("🔍 人員詳情: {persons}", string.Join(", ", persons.Select(p => $"{p.Id}:{p.Name}")));
 
                 // 生成圖譜數據
-                _logger.LogInformation("🔍 準備調用 GenerateGraphData 方法");
-                var graphData = GenerateGraphData(persons.ToList());
-                _logger.LogInformation("🔍 GenerateGraphData 方法調用完成");
+                _logger.LogInformation("🔍 準備調用 GenerateGraphDataAsync 方法");
+                var graphData = await GenerateGraphDataAsync(persons.ToList());
+                _logger.LogInformation("🔍 GenerateGraphDataAsync 方法調用完成");
 
                 _logger.LogInformation("✅ 關聯圖譜生成成功，節點：{nodes}，連線：{links}", 
                     graphData.Nodes.Count, graphData.Links.Count);
@@ -78,6 +78,87 @@ namespace familytree_backend.Controllers
                     Success = false,
                     Message = "分析失敗：" + ex.Message
                 });
+            }
+        }
+
+        /// <summary>
+        /// 建立人員關係
+        /// </summary>
+        /// <param name="request">建立關係請求</param>
+        /// <returns>建立結果</returns>
+        [HttpPost("create-relationship")]
+        public async Task<IActionResult> CreateRelationship([FromBody] CreateRelationshipRequest request)
+        {
+            _logger.LogInformation("🔗 開始建立人員關係");
+            _logger.LogInformation("🔍 關係詳情: {sourceId} -> {targetId}, 類型: {type}", 
+                request.SourcePersonId, request.TargetPersonId, request.RelationshipType);
+
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                // 檢查人員是否存在
+                var sourcePerson = await connection.QueryFirstOrDefaultAsync<PersonDataModel>(
+                    "SELECT id, name FROM person_profile WHERE id = @Id", 
+                    new { Id = request.SourcePersonId });
+
+                var targetPerson = await connection.QueryFirstOrDefaultAsync<PersonDataModel>(
+                    "SELECT id, name FROM person_profile WHERE id = @Id", 
+                    new { Id = request.TargetPersonId });
+
+                if (sourcePerson == null)
+                {
+                    _logger.LogWarning("❌ 來源人員不存在: {sourceId}", request.SourcePersonId);
+                    return BadRequest(new { Success = false, Message = "來源人員不存在" });
+                }
+
+                if (targetPerson == null)
+                {
+                    _logger.LogWarning("❌ 目標人員不存在: {targetId}", request.TargetPersonId);
+                    return BadRequest(new { Success = false, Message = "目標人員不存在" });
+                }
+
+                // 檢查關係是否已存在
+                var existingRelationship = await connection.QueryFirstOrDefaultAsync(
+                    @"SELECT id FROM relationship_layers 
+                      WHERE source_person_id = @SourceId AND target_person_id = @TargetId 
+                      AND relation_type = @Type",
+                    new { SourceId = request.SourcePersonId, TargetId = request.TargetPersonId, Type = request.RelationshipType });
+
+                if (existingRelationship != null)
+                {
+                    _logger.LogWarning("❌ 關係已存在: {sourceId} -> {targetId}, 類型: {type}", 
+                        request.SourcePersonId, request.TargetPersonId, request.RelationshipType);
+                    return BadRequest(new { Success = false, Message = "此關係已存在" });
+                }
+
+                // 生成分析會話ID
+                var sessionId = $"manual_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid():N}";
+
+                // 插入關係資料
+                var insertSql = @"
+                    INSERT INTO relationship_layers 
+                    (source_person_id, target_person_id, relation_type, source_field, layer_depth, analysis_session_id)
+                    VALUES (@SourceId, @TargetId, @Type, 'manual', 1, @SessionId)";
+
+                await connection.ExecuteAsync(insertSql, new
+                {
+                    SourceId = request.SourcePersonId,
+                    TargetId = request.TargetPersonId,
+                    Type = request.RelationshipType,
+                    SessionId = sessionId
+                });
+
+                _logger.LogInformation("✅ 關係建立成功: {sourceName} -> {targetName}, 類型: {type}", 
+                    sourcePerson.Name, targetPerson.Name, request.RelationshipType);
+
+                return Ok(new { Success = true, Message = "關係建立成功" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ 建立關係失敗");
+                return StatusCode(500, new { Success = false, Message = "建立關係失敗：" + ex.Message });
             }
         }
 
@@ -137,7 +218,7 @@ namespace familytree_backend.Controllers
                 _logger.LogInformation("✅ 獲取相關人員資料成功，共 {count} 筆", persons.Count());
 
                 // 生成圖譜數據
-                var graphData = GenerateGraphData(persons.ToList());
+                var graphData = await GenerateGraphDataAsync(persons.ToList());
 
                 _logger.LogInformation("✅ 選定人員關聯圖譜生成成功，節點：{nodes}，連線：{links}", 
                     graphData.Nodes.Count, graphData.Links.Count);
@@ -165,16 +246,35 @@ namespace familytree_backend.Controllers
         /// </summary>
         private GraphData GenerateGraphData(List<PersonDataModel> persons)
         {
-            _logger.LogInformation("🔍 開始生成圖譜數據，人員數量：{count}", persons.Count());
-            
-            var nodes = persons.Select(p => new GraphNode
+            return GenerateGraphDataAsync(persons).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// 生成圖譜數據（異步版本，包含手動建立的關係）
+        /// </summary>
+        private async Task<GraphData> GenerateGraphDataAsync(List<PersonDataModel> persons)
+        {
+            try
             {
-                Id = p.Id.ToString(),
-                Name = p.Name,
-                Gender = p.Gender == "男" ? "male" : "female",
-                Photo = null,
-                IsExpanded = true,
-                                    Data = new
+                _logger.LogInformation("🔍 開始生成圖譜數據，人員數量：{count}", persons.Count());
+                
+                // 檢查人員資料的完整性
+                foreach (var person in persons)
+                {
+                    _logger.LogDebug("🔍 檢查人員資料: ID={id}, Name={name}, FamilyRelationships={family}, ImportantFriends={friends}", 
+                        person.Id, person.Name, 
+                        person.FamilyRelationships ?? "null", 
+                        person.ImportantFriends ?? "null");
+                }
+                
+                var nodes = persons.Select(p => new GraphNode
+                {
+                    Id = p.Id.ToString(),
+                    Name = p.Name,
+                    Gender = p.Gender == "男" ? "male" : "female",
+                    Photo = null,
+                    IsExpanded = true,
+                    Data = new
                     {
                         p.Id,
                         p.Name,
@@ -186,7 +286,7 @@ namespace familytree_backend.Controllers
                         p.CreatedAt,
                         p.UpdatedAt
                     }
-            }).ToList();
+                }).ToList();
 
             var links = new List<GraphLink>();
 
@@ -220,6 +320,79 @@ namespace familytree_backend.Controllers
             }
             _logger.LogInformation("🔍 朋友關係解析完成，有關係的人員：{count}", friendRelationshipsCount);
 
+            // 獲取手動建立的關係
+            _logger.LogInformation("🔍 開始獲取手動建立的關係");
+            var manualRelationships = new List<GraphLink>();
+            
+            if (persons.Any())
+            {
+                var personIds = persons.Select(p => p.Id).ToList();
+                _logger.LogInformation("🔍 人員ID列表包含 {count} 個ID，前10個: {ids}", personIds.Count, string.Join(", ", personIds.Take(10)));
+                _logger.LogInformation("🔍 檢查特定ID是否存在: 266={has266}, 234={has234}, 219={has219}, 206={has206}", 
+                    personIds.Contains(266), personIds.Contains(234), personIds.Contains(219), personIds.Contains(206));
+                
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                // 先檢查資料庫中所有手動關係
+                var allManualLinks = await connection.QueryAsync(@"
+                    SELECT 
+                        source_person_id as SourcePersonId,
+                        target_person_id as TargetPersonId,
+                        relation_type as RelationType
+                    FROM relationship_layers 
+                    WHERE source_field = 'manual'");
+                
+                _logger.LogInformation("🔍 資料庫中所有手動關係: {count} 筆", allManualLinks.Count());
+                
+                // 使用字符串拼接的方式構建 IN 子句
+                var personIdsString = string.Join(",", personIds);
+                _logger.LogInformation("🔍 構建的 SQL IN 子句: {sql}", $"source_person_id IN ({personIdsString}) AND target_person_id IN ({personIdsString})");
+                
+                var manualLinks = await connection.QueryAsync($@"
+                    SELECT 
+                        source_person_id as SourcePersonId,
+                        target_person_id as TargetPersonId,
+                        relation_type as RelationType
+                    FROM relationship_layers 
+                    WHERE source_person_id IN ({personIdsString}) AND target_person_id IN ({personIdsString})
+                    AND source_field = 'manual'");
+                
+                _logger.LogInformation("🔍 查詢結果數量: {count}", manualLinks.Count());
+                
+                                foreach (dynamic link in manualLinks)
+                {
+                    // 使用更安全的方式訪問動態屬性
+                    var sourceId = ((IDictionary<string, object>)link)["sourcepersonid"];
+                    var targetId = ((IDictionary<string, object>)link)["targetpersonid"];
+                    var relationType = ((IDictionary<string, object>)link)["relationtype"];
+                    
+                    // 安全檢查 null 值
+                    if (sourceId == null || targetId == null || relationType == null)
+                    {
+                        _logger.LogWarning("🔍 跳過 null 值的手動關係");
+                        continue;
+                    }
+                    
+                    manualRelationships.Add(new GraphLink
+                    {
+                        Source = sourceId.ToString(),
+                        Target = targetId.ToString(),
+                        Type = relationType.ToString(),
+                        IsFamily = false, // 手動建立的關係預設為非家族關係
+                        Strength = 1.0
+                    });
+                    
+                    _logger.LogInformation("🔍 成功添加手動關係: {source} -> {target} ({type})", 
+                        sourceId.ToString(), targetId.ToString(), relationType.ToString());
+                }
+                
+                _logger.LogInformation("🔍 手動建立的關係數量：{count}", manualRelationships.Count);
+            }
+
+            // 合併所有關係
+            links.AddRange(manualRelationships);
+            
             // 移除重複連線
             _logger.LogInformation("🔍 移除重複連線前，總連線數：{count}", links.Count);
             var uniqueLinks = RemoveDuplicateLinks(links);
@@ -245,6 +418,12 @@ namespace familytree_backend.Controllers
                 result.Nodes.Count, result.Links.Count, result.Metadata.FamilyLinks, result.Metadata.FriendLinks);
 
             return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ 生成圖譜數據時發生錯誤: {message}", ex.Message);
+                throw;
+            }
         }
 
         /// <summary>
@@ -253,6 +432,14 @@ namespace familytree_backend.Controllers
         private List<GraphLink> ParseFamilyRelationships(PersonDataModel person, List<PersonDataModel> allPersons)
         {
             var links = new List<GraphLink>();
+            
+            // 安全檢查 null 或空值
+            if (string.IsNullOrEmpty(person.FamilyRelationships))
+            {
+                _logger.LogDebug("🔍 人員 {name} 沒有家族關係資料", person.Name);
+                return links;
+            }
+            
             var lines = person.FamilyRelationships.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
             foreach (var line in lines)
@@ -294,6 +481,14 @@ namespace familytree_backend.Controllers
         private List<GraphLink> ParseFriendRelationships(PersonDataModel person, List<PersonDataModel> allPersons)
         {
             var links = new List<GraphLink>();
+            
+            // 安全檢查 null 或空值
+            if (string.IsNullOrEmpty(person.ImportantFriends))
+            {
+                _logger.LogDebug("🔍 人員 {name} 沒有朋友關係資料", person.Name);
+                return links;
+            }
+            
             var lines = person.ImportantFriends.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
             foreach (var line in lines)
@@ -398,5 +593,12 @@ namespace familytree_backend.Controllers
         public List<GraphNode> Nodes { get; set; } = new();
         public List<GraphLink> Links { get; set; } = new();
         public GraphMetadata? Metadata { get; set; }
+    }
+
+    public class CreateRelationshipRequest
+    {
+        public int SourcePersonId { get; set; }
+        public int TargetPersonId { get; set; }
+        public string RelationshipType { get; set; } = "";
     }
 } 

@@ -51,6 +51,17 @@ export interface AnalysisResponse {
   data?: GraphData;
 }
 
+export interface CreateRelationshipRequest {
+  sourcePersonId: number;
+  targetPersonId: number;
+  relationshipType: string;
+}
+
+export interface CreateRelationshipResponse {
+  success: boolean;
+  message: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -78,6 +89,14 @@ export class RelationshipGraphService {
       personIds,
       maxDepth: 3
     });
+  }
+
+  /**
+   * 建立人員關係
+   */
+  createRelationship(request: CreateRelationshipRequest): Observable<CreateRelationshipResponse> {
+    console.log('🔗 建立人員關係:', request);
+    return this.http.post<CreateRelationshipResponse>(`${this.baseUrl}/RelationshipGraph/create-relationship`, request);
   }
 
   /**
