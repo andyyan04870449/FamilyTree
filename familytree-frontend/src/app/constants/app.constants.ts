@@ -1,7 +1,7 @@
 // 應用程式常數定義
 export class AppConstants {
-  // API 相關
-  static readonly API_BASE_URL = 'http://localhost:5087/api';
+  // API 相關 - 使用相對路徑，讓前端自動使用當前網址的域名
+  static readonly API_BASE_URL = '/api';
   static readonly PERSON_API_URL = `${AppConstants.API_BASE_URL}/person`;
   static readonly ANALYSIS_API_URL = `${AppConstants.API_BASE_URL}/analysis`;
 

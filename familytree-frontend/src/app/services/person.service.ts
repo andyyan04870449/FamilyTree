@@ -69,6 +69,27 @@ export interface AnalysisResultResponse {
   };
 }
 
+export interface MissingPerson {
+  id: number;
+  name: string;
+  relationType: string;
+  sourcePersonId: number;
+  sourceField: string;
+  analysisSessionId: string;
+  layerDepth: number;
+  discoveredAt: string;
+  status: string;
+  resolvedPersonId?: number;
+  notes?: string;
+  sourcePersonName?: string;
+  resolvedPersonName?: string;
+}
+
+export interface MissingPersonStats {
+  stats: Array<{ status: string; count: number }>;
+  total: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
