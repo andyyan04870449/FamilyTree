@@ -1,0 +1,235 @@
+<!-- 檔案管理頁面模板 -->
+<div class="file-management-page">
+  <!-- 頁面標題 -->
+  <div class="page-header">
+    <h1>📁 檔案管理</h1>
+    <p>管理已上傳的檔案，查看處理狀態和結果</p>
+  </div>
+
+  <!-- 操作區域 -->
+  <div class="actions-section">
+    <div class="search-filters">
+      <!-- 搜尋框 -->
+      <div class="search-box">
+        <input 
+          type="text" 
+          [(ngModel)]="searchKeyword"
+          (input)="applyFilters()"
+          placeholder="搜尋檔案名稱..."
+          class="search-input"
+        >
+        <button 
+          *ngIf="searchKeyword"
+          (click)="clearSearch()"
+          class="clear-btn"
+        >
+          ✕
+        </button>
+      </div>
+
+      <!-- 狀態篩選 -->
+      <select 
+        [(ngModel)]="selectedStatus"
+        (change)="applyFilters()"
+        class="status-filter"
+      >
+        <option value="all">所有狀態</option>
+        <option value="processing">處理中</option>
+        <option value="completed">已完成</option>
+        <option value="failed">失敗</option>
+      </select>
+
+      <!-- 排序選項 -->
+      <div class="sort-options">
+        <select 
+          [(ngModel)]="sortBy"
+          (change)="applyFilters()"
+          class="sort-select"
+        >
+          <option value="uploadDate">上傳時間</option>
+          <option value="fileName">檔案名稱</option>
+          <option value="fileSize">檔案大小</option>
+          <option value="status">狀態</option>
+        </select>
+        <button 
+          (click)="toggleSort(sortBy)"
+          class="sort-btn"
+          [class.asc]="sortOrder === 'asc'"
+          [class.desc]="sortOrder === 'desc'"
+        >
+          {{ sortOrder === 'asc' ? '↑' : '↓' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- 操作按鈕 -->
+    <div class="action-buttons">
+      <button 
+        (click)="goToUpload()"
+        class="btn btn-primary"
+      >
+        📤 上傳新檔案
+      </button>
+      <button 
+        *ngIf="selectedFiles.length > 0"
+        (click)="deleteSelectedFiles()"
+        class="btn btn-error"
+        [disabled]="loading"
+      >
+        🗑️ 刪除選中 ({{ selectedFiles.length }})
+      </button>
+    </div>
+  </div>
+
+  <!-- 錯誤訊息 -->
+  <div *ngIf="error" class="error-message">
+    <span class="error-icon">⚠️</span>
+    {{ error }}
+  </div>
+
+  <!-- 載入中 -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>載入中...</p>
+  </div>
+
+  <!-- 檔案列表 -->
+  <div *ngIf="!loading && !error" class="files-section">
+    <!-- 列表標題 -->
+    <div class="files-header">
+      <h3>檔案列表 ({{ filteredFiles.length }})</h3>
+      <div class="header-actions">
+        <label class="select-all-label">
+          <input 
+            type="checkbox"
+            [checked]="selectAll"
+            (change)="toggleSelectAll()"
+            [indeterminate]="selectedFiles.length > 0 && !selectAll"
+          >
+          <span>全選</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 空結果 -->
+    <div *ngIf="filteredFiles.length === 0" class="empty-results">
+      <div class="empty-icon">📁</div>
+      <h3>沒有找到檔案</h3>
+      <p *ngIf="searchKeyword || selectedStatus !== 'all'">
+        請嘗試調整搜尋條件或篩選器
+      </p>
+      <p *ngIf="!searchKeyword && selectedStatus === 'all'">
+        還沒有上傳任何檔案，點擊「上傳新檔案」開始使用
+      </p>
+    </div>
+
+    <!-- 檔案表格 -->
+    <div *ngIf="filteredFiles.length > 0" class="files-table">
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="checkbox-col">
+              <input 
+                type="checkbox"
+                [checked]="selectAll"
+                (change)="toggleSelectAll()"
+                [indeterminate]="selectedFiles.length > 0 && !selectAll"
+              >
+            </th>
+            <th class="file-col">檔案</th>
+            <th class="size-col">大小</th>
+            <th class="status-col">狀態</th>
+            <th class="progress-col">處理進度</th>
+            <th class="date-col">上傳時間</th>
+            <th class="actions-col">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let file of filteredFiles" class="file-row">
+            <!-- 選中框 -->
+            <td class="checkbox-col">
+              <input 
+                type="checkbox"
+                [checked]="selectedFiles.includes(file.id)"
+                (change)="toggleFileSelection(file.id)"
+              >
+            </td>
+
+            <!-- 檔案資訊 -->
+            <td class="file-col">
+              <div class="file-info">
+                <span class="file-icon">{{ getFileTypeIcon(file.fileType) }}</span>
+                <div class="file-details">
+                  <div class="file-name">{{ file.fileName }}</div>
+                  <div class="file-original">{{ file.originalName }}</div>
+                </div>
+              </div>
+            </td>
+
+            <!-- 檔案大小 -->
+            <td class="size-col">
+              <span class="file-size">{{ formatFileSize(file.fileSize) }}</span>
+            </td>
+
+            <!-- 狀態 -->
+            <td class="status-col">
+              <span class="status-badge" [class]="'status-' + getStatusColor(file.status)">
+                {{ getStatusText(file.status) }}
+              </span>
+            </td>
+
+            <!-- 處理進度 -->
+            <td class="progress-col">
+              <div *ngIf="file.status === 'processing'" class="progress-info">
+                <div class="progress-bar">
+                  <div 
+                    class="progress-fill"
+                    [style.width.%]="file.recordCount ? (file.processedCount! / file.recordCount) * 100 : 0"
+                  ></div>
+                </div>
+                <div class="progress-text">
+                  {{ file.processedCount }}/{{ file.recordCount }}
+                </div>
+              </div>
+              <div *ngIf="file.status === 'completed'" class="completed-info">
+                <span class="success-text">✅ {{ file.processedCount }} 筆記錄</span>
+                <span *ngIf="file.errorCount! > 0" class="error-text">
+                  ⚠️ {{ file.errorCount }} 筆錯誤
+                </span>
+              </div>
+              <div *ngIf="file.status === 'failed'" class="failed-info">
+                <span class="error-text">❌ {{ file.errorCount }} 筆錯誤</span>
+              </div>
+            </td>
+
+            <!-- 上傳時間 -->
+            <td class="date-col">
+              <span class="upload-date">{{ formatDate(file.uploadDate) }}</span>
+            </td>
+
+            <!-- 操作按鈕 -->
+            <td class="actions-col">
+              <div class="action-buttons">
+                <button 
+                  *ngIf="file.status === 'failed'"
+                  (click)="reprocessFile(file.id)"
+                  class="btn btn-sm btn-warning"
+                  title="重新處理"
+                >
+                  🔄
+                </button>
+                <button 
+                  (click)="deleteFile(file.id)"
+                  class="btn btn-sm btn-error"
+                  title="刪除檔案"
+                >
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div> 

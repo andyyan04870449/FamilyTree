@@ -1,6 +1,8 @@
 <div class="sidebar-nav">
   <div class="nav-header">
-    <h3>🧬 AI關聯分析</h3>
+    <h3>
+      <a routerLink="/" class="sidebar-title-link">🧬 視覺化分析系統</a>
+    </h3>
   </div>
   
   <nav class="nav-menu">
@@ -11,7 +13,7 @@
         <li class="nav-item" [class.active]="activeRoute === 'file-upload'">
           <a routerLink="/file-upload">
             <span class="nav-icon">📤</span>
-            <span class="nav-text">檔案管理</span>
+            <span class="nav-text">檔案上傳</span>
           </a>
         </li>
         <li class="nav-item" [class.active]="activeRoute === 'person-list'">
@@ -23,27 +25,20 @@
       </ul>
     </div>
     
-    <!-- 全文檢索 -->
+    <!-- 視覺化分析 -->
     <div class="nav-section">
-      <h4>🔍 全文檢索</h4>
+      <h4>📊 視覺化分析</h4>
       <ul class="nav-list">
         <li class="nav-item" [class.active]="activeRoute === 'full-text-search'">
           <a routerLink="/full-text-search">
-            <span class="nav-icon">🔎</span>
+            <span class="nav-icon">🔍</span>
             <span class="nav-text">全文檢索</span>
           </a>
         </li>
-      </ul>
-    </div>
-    
-    <!-- 視覺化分析 -->
-    <div class="nav-section">
-      <h4>🌳 視覺化分析</h4>
-      <ul class="nav-list">
         <li class="nav-item" [class.active]="activeRoute === 'relationship-graph'">
           <a routerLink="/relationship-graph">
-            <span class="nav-icon">🔗</span>
-            <span class="nav-text">關聯圖</span>
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">關係圖譜</span>
           </a>
         </li>
         <li class="nav-item" [class.active]="activeRoute === 'organization-chart'">
@@ -61,8 +56,14 @@
       <ul class="nav-list">
         <li class="nav-item" [class.active]="activeRoute === 'system-settings'">
           <a routerLink="/system-settings">
-            <span class="nav-icon">🔧</span>
+            <span class="nav-icon">⚙️</span>
             <span class="nav-text">系統設定</span>
+          </a>
+        </li>
+        <li class="nav-item" [class.active]="activeRoute === 'favorites'">
+          <a routerLink="/favorites">
+            <span class="nav-icon">⭐</span>
+            <span class="nav-text">收藏管理</span>
           </a>
         </li>
       </ul>

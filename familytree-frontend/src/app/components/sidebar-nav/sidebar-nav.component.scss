@@ -29,6 +29,22 @@
       font-size: 1.2rem;
       font-weight: 600;
       color: $text-primary;
+
+      .sidebar-title-link {
+        color: $text-primary;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+
+        &:hover {
+          color: $primary;
+          transform: scale(1.02);
+        }
+
+        &:active {
+          transform: scale(0.98);
+        }
+      }
     }
   }
 

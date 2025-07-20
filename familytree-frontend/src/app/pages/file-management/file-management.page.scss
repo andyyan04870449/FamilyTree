@@ -1,0 +1,724 @@
+// 檔案管理頁面樣式 - 按照系統風格設計
+
+// ============ 變數定義 ============
+$primary-blue: #3b82f6;
+$primary-blue-hover: #2563eb;
+$primary-blue-light: #4a90e2;
+$primary-blue-dark: #357abd;
+
+$bg-dark: #1a1a1a;
+$bg-dark-secondary: #252525;
+$bg-dark-tertiary: #2a2a2a;
+$bg-dark-quaternary: #1f1f1f;
+
+$border-dark: #333;
+$border-dark-light: #444;
+
+$success-green: #28a745;
+$success-green-hover: #1e7e34;
+$warning-yellow: #ffc107;
+$warning-yellow-hover: #e0a800;
+$error-red: #dc2626;
+$error-red-light: #ff6b6b;
+$loading-blue: #4a90e2;
+
+$text-primary: #e0e0e0;
+$text-secondary: #ccc;
+$text-quaternary: #777;
+$label-text: #999;
+
+$font-size-xs: 5px;
+$font-size-sm: 12px;
+$font-size-base: 14px;
+$font-size-md: 16px;
+$font-size-lg: 18px;
+$font-size-xl: 24px;
+
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+
+$spacing-xs: 5px;
+$spacing-sm: 8px;
+$spacing-md: 12px;
+$spacing-lg: 15px;
+$spacing-xl: 20px;
+$spacing-2xl: 25px;
+$spacing-4xl: 40px;
+$spacing-5xl: 60px;
+
+$section-padding: 25px;
+
+$border-radius-sm: 4px;
+$border-radius-md: 6px;
+$border-radius-lg: 8px;
+$border-radius-full: 50%;
+
+$shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
+
+// 響應式混入
+@mixin mobile {
+  @media (max-width: 768px) {
+    @content;
+  }
+}
+
+// ============ 基礎樣式 ============
+.file-management-page {
+  padding: $section-padding;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: $bg-dark;
+  color: $text-primary;
+}
+
+// ============ 頁面標題 ============
+.page-header {
+  margin-bottom: $spacing-4xl;
+  text-align: center;
+
+  h1 {
+    color: $primary-blue;
+    font-size: 2.5rem;
+    font-weight: $font-weight-semibold;
+    margin-bottom: $spacing-md;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: $font-size-lg;
+    margin: 0;
+  }
+}
+
+// ============ 操作區域 ============
+.actions-section {
+  background: $bg-dark-secondary;
+  border: 1px solid $border-dark;
+  border-radius: $border-radius-lg;
+  padding: $spacing-xl;
+  margin-bottom: $spacing-4xl;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $spacing-xl;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.search-filters {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  flex-wrap: wrap;
+
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+// 搜尋框
+.search-box {
+  position: relative;
+  min-width: 250px;
+
+  .search-input {
+    width: 100%;
+    padding: $spacing-md $spacing-xl;
+    padding-right: 40px;
+    background: $bg-dark-tertiary;
+    border: 1px solid $border-dark;
+    border-radius: $border-radius-md;
+    color: $text-primary;
+    font-size: $font-size-base;
+
+    &::placeholder {
+      color: $text-quaternary;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $primary-blue;
+      box-shadow: $shadow-focus;
+    }
+  }
+
+  .clear-btn {
+    position: absolute;
+    right: $spacing-sm;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: $text-quaternary;
+    cursor: pointer;
+    padding: $spacing-xs;
+    border-radius: $border-radius-sm;
+
+    &:hover {
+      color: $text-primary;
+      background: $bg-dark-quaternary;
+    }
+  }
+}
+
+// 狀態篩選
+.status-filter {
+  padding: $spacing-md $spacing-lg;
+  background: $bg-dark-tertiary;
+  border: 1px solid $border-dark;
+  border-radius: $border-radius-md;
+  color: $text-primary;
+  font-size: $font-size-base;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-blue;
+    box-shadow: $shadow-focus;
+  }
+
+  option {
+    background: $bg-dark-tertiary;
+    color: $text-primary;
+  }
+}
+
+// 排序選項
+.sort-options {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+
+  .sort-select {
+    padding: $spacing-md $spacing-lg;
+    background: $bg-dark-tertiary;
+    border: 1px solid $border-dark;
+    border-radius: $border-radius-md;
+    color: $text-primary;
+    font-size: $font-size-base;
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-blue;
+      box-shadow: $shadow-focus;
+    }
+
+    option {
+      background: $bg-dark-tertiary;
+      color: $text-primary;
+    }
+  }
+
+  .sort-btn {
+    padding: $spacing-md;
+    background: $bg-dark-tertiary;
+    border: 1px solid $border-dark;
+    border-radius: $border-radius-md;
+    color: $text-primary;
+    cursor: pointer;
+    font-size: $font-size-base;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: $bg-dark-quaternary;
+      border-color: $primary-blue;
+    }
+
+    &.asc {
+      color: $primary-blue;
+    }
+
+    &.desc {
+      color: $primary-blue;
+    }
+  }
+}
+
+// 操作按鈕
+.action-buttons {
+  display: flex;
+  gap: $spacing-md;
+
+  @include mobile {
+    flex-direction: column;
+  }
+}
+
+// ============ 基礎按鈕樣式 ============
+.btn {
+  padding: $spacing-md $spacing-xl;
+  border: none;
+  border-radius: $border-radius-md;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.btn-sm {
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-sm;
+  }
+}
+
+.btn-primary {
+  @extend .btn;
+  background-color: $primary-blue;
+  color: white;
+  
+  &:hover:not(:disabled) {
+    background-color: $primary-blue-hover;
+  }
+}
+
+.btn-success {
+  @extend .btn;
+  background-color: $success-green;
+  color: white;
+  
+  &:hover:not(:disabled) {
+    background-color: $success-green-hover;
+  }
+}
+
+.btn-warning {
+  @extend .btn;
+  background-color: $warning-yellow;
+  color: $bg-dark;
+  
+  &:hover:not(:disabled) {
+    background-color: $warning-yellow-hover;
+  }
+}
+
+.btn-error {
+  @extend .btn;
+  background-color: $error-red;
+  color: white;
+  
+  &:hover:not(:disabled) {
+    background-color: darken($error-red, 10%);
+  }
+}
+
+// ============ 錯誤訊息 ============
+.error-message {
+  background: rgba($error-red, 0.1);
+  border: 1px solid $error-red;
+  border-radius: $border-radius-md;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-xl;
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  color: $error-red-light;
+
+  .error-icon {
+    font-size: $font-size-lg;
+  }
+}
+
+// ============ 載入中 ============
+.loading-container {
+  text-align: center;
+  padding: $spacing-5xl;
+  color: $text-secondary;
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid $border-dark;
+    border-top: 3px solid $primary-blue;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto $spacing-lg;
+  }
+
+  p {
+    margin: 0;
+    font-size: $font-size-lg;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// ============ 檔案列表區域 ============
+.files-section {
+  background: $bg-dark-secondary;
+  border: 1px solid $border-dark;
+  border-radius: $border-radius-lg;
+  overflow: hidden;
+}
+
+.files-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-xl;
+  border-bottom: 1px solid $border-dark;
+  background: $bg-dark-tertiary;
+
+  h3 {
+    color: $text-primary;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    margin: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-lg;
+  }
+
+  .select-all-label {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    color: $text-secondary;
+    font-size: $font-size-base;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+  }
+}
+
+// ============ 空結果 ============
+.empty-results {
+  text-align: center;
+  padding: $spacing-5xl $spacing-xl;
+  color: $text-secondary;
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: $spacing-xl;
+  }
+
+  h3 {
+    color: $text-primary;
+    font-size: $font-size-xl;
+    margin-bottom: $spacing-md;
+  }
+
+  p {
+    margin: 0;
+    font-size: $font-size-base;
+    line-height: 1.5;
+  }
+}
+
+// ============ 檔案表格 ============
+.files-table {
+  overflow-x: auto;
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    background: $bg-dark-secondary;
+
+    th, td {
+      padding: $spacing-lg;
+      text-align: left;
+      border-bottom: 1px solid $border-dark;
+    }
+
+    th {
+      background: $bg-dark-tertiary;
+      color: $text-secondary;
+      font-weight: $font-weight-medium;
+      font-size: $font-size-sm;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .file-row {
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background: $bg-dark-quaternary;
+      }
+    }
+  }
+}
+
+// 表格欄位寬度
+.checkbox-col {
+  width: 50px;
+  text-align: center;
+}
+
+.file-col {
+  width: 300px;
+}
+
+.size-col {
+  width: 100px;
+}
+
+.status-col {
+  width: 100px;
+}
+
+.progress-col {
+  width: 200px;
+}
+
+.date-col {
+  width: 150px;
+}
+
+.actions-col {
+  width: 100px;
+  text-align: center;
+}
+
+// ============ 檔案資訊 ============
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+
+  .file-icon {
+    font-size: $font-size-xl;
+    width: 40px;
+    text-align: center;
+  }
+
+  .file-details {
+    flex: 1;
+    min-width: 0;
+
+    .file-name {
+      color: $text-primary;
+      font-weight: $font-weight-medium;
+      margin-bottom: $spacing-xs;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-original {
+      color: $text-quaternary;
+      font-size: $font-size-sm;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
+.file-size {
+  color: $text-secondary;
+  font-size: $font-size-sm;
+}
+
+.upload-date {
+  color: $text-secondary;
+  font-size: $font-size-sm;
+}
+
+// ============ 狀態徽章 ============
+.status-badge {
+  display: inline-block;
+  padding: $spacing-xs $spacing-md;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  text-align: center;
+  min-width: 60px;
+
+  &.status-processing {
+    background: rgba($warning-yellow, 0.2);
+    color: $warning-yellow;
+    border: 1px solid rgba($warning-yellow, 0.3);
+  }
+
+  &.status-completed {
+    background: rgba($success-green, 0.2);
+    color: $success-green;
+    border: 1px solid rgba($success-green, 0.3);
+  }
+
+  &.status-failed {
+    background: rgba($error-red, 0.2);
+    color: $error-red-light;
+    border: 1px solid rgba($error-red, 0.3);
+  }
+
+  &.status-secondary {
+    background: rgba($text-quaternary, 0.2);
+    color: $text-quaternary;
+    border: 1px solid rgba($text-quaternary, 0.3);
+  }
+}
+
+// ============ 進度條 ============
+.progress-info {
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: $bg-dark-quaternary;
+    border-radius: $border-radius-sm;
+    overflow: hidden;
+    margin-bottom: $spacing-xs;
+
+    .progress-fill {
+      height: 100%;
+      background: $primary-blue;
+      border-radius: $border-radius-sm;
+      transition: width 0.3s ease;
+    }
+  }
+
+  .progress-text {
+    color: $text-secondary;
+    font-size: $font-size-sm;
+    text-align: center;
+  }
+}
+
+.completed-info {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+
+  .success-text {
+    color: $success-green;
+    font-size: $font-size-sm;
+  }
+
+  .error-text {
+    color: $error-red-light;
+    font-size: $font-size-sm;
+  }
+}
+
+.failed-info {
+  .error-text {
+    color: $error-red-light;
+    font-size: $font-size-sm;
+  }
+}
+
+// ============ 操作按鈕 ============
+.action-buttons {
+  display: flex;
+  gap: $spacing-xs;
+  justify-content: center;
+
+  .btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+// ============ 響應式設計 ============
+@include mobile {
+  .file-management-page {
+    padding: $spacing-lg;
+  }
+
+  .page-header h1 {
+    font-size: 2rem;
+  }
+
+  .actions-section {
+    padding: $spacing-lg;
+  }
+
+  .search-filters {
+    gap: $spacing-md;
+  }
+
+  .search-box {
+    min-width: auto;
+  }
+
+  .files-header {
+    flex-direction: column;
+    gap: $spacing-md;
+    align-items: flex-start;
+  }
+
+  .files-table {
+    .table {
+      th, td {
+        padding: $spacing-md;
+      }
+    }
+  }
+
+  .file-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-sm;
+
+    .file-icon {
+      font-size: $font-size-lg;
+      width: auto;
+    }
+  }
+
+  .progress-col {
+    min-width: 120px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+}
+
+@media (max-width: 480px) {
+  .file-management-page {
+    padding: $spacing-md;
+  }
+
+  .actions-section {
+    padding: $spacing-md;
+  }
+
+  .files-table {
+    .table {
+      th, td {
+        padding: $spacing-sm;
+        font-size: $font-size-sm;
+      }
+    }
+  }
+
+  .file-info .file-details {
+    .file-name {
+      font-size: $font-size-sm;
+    }
+
+    .file-original {
+      font-size: $font-size-xs;
+    }
+  }
+} 

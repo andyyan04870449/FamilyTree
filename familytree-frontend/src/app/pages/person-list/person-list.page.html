@@ -51,57 +51,50 @@
     <p>{{ error }}</p>
   </div>
 
-  <!-- 人員列表 -->
-  <div *ngIf="!loading && !error" class="person-list-container">
+  <!-- 人員 Grid 列表 -->
+  <div *ngIf="!loading && !error" class="person-grid-container">
     <div *ngIf="personDataList.length === 0" class="empty-placeholder">
       <div class="placeholder-icon">👥</div>
       <h3>目前沒有人員資料</h3>
       <p>上傳Excel檔案或手動新增人員資料</p>
     </div>
 
-    <div *ngFor="let person of personDataList" class="person-item">
-      <div class="person-info">
-        <div class="person-avatar">
-          <span class="avatar-text">{{ person.name.charAt(0) }}</span>
-        </div>
-        <div class="person-details">
+    <div class="person-grid">
+      <div *ngFor="let person of personDataList" class="person-card">
+        <div class="person-header">
+          <div class="person-avatar">
+            <span class="avatar-text">{{ person.name.charAt(0) }}</span>
+          </div>
           <div class="person-name">{{ person.name }}</div>
-          <div class="person-meta">
-            <span *ngIf="person.gender" class="meta-item">
-              <span class="meta-label">性別:</span>
-              <span class="meta-value">{{ getGenderText(person.gender) }}</span>
-            </span>
-            <span *ngIf="person.birthday" class="meta-item">
-              <span class="meta-label">生日:</span>
-              <span class="meta-value">{{ getBirthdayText(person.birthday) }}</span>
-            </span>
-            <span *ngIf="person.nationality" class="meta-item">
-              <span class="meta-label">國籍:</span>
-              <span class="meta-value">{{ person.nationality }}</span>
-            </span>
-            <span *ngIf="person.mobile" class="meta-item">
-              <span class="meta-label">手機:</span>
-              <span class="meta-value">{{ person.mobile }}</span>
-            </span>
+        </div>
+        
+        <div class="person-info">
+          <div class="info-row" *ngIf="person.gender">
+            <span class="info-label">性別:</span>
+            <span class="info-value">{{ getGenderText(person.gender) }}</span>
           </div>
-          <div class="person-relationships" *ngIf="person.familyRelationships">
-            <span class="relationships-label">家庭關係:</span>
-            <span class="relationships-value">{{ person.familyRelationships }}</span>
+          <div class="info-row" *ngIf="person.birthday">
+            <span class="info-label">生日:</span>
+            <span class="info-value">{{ getBirthdayText(person.birthday) }}</span>
           </div>
-          <div class="person-friends" *ngIf="person.friends">
-            <span class="friends-label">朋友:</span>
-            <span class="friends-value">{{ person.friends }}</span>
+          <div class="info-row" *ngIf="person.nationality">
+            <span class="info-label">國籍:</span>
+            <span class="info-value">{{ person.nationality }}</span>
+          </div>
+          <div class="info-row" *ngIf="person.mobile">
+            <span class="info-label">手機:</span>
+            <span class="info-value">{{ person.mobile }}</span>
           </div>
         </div>
-      </div>
-      
-      <div class="person-actions">
-        <button class="edit-btn" (click)="editPersonData(person)" title="編輯">
-          ✏️
-        </button>
-        <button class="delete-btn" (click)="deletePersonData(person)" title="刪除">
-          🗑️
-        </button>
+
+        <div class="person-actions">
+          <button class="edit-btn" (click)="editPersonData(person)" title="編輯">
+            ✏️
+          </button>
+          <button class="delete-btn" (click)="deletePersonData(person)" title="刪除">
+            🗑️
+          </button>
+        </div>
       </div>
     </div>
   </div>

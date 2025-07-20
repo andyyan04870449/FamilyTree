@@ -1,36 +1,41 @@
+@import '../../../styles/_variables';
+
 .file-list-container {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: $card-bg;
+  border-radius: $border-radius-xl;
+  box-shadow: $shadow-md;
   overflow: hidden;
+  border: 1px solid $border-color;
 }
 
 .file-list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  padding: $spacing-xl;
+  background: $bg-dark-tertiary;
+  color: $text-primary;
+  border-bottom: 1px solid $border-color;
 
   h3 {
     margin: 0;
-    font-size: 1.2rem;
-    font-weight: 600;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
   }
 
   .refresh-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 6px;
+    background: rgba($primary, 0.1);
+    border: 1px solid rgba($primary, 0.3);
+    color: $primary;
+    padding: $spacing-md $spacing-lg;
+    border-radius: $border-radius-md;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: $font-size-sm;
     transition: all 0.2s ease;
+    font-weight: $font-weight-medium;
 
     &:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.3);
+      background: rgba($primary, 0.2);
       transform: translateY(-1px);
     }
 
@@ -42,29 +47,29 @@
 }
 
 .file-list-content {
-  padding: 20px;
+  padding: $spacing-xl;
 }
 
 .loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40px 20px;
-  color: #666;
+  padding: $spacing-4xl $spacing-xl;
+  color: $text-secondary;
 
   .loading-spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #667eea;
+    border: 4px solid $border-color;
+    border-top: 4px solid $primary;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin-bottom: 16px;
+    margin-bottom: $spacing-md;
   }
 
   p {
     margin: 0;
-    font-size: 1rem;
+    font-size: $font-size-base;
   }
 }
 
@@ -76,20 +81,20 @@
 .error-message {
   display: flex;
   align-items: center;
-  padding: 16px;
-  background: #fee;
-  border: 1px solid #fcc;
-  border-radius: 8px;
-  color: #c33;
+  padding: $spacing-md;
+  background: rgba($error, 0.1);
+  border: 1px solid rgba($error, 0.3);
+  border-radius: $border-radius-md;
+  color: $error;
 
   .error-icon {
-    font-size: 1.2rem;
-    margin-right: 12px;
+    font-size: $font-size-lg;
+    margin-right: $spacing-md;
   }
 
   p {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: $font-size-sm;
   }
 }
 
@@ -97,24 +102,24 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 60px 20px;
-  color: #999;
+  padding: $spacing-5xl $spacing-xl;
+  color: $text-tertiary;
   text-align: center;
 
   .no-files-icon {
     font-size: 3rem;
-    margin-bottom: 16px;
+    margin-bottom: $spacing-md;
     opacity: 0.5;
   }
 
   p {
-    margin: 0 0 8px 0;
-    font-size: 1.1rem;
-    font-weight: 500;
+    margin: 0 0 $spacing-sm 0;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-medium;
   }
 
   small {
-    font-size: 0.9rem;
+    font-size: $font-size-sm;
     opacity: 0.7;
   }
 }
@@ -122,24 +127,24 @@
 .file-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: $spacing-md;
 }
 
 .file-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
+  padding: $spacing-md;
+  background: $bg-dark-tertiary;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
   transition: all 0.2s ease;
 
   &:hover {
-    background: #f1f3f4;
-    border-color: #667eea;
+    background: $hover-bg;
+    border-color: $primary;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    box-shadow: $shadow-md;
   }
 }
 
@@ -152,8 +157,8 @@
 
 .file-icon {
   font-size: 1.5rem;
-  margin-right: 16px;
-  color: #667eea;
+  margin-right: $spacing-md;
+  color: $primary;
 }
 
 .file-details {
@@ -162,23 +167,24 @@
 }
 
 .file-name {
-  font-weight: 600;
-  color: #333;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
   margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: $font-size-base;
 }
 
 .file-meta {
   display: flex;
-  gap: 16px;
-  margin-bottom: 8px;
-  font-size: 0.85rem;
-  color: #666;
+  gap: $spacing-md;
+  margin-bottom: $spacing-sm;
+  font-size: $font-size-xs;
+  color: $text-secondary;
 
   .file-size {
-    font-weight: 500;
+    font-weight: $font-weight-medium;
   }
 
   .file-date {
@@ -189,69 +195,69 @@
 .file-status {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: $spacing-sm;
 }
 
 .status-badge {
   padding: 4px 8px;
   border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 
   &.status-success {
-    background: #d4edda;
-    color: #155724;
+    background: rgba($success, 0.1);
+    color: $success;
   }
 
   &.status-warning {
-    background: #fff3cd;
-    color: #856404;
+    background: rgba($warning, 0.1);
+    color: $warning;
   }
 
   &.status-info {
-    background: #d1ecf1;
-    color: #0c5460;
+    background: rgba($info, 0.1);
+    color: $info;
   }
 
   &.status-danger {
-    background: #f8d7da;
-    color: #721c24;
+    background: rgba($error, 0.1);
+    color: $error;
   }
 
   &.status-secondary {
-    background: #e2e3e5;
-    color: #383d41;
+    background: rgba($text-muted, 0.1);
+    color: $text-muted;
   }
 }
 
 .merged-badge {
   padding: 2px 6px;
-  background: #28a745;
+  background: $success;
   color: white;
-  border-radius: 8px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
 }
 
 .file-actions {
   display: flex;
-  gap: 8px;
+  gap: $spacing-sm;
 }
 
 .delete-btn {
-  background: #dc3545;
+  background: $error;
   color: white;
   border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-md;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: $font-size-base;
   transition: all 0.2s ease;
 
   &:hover {
-    background: #c82333;
+    background: $error-red-light;
     transform: scale(1.05);
   }
 
@@ -264,7 +270,7 @@
 @media (max-width: 768px) {
   .file-list-header {
     flex-direction: column;
-    gap: 12px;
+    gap: $spacing-md;
     text-align: center;
 
     .refresh-btn {
@@ -275,7 +281,7 @@
   .file-item {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: $spacing-md;
   }
 
   .file-actions {
