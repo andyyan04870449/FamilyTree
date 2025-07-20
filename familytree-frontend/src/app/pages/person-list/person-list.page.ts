@@ -52,17 +52,16 @@ export class PersonListComponent implements OnInit, OnDestroy {
 
     this.subscription.add(
       this.personDataService.getPersonDataList(this.currentPage, this.pageSize).subscribe({
-        next: (response: any) => {
+        next: (response) => {
           console.log('[PersonListPage] 載入人員資料成功:', response);
           this.loading = false;
           if (response.success) {
             this.personDataList = response.personDataList;
             this.totalCount = response.totalCount;
             this.totalPages = response.totalPages;
-            this.currentPage = response.pageNumber;
             console.log('[PersonListPage] 人員資料列表:', this.personDataList);
           } else {
-            this.error = response.message;
+            this.error = response.message || '載入資料失敗';
             console.error('[PersonListPage] 載入人員資料失敗:', response.message);
           }
         },
@@ -83,16 +82,15 @@ export class PersonListComponent implements OnInit, OnDestroy {
 
     this.subscription.add(
       this.personDataService.searchPersonData(this.searchName, this.currentPage, this.pageSize).subscribe({
-        next: (response: any) => {
+        next: (response) => {
           console.log('[PersonListPage] 搜尋人員資料成功:', response);
           this.loading = false;
           if (response.success) {
             this.personDataList = response.personDataList;
             this.totalCount = response.totalCount;
             this.totalPages = response.totalPages;
-            this.currentPage = response.pageNumber;
           } else {
-            this.error = response.message;
+            this.error = response.message || '搜尋資料失敗';
             console.error('[PersonListPage] 搜尋人員資料失敗:', response.message);
           }
         },
@@ -169,11 +167,6 @@ export class PersonListComponent implements OnInit, OnDestroy {
     this.showDetailDialog = true;
     
     console.log('[PersonListPage] 對話框狀態設定完成 - selectedPersonId:', this.selectedPersonId, 'showDetailDialog:', this.showDetailDialog);
-    
-    // 延遲一下再次確認狀態
-    setTimeout(() => {
-      console.log('[PersonListPage] 延遲檢查 - selectedPersonId:', this.selectedPersonId, 'showDetailDialog:', this.showDetailDialog);
-    }, 100);
   }
 
   closeDetailDialog(): void {
@@ -190,16 +183,11 @@ export class PersonListComponent implements OnInit, OnDestroy {
         this.personDataService.deletePersonData(person.id).subscribe({
           next: (response: any) => {
             console.log('[PersonListPage] 刪除人員回應:', response);
-            if (response.success) {
-              console.log('[PersonListPage] 人員資料刪除成功');
-              // 重新載入資料
-              if (this.searchName.trim()) {
-                this.searchPersonData();
-              } else {
-                this.loadPersonData();
-              }
+            // 重新載入資料
+            if (this.searchName.trim()) {
+              this.searchPersonData();
             } else {
-              alert(`刪除失敗: ${response.message}`);
+              this.loadPersonData();
             }
           },
           error: (err: any) => {
@@ -212,6 +200,7 @@ export class PersonListComponent implements OnInit, OnDestroy {
   }
 
   formatDate(dateString: string): string {
+    if (!dateString || dateString === '0001-01-01T00:00:00') return '-';
     const date = new Date(dateString);
     return date.toLocaleString('zh-TW', {
       year: 'numeric',

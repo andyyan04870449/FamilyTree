@@ -22,22 +22,30 @@ namespace familytree_backend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPersonDataList([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
+            _logger.LogInformation("=== 收到人員資料列表請求 ===");
+            _logger.LogInformation("請求參數: Page = {Page}, PageSize = {PageSize}", page, pageSize);
+            _logger.LogInformation("請求時間: {RequestTime}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            
             try
             {
                 if (page < 1) page = 1;
                 if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
                 var offset = (page - 1) * pageSize;
+                _logger.LogInformation("計算分頁參數: Offset = {Offset}, PageSize = {PageSize}", offset, pageSize);
 
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
+                _logger.LogInformation("✅ 資料庫連線成功");
 
                 // 取得總數
                 var countSql = "SELECT COUNT(*) FROM person_profile";
+                _logger.LogInformation("📋 執行計數查詢: {CountSql}", countSql);
                 var totalCount = await connection.ExecuteScalarAsync<int>(countSql);
+                _logger.LogInformation("✅ 總資料筆數: {TotalCount}", totalCount);
 
                 // 取得分頁資料
-                var sql = @"SELECT id, file_md5, photo_index as photo, name, discovery_process, gender, birthday, 
+                var sql = @"SELECT id, file_md5, photo_index as photo, name, discovery_source as discovery_process, gender, birthday, 
                                   birthplace, nationality, ethnicity, ancestral_origin as ancestral_home, political_party, 
                                   id_number, passport_number, phone, mobile, email, current_employer as current_workplace, 
                                   address as current_address, mailing_address, family_relationships, experience, 
@@ -48,10 +56,17 @@ namespace familytree_backend.Controllers
                            ORDER BY created_at DESC 
                            LIMIT @pageSize OFFSET @offset";
 
+                _logger.LogInformation("📋 準備執行主查詢:");
+                _logger.LogInformation("SQL查詢: {Sql}", sql);
+                _logger.LogInformation("查詢參數: PageSize = {PageSize}, Offset = {Offset}", pageSize, offset);
+
                 var parameters = new { pageSize, offset };
+                _logger.LogInformation("🔍 開始執行資料查詢...");
                 var personDataList = await connection.QueryAsync<PersonDataModel>(sql, parameters);
+                _logger.LogInformation("✅ 查詢執行成功，取得 {Count} 筆資料", personDataList.Count());
 
                 var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                _logger.LogInformation("📊 分頁計算: 總頁數 = {TotalPages}, 當前頁 = {CurrentPage}", totalPages, page);
 
                 var response = new PersonDataListResponse
                 {
@@ -59,16 +74,20 @@ namespace familytree_backend.Controllers
                     Message = "取得人員資料列表成功",
                     PersonDataList = personDataList.ToList(),
                     TotalCount = totalCount,
+                    TotalPages = totalPages,
                     PageNumber = page,
-                    PageSize = pageSize,
-                    TotalPages = totalPages
+                    PageSize = pageSize
                 };
 
+                _logger.LogInformation("✅ 人員資料列表請求處理成功");
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "取得人員資料列表失敗");
+                _logger.LogError(ex, "❌ 取得人員資料列表失敗");
+                _logger.LogError("錯誤訊息: {ErrorMessage}", ex.Message);
+                _logger.LogError("堆疊追蹤: {StackTrace}", ex.StackTrace);
+                
                 return StatusCode(500, new { success = false, message = "取得人員資料列表失敗" });
             }
         }
@@ -86,30 +105,33 @@ namespace familytree_backend.Controllers
                 await connection.OpenAsync();
                 _logger.LogInformation("✅ 資料庫連線成功");
 
-                var sql = @"SELECT id, file_md5, photo_index as photo, name, discovery_process, gender, birthday, 
-                                  birthplace, nationality, ethnicity, ancestral_home, political_party, 
-                                  id_number, passport_number, phone, mobile, email, current_workplace, 
-                                  current_address, mailing_address, family_relationships, experience, 
-                                  education, online_accounts, publications, activities, important_friends, 
-                                  frequent_places, travel_records, notes, created_at, created_by, 
-                                  updated_at, updated_by
+                var sql = @"SELECT id, file_md5 as FileMd5, photo_index as Photo, name, discovery_process as DiscoveryProcess, gender, birthday, 
+                                  birthplace, nationality, ethnicity, ancestral_origin as AncestralHome, political_party as PoliticalParty, 
+                                  id_number as IdNumber, passport_number as PassportNumber, phone, mobile, email, current_employer as CurrentWorkplace, 
+                                  address as CurrentAddress, mailing_address as MailingAddress, family_relationships as FamilyRelationships, experience, 
+                                  education, online_accounts as OnlineAccounts, publications, activities, important_friends as ImportantFriends, 
+                                  frequent_locations as FrequentPlaces, travel_history as TravelRecords, remarks as Notes, 
+                                  created_at as CreatedAt, created_by as CreatedBy, 
+                                  updated_at as UpdatedAt, updated_by as UpdatedBy
                            FROM person_profile 
                            WHERE id = @id";
 
                 _logger.LogInformation("🔍 執行資料庫查詢: PersonId = {PersonId}", id);
                 var personData = await connection.QueryFirstOrDefaultAsync<PersonDataModel>(sql, new { id });
-
+                
                 if (personData == null)
                 {
                     _logger.LogWarning("⚠️ 找不到人員資料: PersonId = {PersonId}", id);
                     return NotFound(new { success = false, message = "人員資料不存在" });
                 }
 
+
+
                 _logger.LogInformation("✅ 成功取得人員資料: PersonId = {PersonId}, Name = {Name}", id, personData.Name);
                 _logger.LogInformation("📋 人員資料概覽:");
                 _logger.LogInformation("  - 姓名: {Name}", personData.Name ?? "無");
                 _logger.LogInformation("  - 性別: {Gender}", personData.Gender ?? "無");
-                _logger.LogInformation("  - 生日: {Birthday}", personData.Birthday?.ToString("yyyy-MM-dd") ?? "無");
+                _logger.LogInformation("  - 生日: {Birthday}", personData.Birthday ?? "無");
                 _logger.LogInformation("  - 國籍: {Nationality}", personData.Nationality ?? "無");
                 _logger.LogInformation("  - 電話: {Phone}", personData.Phone ?? "無");
                 _logger.LogInformation("  - 手機: {Mobile}", personData.Mobile ?? "無");
@@ -161,11 +183,11 @@ namespace familytree_backend.Controllers
 
                 var sql = @"INSERT INTO person_profile (
                     file_md5, photo_index, name, discovery_process, gender, birthday, birthplace, 
-                    nationality, ethnicity, ancestral_home, political_party, id_number, 
-                    passport_number, phone, mobile, email, current_workplace, current_address, 
+                    nationality, ethnicity, ancestral_origin, political_party, id_number, 
+                    passport_number, phone, mobile, email, current_employer, address, 
                     mailing_address, family_relationships, experience, education, online_accounts, 
-                    publications, activities, important_friends, frequent_places, travel_records, 
-                    notes, created_at, updated_at
+                    publications, activities, important_friends, frequent_locations, travel_history, 
+                    remarks, created_at, updated_at
                 ) VALUES (
                     @fileMd5, @Photo, @name, @discoveryProcess, @gender, @birthday, @birthplace,
                     @nationality, @ethnicity, @ancestralHome, @politicalParty, @idNumber,
@@ -249,14 +271,14 @@ namespace familytree_backend.Controllers
                 var sql = @"UPDATE person_profile SET 
                     photo_index = @Photo, name = @name, discovery_process = @discoveryProcess, 
                     gender = @gender, birthday = @birthday, birthplace = @birthplace,
-                    nationality = @nationality, ethnicity = @ethnicity, ancestral_home = @ancestralHome, 
+                    nationality = @nationality, ethnicity = @ethnicity, ancestral_origin = @ancestralHome, 
                     political_party = @politicalParty, id_number = @idNumber, passport_number = @passportNumber, 
-                    phone = @phone, mobile = @mobile, email = @email, current_workplace = @currentWorkplace, 
-                    current_address = @currentAddress, mailing_address = @mailingAddress, 
+                    phone = @phone, mobile = @mobile, email = @email, current_employer = @currentWorkplace, 
+                    address = @currentAddress, mailing_address = @mailingAddress, 
                     family_relationships = @familyRelationships, experience = @experience, 
                     education = @education, online_accounts = @onlineAccounts, publications = @publications, 
                     activities = @activities, important_friends = @importantFriends, 
-                    frequent_places = @frequentPlaces, travel_records = @travelRecords, notes = @notes, 
+                    frequent_locations = @frequentPlaces, travel_history = @travelRecords, remarks = @notes, 
                     updated_at = @updatedAt
                     WHERE id = @id";
 
@@ -378,17 +400,17 @@ namespace familytree_backend.Controllers
                 var totalCount = await connection.ExecuteScalarAsync<int>(countSql, parameters);
 
                 // 取得分頁資料
-                var sql = $@"SELECT id, file_md5, photo_index as photo, name, discovery_process, gender, birthday, 
-                                   birthplace, nationality, ethnicity, ancestral_home, political_party, 
-                                   id_number, passport_number, phone, mobile, email, current_workplace, 
-                                   current_address, mailing_address, family_relationships, experience, 
-                                   education, online_accounts, publications, activities, important_friends, 
-                                   frequent_places, travel_records, notes, created_at, created_by, 
-                                   updated_at, updated_by
-                            FROM person_profile 
-                            {whereClause}
-                            ORDER BY created_at DESC 
-                            LIMIT @pageSize OFFSET @offset";
+                                var sql = $@"SELECT id, file_md5, photo_index as photo, name, discovery_source as discovery_process, gender, birthday, 
+                                    birthplace, nationality, ethnicity, ancestral_origin as ancestral_home, political_party, 
+                                    id_number, passport_number, phone, mobile, email, current_employer as current_workplace, 
+                                    address as current_address, mailing_address, family_relationships, experience, 
+                                    education, online_accounts, publications, activities, friends as important_friends, 
+                                    frequent_locations as frequent_places, travel_history as travel_records, remarks as notes, created_at, created_by, 
+                                    updated_at, updated_by
+                             FROM person_profile 
+                             {whereClause}
+                             ORDER BY created_at DESC 
+                             LIMIT @pageSize OFFSET @offset";
 
                 var personDataList = await connection.QueryAsync<PersonDataModel>(sql, parameters);
 

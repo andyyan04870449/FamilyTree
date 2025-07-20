@@ -19,7 +19,7 @@ namespace familytree_backend.Models
         
         public string? Gender { get; set; }                  // 性別
         
-        public DateTime? Birthday { get; set; }              // 生日
+        public string? Birthday { get; set; }                // 生日
         
         public string? Birthplace { get; set; }              // 出生地（父母戶籍所在地）
         
@@ -67,11 +67,11 @@ namespace familytree_backend.Models
         
         public string? Notes { get; set; }                   // 備註
         
-        public DateTime CreatedAt { get; set; }              // 建檔時間
+        public string? CreatedAt { get; set; }              // 建檔時間
         
         public string? CreatedBy { get; set; }               // 建檔人
         
-        public DateTime UpdatedAt { get; set; }              // 最後更新時間
+        public string? UpdatedAt { get; set; }              // 最後更新時間
         
         public string? UpdatedBy { get; set; }               // 最後更新人
     }
@@ -103,7 +103,7 @@ namespace familytree_backend.Models
         
         public string? DiscoveryProcess { get; set; }
         public string? Gender { get; set; }
-        public DateTime? Birthday { get; set; }
+        public string? Birthday { get; set; }
         public string? Birthplace { get; set; }
         public string? Nationality { get; set; }
         public string? Ethnicity { get; set; }

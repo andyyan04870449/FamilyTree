@@ -24,28 +24,34 @@
   border: 1px solid #333;
 }
 
-.close-btn {
+.dialog-actions {
   position: absolute;
   top: 15px;
   right: 15px;
-  background: transparent;
-  border: none;
-  color: #999;
-  font-size: 24px;
-  cursor: pointer;
   z-index: 1001;
-  padding: 5px;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
   display: flex;
+  gap: 8px;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
 
-  &:hover {
-    background: #333;
-    color: #fff;
+  .close-btn {
+    background: transparent;
+    border: none;
+    color: #999;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: #333;
+      color: #fff;
+    }
   }
 }
 
@@ -116,6 +122,9 @@
 
 .photo-section {
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 .photo-container {
@@ -145,6 +154,48 @@
   font-weight: bold;
 }
 
+.photo-info {
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    label {
+      font-size: 14px;
+      color: #999;
+      font-weight: 500;
+      margin-bottom: 3px;
+    }
+
+    span {
+      font-size: 14px;
+      color: #e0e0e0;
+      padding: 6px 8px;
+      background: #333;
+      border-radius: 4px;
+      border: 1px solid #444;
+      min-height: 16px;
+      word-break: break-word;
+    }
+
+    .edit-input {
+      padding: 6px 8px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 14px;
+      transition: all 0.2s ease;
+
+      &:focus {
+        outline: none;
+        border-color: #4a90e2;
+        box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+      }
+    }
+  }
+}
+
 .basic-info {
   flex: 1;
   min-width: 0;
@@ -167,19 +218,88 @@
     font-weight: 600;
   }
 
-  .toggle-btn {
-    background: #333;
-    border: none;
-    color: #ccc;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s ease;
+  .section-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 
-    &:hover {
-      background: #444;
-      color: #fff;
+    .edit-btn {
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      
+      &:hover:not(:disabled) {
+        background: #357abd;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
+    .save-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      
+      &:hover:not(:disabled) {
+        background: #1e7e34;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
+    .cancel-btn {
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      
+      &:hover:not(:disabled) {
+        background: #545b62;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
+    .toggle-btn {
+      background: #333;
+      border: none;
+      color: #ccc;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #444;
+        color: #fff;
+      }
     }
   }
 }
@@ -198,8 +318,8 @@
   display: flex;
   gap: 30px;
 
-  &:last-child {
-    .info-item.full-width {
+  &.full-width {
+    .info-item {
       flex: 1;
     }
   }
@@ -220,6 +340,11 @@
     color: #999;
     font-weight: 500;
     margin-bottom: 3px;
+
+    .required {
+      color: #ff6b6b;
+      margin-left: 2px;
+    }
   }
 
   span {
@@ -231,6 +356,34 @@
     border: 1px solid #444;
     min-height: 20px;
     word-break: break-word;
+  }
+
+  .edit-input,
+  .edit-select,
+  .edit-textarea {
+    padding: 8px 12px;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-size: 16px;
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #4a90e2;
+      box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+    }
+  }
+
+  .edit-textarea {
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+  }
+
+  .edit-select {
+    cursor: pointer;
   }
 }
 
@@ -247,18 +400,36 @@
   padding: 0 20px;
   background: #1f1f1f;
   border-radius: 8px 8px 0 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #555 #2a2a2a;
+
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #2a2a2a;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 3px;
+  }
 }
 
 .tab-btn {
   background: transparent;
   border: none;
   color: #999;
-  padding: 15px 20px;
+  padding: 12px 16px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   border-bottom: 3px solid transparent;
   transition: all 0.2s ease;
   white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 0;
 
   &:hover {
     color: #ccc;
@@ -280,6 +451,60 @@
   min-height: 200px;
 }
 
+.tab-edit-field {
+  margin-bottom: 20px;
+
+  label {
+    display: block;
+    font-size: 16px;
+    color: #ccc;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  .edit-textarea {
+    width: 100%;
+    padding: 12px;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    resize: vertical;
+
+    &:focus {
+      outline: none;
+      border-color: #4a90e2;
+      box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+    }
+  }
+
+  .field-content {
+    min-height: 60px;
+  }
+
+  .field-value {
+    display: block;
+    padding: 12px;
+    background: #333;
+    border-radius: 4px;
+    border: 1px solid #444;
+    color: #e0e0e0;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 40px;
+  }
+}
+
+.background-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .empty-content {
   text-align: center;
   color: #777;
@@ -288,7 +513,17 @@
   font-size: 16px;
 }
 
-.relationships-table {
+// 通用表格樣式
+.relationships-table,
+.friends-table,
+.education-table,
+.experience-table,
+.online-accounts-table,
+.publications-table,
+.activities-table,
+.frequent-places-table,
+.travel-table,
+.notes-table {
   overflow-x: auto;
 
   table {
@@ -325,26 +560,6 @@
     tr:last-child td {
       border-bottom: none;
     }
-  }
-}
-
-.gender-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  text-align: center;
-  min-width: 30px;
-
-  &.male {
-    background: #4a90e2;
-    color: white;
-  }
-
-  &.female {
-    background: #e74c3c;
-    color: white;
   }
 }
 
@@ -410,22 +625,75 @@
 
   .tabs-nav {
     padding: 0 10px;
+    overflow-x: auto;
   }
 
   .tab-btn {
-    padding: 12px 15px;
-    font-size: 13px;
+    padding: 10px 12px;
+    font-size: 12px;
+    min-width: 80px;
   }
 
   .tabs-content {
     padding: 15px;
   }
 
-  .relationships-table {
+  .relationships-table,
+  .friends-table,
+  .education-table,
+  .experience-table,
+  .online-accounts-table,
+  .publications-table,
+  .activities-table,
+  .frequent-places-table,
+  .travel-table,
+  .notes-table {
     font-size: 12px;
 
     th, td {
       padding: 8px 10px;
     }
   }
-} 
+
+  .dialog-actions {
+    position: static;
+    padding: 15px;
+    background: #1f1f1f;
+    border-bottom: 1px solid #333;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-btn {
+    padding: 8px 10px;
+    font-size: 11px;
+    min-width: 70px;
+  }
+
+  .tabs-nav {
+    padding: 0 5px;
+  }
+
+  .tabs-content {
+    padding: 10px;
+  }
+}
+
+/* 美化滾動條 */
+.dialog-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dialog-content::-webkit-scrollbar-track {
+  background: #2a2a2a;
+}
+
+.dialog-content::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.dialog-content::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using Dapper;
+using System.IO;
+using familytree_backend.Models;
 
 namespace familytree_backend.Controllers
 {
@@ -9,10 +11,33 @@ namespace familytree_backend.Controllers
     public class PersonController : ControllerBase
     {
         private readonly string _connectionString;
+        private readonly IWebHostEnvironment _environment;
 
-        public PersonController(IConfiguration configuration)
+        public PersonController(IConfiguration configuration, IWebHostEnvironment environment)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _environment = environment;
+        }
+
+        private void LogToFile(string message)
+        {
+            try
+            {
+                var logDirectory = Path.Combine(_environment.ContentRootPath, "logs");
+                var logFilePath = Path.Combine(logDirectory, "familytree-analysis-.log");
+                
+                if (!Directory.Exists(logDirectory))
+                {
+                    Directory.CreateDirectory(logDirectory);
+                }
+
+                var logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - PersonController - {message}";
+                System.IO.File.AppendAllText(logFilePath, logEntry + Environment.NewLine);
+            }
+            catch
+            {
+                // 日誌寫入失敗時不中斷主要業務流程
+            }
         }
 
         [HttpGet]
@@ -20,16 +45,68 @@ namespace familytree_backend.Controllers
         {
             try
             {
+                LogToFile("開始獲取所有人員資料");
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
                 
-                var persons = await connection.QueryAsync<Person>(
-                    "SELECT id, name, gender, birthday, nationality, mobile, phone, id_number, passport_number, family_relationships, friends, extra_data as profiledata, created_at, updated_at FROM person_profile ORDER BY created_at DESC");
+                var sql = @"
+                    SELECT 
+                        id,
+                        name,
+                        TRIM(gender) as gender,
+                        CASE 
+                            WHEN birthday IS NULL OR birthday = '' THEN NULL
+                            ELSE TO_CHAR(birthday::timestamp, 'YYYY-MM-DD')
+                        END as birthday,
+                        nationality,
+                        mobile,
+                        phone,
+                        id_number as IdNumber,
+                        passport_number as PassportNumber,
+                        family_relationships as FamilyRelationships,
+                        friends as ImportantFriends,
+                        extra_data as profiledata,
+                        created_at as CreatedAt,
+                        updated_at as UpdatedAt,
+                        photo_index as Photo,
+                        discovery_source as DiscoveryProcess,
+                        birthplace as Birthplace,
+                        ethnicity as Ethnicity,
+                        ancestral_origin as AncestralHome,
+                        political_party as PoliticalParty,
+                        email as Email,
+                        current_employer as CurrentWorkplace,
+                        address as CurrentAddress,
+                        mailing_address as MailingAddress,
+                        experience as Experience,
+                        education as Education,
+                        online_accounts as OnlineAccounts,
+                        publications as Publications,
+                        activities as Activities,
+                        frequent_locations as FrequentPlaces,
+                        travel_history as TravelRecords,
+                        remarks as Notes,
+                        file_md5 as FileMd5
+                    FROM person_profile
+                    ORDER BY created_at DESC";
                 
-                return Ok(persons);
+                var persons = await connection.QueryAsync<PersonDataModel>(sql);
+                
+                LogToFile($"成功獲取 {persons.Count()} 筆人員資料");
+                return Ok(new PersonDataListResponse 
+                { 
+                    Success = true,
+                    Message = "成功獲取人員資料",
+                    PersonDataList = persons.ToList(),
+                    TotalCount = persons.Count(),
+                    PageNumber = 1,
+                    PageSize = persons.Count(),
+                    TotalPages = 1
+                });
             }
             catch (Exception ex)
             {
+                LogToFile($"獲取人員資料時發生錯誤: {ex.Message}");
                 return StatusCode(500, new { error = ex.Message });
             }
         }
@@ -39,6 +116,7 @@ namespace familytree_backend.Controllers
         {
             try
             {
+                LogToFile($"開始獲取ID為 {id} 的人員資料");
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
                 
@@ -47,36 +125,40 @@ namespace familytree_backend.Controllers
                     new { id });
                 
                 if (person == null)
+                {
+                    LogToFile($"未找到ID為 {id} 的人員資料");
                     return NotFound();
+                }
                 
+                LogToFile($"成功獲取ID為 {id} 的人員資料");
                 return Ok(person);
             }
             catch (Exception ex)
             {
+                LogToFile($"獲取ID為 {id} 的人員資料時發生錯誤: {ex.Message}");
                 return StatusCode(500, new { error = ex.Message });
             }
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreatePerson([FromBody] Person person)
+        public async Task<IActionResult> CreatePerson([FromBody] PersonDataModel person)
         {
             try
             {
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
                 
-                var sql = @"INSERT INTO person_profile (name, gender, birthday, nationality, mobile, extra_data, created_at, updated_at) 
-                           VALUES (@name, @gender, @birthday, @nationality, @mobile, @profiledata, @createdat, @updatedat) 
+                var sql = @"INSERT INTO person_profile (name, gender, birthday, nationality, mobile, created_at, updated_at) 
+                           VALUES (@Name, @Gender, @Birthday, @Nationality, @Mobile, @CreatedAt, @UpdatedAt) 
                            RETURNING id";
                 
                 var parameters = new
                 {
                     person.Name,
                     person.Gender,
-                    Birthday = string.IsNullOrEmpty(person.Birthday) ? (DateTime?)null : DateTime.Parse(person.Birthday),
+                    person.Birthday,
                     person.Nationality,
                     person.Mobile,
-                    person.ProfileData,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
@@ -84,8 +166,8 @@ namespace familytree_backend.Controllers
                 var newId = await connection.ExecuteScalarAsync<int>(sql, parameters);
                 
                 person.Id = newId;
-                person.CreatedAt = DateTime.UtcNow;
-                person.UpdatedAt = DateTime.UtcNow;
+                person.CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff");
+                person.UpdatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff");
                 
                 return CreatedAtAction(nameof(GetPerson), new { id = person.Id }, person);
             }
@@ -96,7 +178,7 @@ namespace familytree_backend.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdatePerson(int id, [FromBody] Person person)
+        public async Task<IActionResult> UpdatePerson(int id, [FromBody] PersonDataModel person)
         {
             try
             {
@@ -104,19 +186,18 @@ namespace familytree_backend.Controllers
                 await connection.OpenAsync();
                 
                 var sql = @"UPDATE person_profile 
-                           SET name = @name, gender = @gender, birthday = @birthday, nationality = @nationality, 
-                               mobile = @mobile, extra_data = @profiledata, updated_at = @updatedat 
-                           WHERE id = @id";
+                           SET name = @Name, gender = @Gender, birthday = @Birthday, nationality = @Nationality, 
+                               mobile = @Mobile, updated_at = @UpdatedAt 
+                           WHERE id = @Id";
                 
                 var parameters = new
                 {
-                    id,
+                    Id = id,
                     person.Name,
                     person.Gender,
-                    Birthday = string.IsNullOrEmpty(person.Birthday) ? (DateTime?)null : DateTime.Parse(person.Birthday),
+                    person.Birthday,
                     person.Nationality,
                     person.Mobile,
-                    person.ProfileData,
                     UpdatedAt = DateTime.UtcNow
                 };
                 
@@ -126,7 +207,7 @@ namespace familytree_backend.Controllers
                     return NotFound();
                 
                 person.Id = id;
-                person.UpdatedAt = DateTime.UtcNow;
+                person.UpdatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff");
                 
                 return Ok(person);
             }

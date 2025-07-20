@@ -147,7 +147,7 @@ namespace familytree_backend.Services
 
             _logger.LogInformation("從資料庫取得 {Count} 個欄位對應", mappings.Count());
 
-            var result = new Dictionary<string, string>();
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var processedKeys = new List<string>();
             var duplicateKeys = new List<string>();
             
@@ -162,10 +162,15 @@ namespace familytree_backend.Services
                     continue;
                 }
                 
+                // 如果已經存在這個鍵，記錄下來但不報錯
                 if (result.ContainsKey(key))
                 {
-                    _logger.LogWarning("發現重複的Excel欄位名稱: '{Key}'", key);
-                    duplicateKeys.Add(key);
+                    if (!duplicateKeys.Contains(key))
+                    {
+                        _logger.LogWarning("發現重複的Excel欄位名稱: '{Key}' -> '{DbField1}' 和 '{DbField2}'", 
+                            key, result[key], mapping.DbFieldName);
+                        duplicateKeys.Add(key);
+                    }
                     continue;
                 }
                 
@@ -189,6 +194,20 @@ namespace familytree_backend.Services
             _logger.LogInformation("=== 開始處理Excel資料 ===");
             _logger.LogInformation("FileMd5: {FileMd5}, 資料行數: {RowCount}", fileMd5, excelData.Rows.Count);
 
+            // 顯示所有可用的欄位對應
+            _logger.LogInformation("所有可用的欄位對應:");
+            foreach (var mapping in fieldMappings)
+            {
+                _logger.LogInformation("Excel欄位: '{ExcelField}' -> DB欄位: '{DbField}'", mapping.Key, mapping.Value);
+            }
+
+            // 顯示Excel中的所有欄位
+            _logger.LogInformation("Excel檔案中的所有欄位:");
+            foreach (DataColumn column in excelData.Columns)
+            {
+                _logger.LogInformation("Excel欄位名稱: '{ColumnName}'", column.ColumnName);
+            }
+
             var result = new ExcelProcessingResult
             {
                 SuccessRows = 0,
@@ -200,15 +219,16 @@ namespace familytree_backend.Services
             var unmappedFields = new HashSet<string>();
             foreach (DataColumn column in excelData.Columns)
             {
-                if (!fieldMappings.ContainsKey(column.ColumnName))
+                var columnName = column.ColumnName.Trim();
+                if (!fieldMappings.ContainsKey(columnName))
                 {
-                    unmappedFields.Add(column.ColumnName);
-                    _logger.LogWarning("發現未對應的Excel欄位: '{ColumnName}'", column.ColumnName);
+                    unmappedFields.Add(columnName);
+                    _logger.LogWarning("發現未對應的Excel欄位: '{ColumnName}'", columnName);
                 }
                 else
                 {
                     _logger.LogInformation("欄位對應成功: '{ExcelField}' -> '{DbField}'", 
-                        column.ColumnName, fieldMappings[column.ColumnName]);
+                        columnName, fieldMappings[columnName]);
                 }
             }
             result.UnmappedFields = unmappedFields.ToList();
@@ -224,29 +244,55 @@ namespace familytree_backend.Services
                 var rowIndex = excelData.Rows.IndexOf(row) + 1;
                 _logger.LogInformation("=== 處理第 {RowIndex} 行資料 ===", rowIndex);
                 
+                PersonDataModel? personData = null;
                 try
                 {
-                    var personData = new PersonDataModel
+                    personData = new PersonDataModel
                     {
                         FileMd5 = fileMd5,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
+                        CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff"),
+                        UpdatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff")
                     };
 
-                    // 對應欄位資料
+                    // 處理每個欄位
+                    var processedFieldsCount = 0;
+                    var skippedFieldsCount = 0;
+                    
                     foreach (DataColumn column in excelData.Columns)
                     {
-                        if (fieldMappings.TryGetValue(column.ColumnName, out var dbFieldName))
+                        var columnName = column.ColumnName.Trim();
+                        var cellValue = row[column]?.ToString()?.Trim() ?? "";
+                        
+                        if (fieldMappings.TryGetValue(columnName, out var dbFieldName))
                         {
-                            var value = row[column.ColumnName]?.ToString() ?? "";
-                            _logger.LogInformation("設定欄位: '{ExcelField}' -> '{DbField}' = '{Value}'", 
-                                column.ColumnName, dbFieldName, value.Length > 100 ? value.Substring(0, 100) + "..." : value);
-                            
-                            SetPersonDataField(personData, dbFieldName, value);
+                            if (!string.IsNullOrWhiteSpace(cellValue))
+                            {
+                                _logger.LogDebug("第 {RowIndex} 行 - 處理欄位: '{ExcelField}' -> '{DbField}' = '{Value}'", 
+                                    rowIndex, columnName, dbFieldName, cellValue);
+                                SetPersonDataField(personData, dbFieldName, cellValue);
+                                processedFieldsCount++;
+                            }
+                            else
+                            {
+                                _logger.LogDebug("第 {RowIndex} 行 - 跳過空值欄位: '{ExcelField}' -> '{DbField}'", 
+                                    rowIndex, columnName, dbFieldName);
+                                skippedFieldsCount++;
+                            }
+                        }
+                        else
+                        {
+                            if (!string.IsNullOrWhiteSpace(cellValue))
+                            {
+                                _logger.LogDebug("第 {RowIndex} 行 - 未對應欄位有值: '{ExcelField}' = '{Value}'", 
+                                    rowIndex, columnName, cellValue);
+                            }
                         }
                     }
+                    
+                    _logger.LogInformation("第 {RowIndex} 行處理統計: 成功處理 {ProcessedCount} 個欄位, 跳過空值 {SkippedCount} 個欄位", 
+                        rowIndex, processedFieldsCount, skippedFieldsCount);
 
-                    // 檢查必要欄位
+                    // 檢查必填欄位
                     if (string.IsNullOrWhiteSpace(personData.Name))
                     {
                         _logger.LogWarning("第 {RowIndex} 行跳過: 姓名欄位為空", rowIndex);
@@ -254,198 +300,201 @@ namespace familytree_backend.Services
                         continue;
                     }
 
-                    _logger.LogInformation("第 {RowIndex} 行人員資料準備完成: {Name}", rowIndex, personData.Name);
-                    _logger.LogInformation("完整人員資料:");
-                    _logger.LogInformation("  - 姓名: {Name}", personData.Name ?? "無");
-                    _logger.LogInformation("  - 性別: {Gender}", personData.Gender ?? "無");
-                    _logger.LogInformation("  - 生日: {Birthday}", personData.Birthday?.ToString("yyyy-MM-dd") ?? "無");
-                    _logger.LogInformation("  - 國籍: {Nationality}", personData.Nationality ?? "無");
-                    _logger.LogInformation("  - 民族: {Ethnicity}", personData.Ethnicity ?? "無");
-                    _logger.LogInformation("  - 電話: {Phone}", personData.Phone ?? "無");
-                    _logger.LogInformation("  - 手機: {Mobile}", personData.Mobile ?? "無");
-                    _logger.LogInformation("  - 信箱: {Email}", personData.Email ?? "無");
-                    _logger.LogInformation("  - 現居地址: {CurrentAddress}", personData.CurrentAddress ?? "無");
-                    _logger.LogInformation("  - 現職單位: {CurrentWorkplace}", personData.CurrentWorkplace ?? "無");
-                    _logger.LogInformation("  - 親屬關係: {FamilyRelationships}", personData.FamilyRelationships ?? "無");
-                    _logger.LogInformation("  - 重要友人: {ImportantFriends}", personData.ImportantFriends ?? "無");
-                    _logger.LogInformation("  - 工作經歷: {Experience}", personData.Experience ?? "無");
-                    _logger.LogInformation("  - 學歷: {Education}", personData.Education ?? "無");
-                    _logger.LogInformation("  - 網路帳號: {OnlineAccounts}", personData.OnlineAccounts ?? "無");
-                    _logger.LogInformation("  - 著作: {Publications}", personData.Publications ?? "無");
-                    _logger.LogInformation("  - 參與活動: {Activities}", personData.Activities ?? "無");
-                    _logger.LogInformation("  - 經常出入場所: {FrequentPlaces}", personData.FrequentPlaces ?? "無");
-                    _logger.LogInformation("  - 出國紀錄: {TravelRecords}", personData.TravelRecords ?? "無");
-                    _logger.LogInformation("  - 備註: {Notes}", personData.Notes ?? "無");
-
-                    // 儲存到資料庫
-                    _logger.LogInformation("開始儲存第 {RowIndex} 行資料到資料庫...", rowIndex);
+                    // 儲存資料
                     await SavePersonDataAsync(connection, personData);
-                    _logger.LogInformation("✅ 第 {RowIndex} 行資料儲存成功", rowIndex);
                     result.SuccessRows++;
+                    _logger.LogInformation("第 {RowIndex} 行資料處理成功: Name='{Name}'", rowIndex, personData.Name);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "❌ 處理Excel第 {RowIndex} 行資料失敗", rowIndex);
-                    _logger.LogError("錯誤詳情: {ErrorMessage}", ex.Message);
                     result.FailedRows++;
+                    _logger.LogError(ex, "處理第 {RowIndex} 行資料時發生錯誤: Name='{Name}', Error={ErrorMessage}", 
+                        rowIndex, personData?.Name ?? "未知", ex.Message);
                 }
             }
 
             _logger.LogInformation("=== Excel資料處理完成 ===");
-            _logger.LogInformation("成功處理: {SuccessRows} 行, 失敗: {FailedRows} 行", result.SuccessRows, result.FailedRows);
+            _logger.LogInformation("處理結果: 成功={SuccessRows}, 失敗={FailedRows}, 未對應欄位數={UnmappedCount}", 
+                result.SuccessRows, result.FailedRows, result.UnmappedFields.Count);
+
             return result;
         }
 
         private void SetPersonDataField(PersonDataModel personData, string dbFieldName, string value)
         {
-            _logger.LogDebug("SetPersonDataField: {DbFieldName} = '{Value}'", dbFieldName, value);
+            _logger.LogDebug("設定欄位: {DbFieldName} = {Value}", dbFieldName, value);
             
             switch (dbFieldName.ToLower())
             {
                 case "name":
                     personData.Name = value;
-                    _logger.LogDebug("設定 Name: '{Value}'", value);
-                    break;
-                case "photo":
-                    personData.Photo = value;
-                    _logger.LogDebug("設定 Photo: '{Value}'", value);
-                    break;
-                case "discovery_process":
-                    personData.DiscoveryProcess = value;
-                    _logger.LogDebug("設定 DiscoveryProcess: '{Value}'", value);
                     break;
                 case "gender":
                     personData.Gender = value;
-                    _logger.LogDebug("設定 Gender: '{Value}'", value);
                     break;
                 case "birthday":
                     if (DateTime.TryParse(value, out var birthday))
                     {
-                        personData.Birthday = birthday;
-                        _logger.LogDebug("設定 Birthday: '{Value}' -> {ParsedDate}", value, birthday);
+                        personData.Birthday = birthday.ToString("yyyy-MM-dd");
                     }
                     else
                     {
-                        _logger.LogWarning("無法解析生日格式: '{Value}'", value);
+                        personData.Birthday = value; // 保留原始字串如果無法轉換
                     }
-                    break;
-                case "birthplace":
-                    personData.Birthplace = value;
-                    _logger.LogDebug("設定 Birthplace: '{Value}'", value);
                     break;
                 case "nationality":
                     personData.Nationality = value;
-                    _logger.LogDebug("設定 Nationality: '{Value}'", value);
+                    break;
+                case "birthplace":
+                    personData.Birthplace = value;
                     break;
                 case "ethnicity":
                     personData.Ethnicity = value;
-                    _logger.LogDebug("設定 Ethnicity: '{Value}'", value);
                     break;
-                case "ancestral_home":
+                case "ancestral_origin":
                     personData.AncestralHome = value;
-                    _logger.LogDebug("設定 AncestralHome: '{Value}'", value);
                     break;
                 case "political_party":
                     personData.PoliticalParty = value;
-                    _logger.LogDebug("設定 PoliticalParty: '{Value}'", value);
                     break;
                 case "id_number":
                     personData.IdNumber = value;
-                    _logger.LogDebug("設定 IdNumber: '{Value}'", value);
                     break;
                 case "passport_number":
                     personData.PassportNumber = value;
-                    _logger.LogDebug("設定 PassportNumber: '{Value}'", value);
                     break;
                 case "phone":
                     personData.Phone = value;
-                    _logger.LogDebug("設定 Phone: '{Value}'", value);
                     break;
                 case "mobile":
                     personData.Mobile = value;
-                    _logger.LogDebug("設定 Mobile: '{Value}'", value);
                     break;
                 case "email":
                     personData.Email = value;
-                    _logger.LogDebug("設定 Email: '{Value}'", value);
                     break;
-                case "current_workplace":
+                case "current_employer":
                     personData.CurrentWorkplace = value;
-                    _logger.LogDebug("設定 CurrentWorkplace: '{Value}'", value);
                     break;
-                case "current_address":
+                case "address":
                     personData.CurrentAddress = value;
-                    _logger.LogDebug("設定 CurrentAddress: '{Value}'", value);
                     break;
                 case "mailing_address":
                     personData.MailingAddress = value;
-                    _logger.LogDebug("設定 MailingAddress: '{Value}'", value);
                     break;
                 case "family_relationships":
                     personData.FamilyRelationships = value;
-                    _logger.LogInformation("🔥 設定 FamilyRelationships: '{Value}'", value);
                     break;
                 case "experience":
                     personData.Experience = value;
-                    _logger.LogInformation("🔥 設定 Experience: '{Value}'", value);
                     break;
                 case "education":
                     personData.Education = value;
-                    _logger.LogDebug("設定 Education: '{Value}'", value);
                     break;
                 case "online_accounts":
                     personData.OnlineAccounts = value;
-                    _logger.LogInformation("🔥 設定 OnlineAccounts: '{Value}'", value);
                     break;
                 case "publications":
                     personData.Publications = value;
-                    _logger.LogInformation("🔥 設定 Publications: '{Value}'", value);
                     break;
                 case "activities":
                     personData.Activities = value;
-                    _logger.LogInformation("🔥 設定 Activities: '{Value}'", value);
                     break;
-                case "important_friends":
+                case "important_friends":  // 修正：使用正確的欄位名稱
                     personData.ImportantFriends = value;
-                    _logger.LogInformation("🔥 設定 ImportantFriends: '{Value}'", value);
                     break;
-                case "frequent_places":
+                case "frequent_locations":
                     personData.FrequentPlaces = value;
-                    _logger.LogInformation("🔥 設定 FrequentPlaces: '{Value}'", value);
                     break;
-                case "travel_records":
+                case "travel_history":
                     personData.TravelRecords = value;
-                    _logger.LogInformation("🔥 設定 TravelRecords: '{Value}'", value);
                     break;
-                case "notes":
+                case "remarks":
                     personData.Notes = value;
-                    _logger.LogDebug("設定 Notes: '{Value}'", value);
+                    break;
+                case "discovery_process":  // 修正：使用正確的欄位名稱
+                    personData.DiscoveryProcess = value;
+                    break;
+                case "photo_index":  // 修正：使用正確的欄位名稱
+                    personData.Photo = value;
                     break;
                 default:
-                    _logger.LogWarning("未知的資料庫欄位名稱: '{DbFieldName}'", dbFieldName);
+                    _logger.LogWarning("未知的資料庫欄位名稱: {DbFieldName}", dbFieldName);
                     break;
             }
         }
 
         private async Task SavePersonDataAsync(NpgsqlConnection connection, PersonDataModel personData)
         {
-                            var sql = @"INSERT INTO person_profile (
-                file_md5, photo_index, name, discovery_process, gender, birthday, birthplace, 
-                nationality, ethnicity, ancestral_origin, political_party, id_number, 
-                passport_number, phone, mobile, email, current_employer, address, 
-                mailing_address, family_relationships, experience, education, online_accounts, 
-                publications, activities, friends, frequent_locations, travel_history, 
-                remarks, created_at, updated_at
-            ) VALUES (
-                @FileMd5, @Photo, @Name, @DiscoveryProcess, @Gender, @Birthday, @Birthplace,
-                @Nationality, @Ethnicity, @AncestralHome, @PoliticalParty, @IdNumber,
-                @PassportNumber, @Phone, @Mobile, @Email, @CurrentWorkplace, @CurrentAddress,
-                @MailingAddress, @FamilyRelationships, @Experience, @Education, @OnlineAccounts,
-                @Publications, @Activities, @ImportantFriends, @FrequentPlaces, @TravelRecords,
-                @Notes, @CreatedAt, @UpdatedAt
-            )";
+            _logger.LogInformation("開始保存人員資料: Name='{Name}', FileMd5='{FileMd5}'", personData.Name, personData.FileMd5);
 
-            await connection.ExecuteAsync(sql, personData);
+            var sql = @"
+                INSERT INTO person_profile (
+                    file_md5, photo_index, name, discovery_process, gender, birthday, birthplace,
+                    nationality, ethnicity, ancestral_origin, political_party, id_number, passport_number,
+                    phone, mobile, email, current_employer, address, mailing_address,
+                    family_relationships, experience, education, online_accounts, publications,
+                    activities, important_friends, frequent_locations, travel_history, remarks,
+                    created_at, updated_at
+                ) VALUES (
+                    @FileMd5, @Photo, @Name, @DiscoveryProcess, @Gender, @Birthday, @Birthplace,
+                    @Nationality, @Ethnicity, @AncestralHome, @PoliticalParty, @IdNumber, @PassportNumber,
+                    @Phone, @Mobile, @Email, @CurrentWorkplace, @CurrentAddress, @MailingAddress,
+                    @FamilyRelationships, @Experience, @Education, @OnlineAccounts, @Publications,
+                    @Activities, @ImportantFriends, @FrequentPlaces, @TravelRecords, @Notes,
+                    @CreatedAt, @UpdatedAt
+                )";
+
+            try
+            {
+                var parameters = new
+                {
+                    personData.FileMd5,
+                    personData.Photo,
+                    personData.Name,
+                    personData.DiscoveryProcess,
+                    personData.Gender,
+                    personData.Birthday,
+                    personData.Birthplace,
+                    personData.Nationality,
+                    personData.Ethnicity,
+                    personData.AncestralHome,
+                    personData.PoliticalParty,
+                    personData.IdNumber,
+                    personData.PassportNumber,
+                    personData.Phone,
+                    personData.Mobile,
+                    personData.Email,
+                    personData.CurrentWorkplace,
+                    personData.CurrentAddress,
+                    personData.MailingAddress,
+                    personData.FamilyRelationships,
+                    personData.Experience,
+                    personData.Education,
+                    personData.OnlineAccounts,
+                    personData.Publications,
+                    personData.Activities,
+                    personData.ImportantFriends,
+                    personData.FrequentPlaces,
+                    personData.TravelRecords,
+                    personData.Notes,
+                    personData.CreatedAt,
+                    personData.UpdatedAt
+                };
+
+                await connection.ExecuteAsync(sql, parameters);
+                _logger.LogInformation("人員資料保存成功: Name='{Name}'", personData.Name);
+            }
+            catch (PostgresException pgEx)
+            {
+                _logger.LogError(pgEx, "保存人員資料時發生PostgreSQL錯誤: Code={ErrorCode}, Message={Message}", 
+                    pgEx.SqlState, pgEx.MessageText);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "保存人員資料時發生未知錯誤");
+                throw;
+            }
         }
 
         private async Task UpdateFileStatusAsync(string fileMd5, string status)

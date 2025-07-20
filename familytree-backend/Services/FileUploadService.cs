@@ -347,42 +347,63 @@ namespace familytree_backend.Services
                              file_size as FileSize, md5_hash as Md5Hash, upload_time as UploadTime, 
                              is_merged as IsMerged, merge_time as MergeTime, status, 
                              created_at as CreatedAt, updated_at as UpdatedAt 
-                      FROM user_update_file WHERE id = @id", new { id = fileId });
+              FROM user_update_file WHERE id = @id", new { id = fileId });
 
                 if (file == null)
                 {
+                    _logger.LogWarning("找不到檔案ID: {FileId}", fileId);
                     return new DeleteImpactResponse
                     {
                         Success = false,
-                        Message = "檔案不存在"
+                        Message = "檔案不存在",
+                        PersonCount = 0,
+                        PersonNames = new List<string>(),
+                        FileName = "",
+                        HasMorePersons = false
                     };
                 }
 
-                // 檢查會影響的人員資料數量
-                var personDataCount = await connection.QuerySingleAsync<int>(
-                    "SELECT COUNT(*) FROM person_profile WHERE file_md5 = @md5", new { md5 = file.Md5Hash });
+                // 查詢與此檔案相關的人員資料
+                var sql = @"SELECT id, name, gender, nationality 
+                   FROM person_profile 
+                   WHERE file_md5 = @md5Hash";
 
-                // 取得會被刪除的人員姓名列表（最多顯示前10個）
-                var personNames = await connection.QueryAsync<string>(
-                    "SELECT name FROM person_profile WHERE file_md5 = @md5 LIMIT 10", new { md5 = file.Md5Hash });
+                var affectedPersons = await connection.QueryAsync<PersonDataModel>(sql, new { md5Hash = file.Md5Hash });
+                var personCount = affectedPersons.Count();
+
+                _logger.LogInformation("分析刪除影響: 檔案={FileName}, 影響人數={Count}", 
+                    file.OriginalFilename, personCount);
+
+                // 取得人員名稱列表，最多顯示10個
+                var maxDisplayNames = 10;
+                var personNames = affectedPersons.Take(maxDisplayNames).Select(p => p.Name ?? "").Where(name => !string.IsNullOrWhiteSpace(name)).ToList();
+                var hasMorePersons = personCount > maxDisplayNames;
+
+                var message = personCount > 0 
+                    ? $"刪除檔案 '{file.OriginalFilename}' 將同時刪除 {personCount} 筆人員資料"
+                    : $"刪除檔案 '{file.OriginalFilename}' 不會影響任何人員資料";
 
                 return new DeleteImpactResponse
                 {
                     Success = true,
-                    Message = $"刪除檔案 '{file.OriginalFilename}' 將同時刪除 {personDataCount} 筆人員資料",
-                    PersonCount = personDataCount,
-                    PersonNames = personNames.ToList(),
+                    Message = message,
+                    PersonCount = personCount,
+                    PersonNames = personNames,
                     FileName = file.OriginalFilename,
-                    HasMorePersons = personDataCount > 10
+                    HasMorePersons = hasMorePersons
                 };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "取得刪除影響資訊失敗: {FileId}", fileId);
+                _logger.LogError(ex, "分析刪除影響時發生錯誤: {FileId}", fileId);
                 return new DeleteImpactResponse
                 {
                     Success = false,
-                    Message = $"取得刪除影響資訊失敗: {ex.Message}"
+                    Message = $"分析刪除影響時發生錯誤: {ex.Message}",
+                    PersonCount = 0,
+                    PersonNames = new List<string>(),
+                    FileName = "",
+                    HasMorePersons = false
                 };
             }
         }

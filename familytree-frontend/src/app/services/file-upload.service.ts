@@ -53,7 +53,7 @@ export interface DeleteImpactResponse {
   providedIn: 'root'
 })
 export class FileUploadService {
-  private apiUrl = `${AppConstants.API_BASE_URL}/fileupload`;
+  private apiUrl = `${AppConstants.API_BASE_URL}/FileUpload`;
   private filesSubject = new BehaviorSubject<FileUploadModel[]>([]);
   public files$ = this.filesSubject.asObservable();
 

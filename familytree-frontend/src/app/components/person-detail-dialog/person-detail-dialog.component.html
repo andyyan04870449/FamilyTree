@@ -1,7 +1,9 @@
 <div class="dialog-overlay" *ngIf="isVisible" (click)="onOverlayClick($event)">
   <div class="dialog-container">
     <!-- 關閉按鈕 -->
-    <button class="close-btn" (click)="onClose()">✕</button>
+    <div class="dialog-actions">
+      <button class="close-btn" (click)="onClose()" [disabled]="saving">✕</button>
+    </div>
     
     <!-- 載入中 -->
     <div *ngIf="loading" class="loading-container">
@@ -19,12 +21,23 @@
     <div *ngIf="personData && !loading && !error" class="dialog-content">
       <!-- 上方區塊：基本資料 -->
       <div class="basic-info-section">
-        <!-- 左側：照片 -->
+        <!-- 左側：頭像 -->
         <div class="photo-section">
           <div class="photo-container">
-            <img *ngIf="personData.photo" [src]="personData.photo" [alt]="personData.name" class="person-photo">
-            <div *ngIf="!personData.photo" class="placeholder-photo">
-              <span class="placeholder-text">{{ personData.name.charAt(0) }}</span>
+            <div class="placeholder-photo">
+              <span class="placeholder-text">{{ personData.name.charAt(0) || '?' }}</span>
+            </div>
+          </div>
+          <div class="photo-info">
+            <div class="info-item">
+              <label>照片編號</label>
+              <input 
+                *ngIf="isEditMode" 
+                type="text" 
+                [(ngModel)]="editData.photo" 
+                class="edit-input"
+              >
+              <span *ngIf="!isEditMode">{{ personData.photo || '--' }}</span>
             </div>
           </div>
         </div>
@@ -34,86 +47,260 @@
           <div class="collapsible-section">
             <div class="section-header">
               <h3>基本資料</h3>
-              <button class="toggle-btn">▼</button>
+              <div class="section-actions">
+                <button *ngIf="!isEditMode" class="edit-btn" (click)="enterEditMode()" [disabled]="loading">
+                  ✏️ 編輯
+                </button>
+                <button *ngIf="isEditMode" class="save-btn" (click)="saveChanges()" [disabled]="loading || saving">
+                  💾 {{ saving ? '儲存中...' : '儲存' }}
+                </button>
+                <button *ngIf="isEditMode" class="cancel-btn" (click)="cancelEdit()" [disabled]="saving">
+                  ❌ 取消
+                </button>
+                <button class="toggle-btn">▼</button>
+              </div>
             </div>
             <div class="section-content">
               <div class="info-grid">
+                
+                <!-- 第一行：姓名、性別 -->
                 <div class="info-row">
                   <div class="info-item">
-                    <label>姓名</label>
-                    <span>{{ personData.name }}</span>
+                    <label>姓名 <span *ngIf="isEditMode" class="required">*</span></label>
+                    <input 
+                      *ngIf="isEditMode" 
+                      type="text" 
+                      [(ngModel)]="editData.name" 
+                      required
+                      class="edit-input"
+                    >
+                    <span *ngIf="!isEditMode">{{ personData.name || '--' }}</span>
                   </div>
                   <div class="info-item">
                     <label>性別</label>
-                    <span>{{ getGenderText(personData.gender) }}</span>
+                    <select 
+                      *ngIf="isEditMode" 
+                      [(ngModel)]="editData.gender" 
+                      class="edit-select"
+                    >
+                      <option value="">請選擇</option>
+                      <option value="男">男</option>
+                      <option value="女">女</option>
+                    </select>
+                    <span *ngIf="!isEditMode">{{ personData.gender || '--' }}</span>
                   </div>
                 </div>
+
+                <!-- 第二行：生日、出生地 -->
                 <div class="info-row">
                   <div class="info-item">
                     <label>生日</label>
-                    <span>{{ formatDate(personData.birthday) }}</span>
+                    <input 
+                      *ngIf="isEditMode" 
+                      type="date" 
+                      [(ngModel)]="editData.birthday" 
+                      class="edit-input"
+                    >
+                    <span *ngIf="!isEditMode">{{ formatDate(personData.birthday) }}</span>
                   </div>
                   <div class="info-item">
-                    <label>身分證號碼</label>
-                    <span>{{ personData.idNumber || '--' }}</span>
+                    <label>出生地（父母戶籍所在地）</label>
+                    <input 
+                      *ngIf="isEditMode" 
+                      type="text" 
+                      [(ngModel)]="editData.birthplace" 
+                      class="edit-input"
+                    >
+                    <span *ngIf="!isEditMode">{{ personData.birthplace || '--' }}</span>
                   </div>
                 </div>
+
+                <!-- 第三行：國籍、民族 -->
                 <div class="info-row">
                   <div class="info-item">
                     <label>國籍</label>
-                    <span>{{ personData.nationality || '--' }}</span>
+                    <input 
+                      *ngIf="isEditMode" 
+                      type="text" 
+                      [(ngModel)]="editData.nationality" 
+                      class="edit-input"
+                    >
+                    <span *ngIf="!isEditMode">{{ personData.nationality || '--' }}</span>
                   </div>
                   <div class="info-item">
                     <label>民族</label>
-                    <span>{{ personData.ethnicity || '--' }}</span>
+                    <input 
+                      *ngIf="isEditMode" 
+                      type="text" 
+                      [(ngModel)]="editData.ethnicity" 
+                      class="edit-input"
+                    >
+                    <span *ngIf="!isEditMode">{{ personData.ethnicity || '--' }}</span>
                   </div>
                 </div>
+
+                <!-- 第四行：籍貫、黨派 -->
                 <div class="info-row">
                   <div class="info-item">
-                    <label>護照號碼</label>
-                    <span>{{ personData.passportNumber || '--' }}</span>
+                    <label>籍貫（祖父戶籍所在地）</label>
+                    <input 
+                      *ngIf="isEditMode" 
+                      type="text" 
+                      [(ngModel)]="editData.ancestralHome" 
+                      class="edit-input"
+                    >
+                    <span *ngIf="!isEditMode">{{ personData.ancestralHome || '--' }}</span>
                   </div>
-                  <div class="info-item">
-                    <label>電話</label>
-                    <span>{{ personData.phone || '--' }}</span>
-                  </div>
-                </div>
-                <div class="info-row">
-                  <div class="info-item">
-                    <label>行動電話</label>
-                    <span>{{ personData.mobile || '--' }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>電子信箱</label>
-                    <span>{{ personData.email || '--' }}</span>
-                  </div>
-                </div>
-                <div class="info-row">
-                  <div class="info-item">
-                    <label>現居地址</label>
-                    <span>{{ personData.currentAddress || '--' }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>通訊地址</label>
-                    <span>{{ personData.mailingAddress || '--' }}</span>
-                  </div>
-                </div>
-                <div class="info-row">
                   <div class="info-item">
                     <label>黨派</label>
-                    <span>{{ personData.politicalParty || '--' }}</span>
+                    <input 
+                      *ngIf="isEditMode" 
+                      type="text" 
+                      [(ngModel)]="editData.politicalParty" 
+                      class="edit-input"
+                    >
+                    <span *ngIf="!isEditMode">{{ personData.politicalParty || '--' }}</span>
+                  </div>
+                </div>
+
+                <!-- 第五行：身分證號碼、護照號碼 -->
+                <div class="info-row">
+                  <div class="info-item">
+                    <label>身分證號碼</label>
+                    <input 
+                      *ngIf="isEditMode" 
+                      type="text" 
+                      [(ngModel)]="editData.idNumber" 
+                      class="edit-input"
+                    >
+                    <span *ngIf="!isEditMode">{{ personData.idNumber || '--' }}</span>
                   </div>
                   <div class="info-item">
-                    <label>籍貫</label>
-                    <span>{{ personData.ancestralHome || '--' }}</span>
+                    <label>護照號碼</label>
+                    <input 
+                      *ngIf="isEditMode" 
+                      type="text" 
+                      [(ngModel)]="editData.passportNumber" 
+                      class="edit-input"
+                    >
+                    <span *ngIf="!isEditMode">{{ personData.passportNumber || '--' }}</span>
                   </div>
                 </div>
+
+                <!-- 第六行：電話、行動電話 -->
                 <div class="info-row">
+                  <div class="info-item">
+                    <label>電話</label>
+                    <input 
+                      *ngIf="isEditMode" 
+                      type="tel" 
+                      [(ngModel)]="editData.phone" 
+                      class="edit-input"
+                    >
+                    <span *ngIf="!isEditMode">{{ personData.phone || '--' }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>行動電話</label>
+                    <input 
+                      *ngIf="isEditMode" 
+                      type="tel" 
+                      [(ngModel)]="editData.mobile" 
+                      class="edit-input"
+                    >
+                    <span *ngIf="!isEditMode">{{ personData.mobile || '--' }}</span>
+                  </div>
+                </div>
+
+                <!-- 第七行：電子信箱、現職單位 -->
+                <div class="info-row">
+                  <div class="info-item">
+                    <label>電子信箱</label>
+                    <input 
+                      *ngIf="isEditMode" 
+                      type="email" 
+                      [(ngModel)]="editData.email" 
+                      class="edit-input"
+                    >
+                    <span *ngIf="!isEditMode">{{ personData.email || '--' }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>現職單位</label>
+                    <input 
+                      *ngIf="isEditMode" 
+                      type="text" 
+                      [(ngModel)]="editData.currentWorkplace" 
+                      class="edit-input"
+                    >
+                    <span *ngIf="!isEditMode">{{ personData.currentWorkplace || '--' }}</span>
+                  </div>
+                </div>
+
+                <!-- 第八行：現居地址（全寬） -->
+                <div class="info-row full-width">
+                  <div class="info-item full-width">
+                    <label>現居地址</label>
+                    <textarea 
+                      *ngIf="isEditMode" 
+                      [(ngModel)]="editData.currentAddress" 
+                      rows="2"
+                      class="edit-textarea"
+                    ></textarea>
+                    <span *ngIf="!isEditMode">{{ personData.currentAddress || '--' }}</span>
+                  </div>
+                </div>
+
+                <!-- 第九行：通訊地址（全寬） -->
+                <div class="info-row full-width">
+                  <div class="info-item full-width">
+                    <label>通訊地址</label>
+                    <textarea 
+                      *ngIf="isEditMode" 
+                      [(ngModel)]="editData.mailingAddress" 
+                      rows="2"
+                      class="edit-textarea"
+                    ></textarea>
+                    <span *ngIf="!isEditMode">{{ personData.mailingAddress || '--' }}</span>
+                  </div>
+                </div>
+
+                <!-- 第十行：發掘經過（全寬） -->
+                <div class="info-row full-width">
                   <div class="info-item full-width">
                     <label>發掘經過</label>
-                    <span>{{ personData.discoveryProcess || '--' }}</span>
+                    <textarea 
+                      *ngIf="isEditMode" 
+                      [(ngModel)]="editData.discoveryProcess" 
+                      rows="3"
+                      class="edit-textarea"
+                    ></textarea>
+                    <span *ngIf="!isEditMode">{{ personData.discoveryProcess || '--' }}</span>
                   </div>
                 </div>
+
+                <!-- 系統資訊行：建檔時間、建檔人 -->
+                <div class="info-row">
+                  <div class="info-item">
+                    <label>建檔時間</label>
+                    <span>{{ formatDateTime(personData.createdAt) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>建檔人</label>
+                    <span>{{ personData.createdBy || '--' }}</span>
+                  </div>
+                </div>
+
+                <!-- 系統資訊行：最後更新時間、最後更新人 -->
+                <div class="info-row">
+                  <div class="info-item">
+                    <label>最後更新時間</label>
+                    <span>{{ formatDateTime(personData.updatedAt) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <label>最後更新人</label>
+                    <span>{{ personData.updatedBy || '--' }}</span>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -140,31 +327,31 @@
           </button>
           <button 
             class="tab-btn" 
-            [class.active]="activeTab === 'experience'"
-            (click)="setActiveTab('experience')"
-          >
-            工作經歷({{ getTabCount('experience') }})
-          </button>
-          <button 
-            class="tab-btn" 
             [class.active]="activeTab === 'education'"
             (click)="setActiveTab('education')"
           >
-            就學經歷({{ getTabCount('education') }})
+            學歷({{ getTabCount('education') }})
           </button>
           <button 
             class="tab-btn" 
-            [class.active]="activeTab === 'accounts'"
-            (click)="setActiveTab('accounts')"
+            [class.active]="activeTab === 'experience'"
+            (click)="setActiveTab('experience')"
           >
-            網路帳號({{ getTabCount('accounts') }})
+            經歷({{ getTabCount('experience') }})
           </button>
           <button 
             class="tab-btn" 
-            [class.active]="activeTab === 'travel'"
-            (click)="setActiveTab('travel')"
+            [class.active]="activeTab === 'online'"
+            (click)="setActiveTab('online')"
           >
-            出國紀錄({{ getTabCount('travel') }})
+            網路帳號({{ getTabCount('online') }})
+          </button>
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab === 'publications'"
+            (click)="setActiveTab('publications')"
+          >
+            著作({{ getTabCount('publications') }})
           </button>
           <button 
             class="tab-btn" 
@@ -182,10 +369,17 @@
           </button>
           <button 
             class="tab-btn" 
-            [class.active]="activeTab === 'publications'"
-            (click)="setActiveTab('publications')"
+            [class.active]="activeTab === 'travel'"
+            (click)="setActiveTab('travel')"
           >
-            著作({{ getTabCount('publications') }})
+            出國紀錄({{ getTabCount('travel') }})
+          </button>
+          <button 
+            class="tab-btn" 
+            [class.active]="activeTab === 'notes'"
+            (click)="setActiveTab('notes')"
+          >
+            備註({{ getTabCount('notes') }})
           </button>
         </div>
 
@@ -193,137 +387,368 @@
         <div class="tabs-content">
           <!-- 親屬關係 -->
           <div *ngIf="activeTab === 'relationships'" class="tab-content">
-            <div *ngIf="relationshipItems.length === 0" class="empty-content">
-              目前沒有親屬關係資料
-            </div>
-            <div *ngIf="relationshipItems.length > 0" class="relationships-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>項次</th>
-                    <th>姓名</th>
-                    <th>生日</th>
-                    <th>性別</th>
-                    <th>關係</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let item of relationshipItems">
-                    <td>{{ item.index }}</td>
-                    <td>{{ item.name }}</td>
-                    <td>{{ item.birthday }}</td>
-                    <td>
-                      <span class="gender-badge" [class]="item.gender === '男' ? 'male' : 'female'">
-                        {{ item.gender }}
-                      </span>
-                    </td>
-                    <td>{{ item.relationship }}</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="tab-edit-field">
+              <label>親屬關係（職稱，姓名）</label>
+              <textarea 
+                *ngIf="isEditMode" 
+                [(ngModel)]="editData.familyRelationships" 
+                rows="6"
+                class="edit-textarea"
+                placeholder="格式：職稱，姓名（每行一筆資料）&#10;例如：&#10;父親，張三&#10;母親，李四&#10;配偶，王五"
+              ></textarea>
+              <div *ngIf="!isEditMode">
+                <div *ngIf="relationshipItems.length === 0" class="empty-content">
+                  目前沒有親屬關係資料
+                </div>
+                <div *ngIf="relationshipItems.length > 0" class="relationships-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>項次</th>
+                        <th>職稱</th>
+                        <th>姓名</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of relationshipItems">
+                        <td>{{ item.index }}</td>
+                        <td>{{ item.relationship }}</td>
+                        <td>{{ item.name }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- 重要友人 -->
           <div *ngIf="activeTab === 'friends'" class="tab-content">
-            <div *ngIf="importantFriends.length === 0" class="empty-content">
-              目前沒有重要友人資料
-            </div>
-            <div *ngIf="importantFriends.length > 0" class="list-content">
-              <div *ngFor="let friend of importantFriends; let i = index" class="list-item">
-                <span class="item-index">{{ i + 1 }}.</span>
-                <span class="item-text">{{ friend }}</span>
+            <div class="tab-edit-field">
+              <label>重要友人（姓名，單位，關聯事件）</label>
+              <textarea 
+                *ngIf="isEditMode" 
+                [(ngModel)]="editData.importantFriends" 
+                rows="6"
+                class="edit-textarea"
+                placeholder="格式：姓名，單位，關聯事件（每行一筆資料）&#10;例如：&#10;陳小明，台積電，大學同學&#10;林美華，政府機關，工作夥伴"
+              ></textarea>
+              <div *ngIf="!isEditMode">
+                <div *ngIf="friendsItems.length === 0" class="empty-content">
+                  目前沒有重要友人資料
+                </div>
+                <div *ngIf="friendsItems.length > 0" class="friends-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>項次</th>
+                        <th>姓名</th>
+                        <th>單位</th>
+                        <th>關聯事件</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of friendsItems">
+                        <td>{{ item.index }}</td>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.unit }}</td>
+                        <td>{{ item.event }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- 工作經歷 -->
-          <div *ngIf="activeTab === 'experience'" class="tab-content">
-            <div *ngIf="experiences.length === 0" class="empty-content">
-              目前沒有工作經歷資料
-            </div>
-            <div *ngIf="experiences.length > 0" class="list-content">
-              <div *ngFor="let exp of experiences; let i = index" class="list-item">
-                <span class="item-index">{{ i + 1 }}.</span>
-                <span class="item-text">{{ exp }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 就學經歷 -->
+          <!-- 學歷 -->
           <div *ngIf="activeTab === 'education'" class="tab-content">
-            <div *ngIf="educations.length === 0" class="empty-content">
-              目前沒有就學經歷資料
+            <div class="tab-edit-field">
+              <label>學歷</label>
+              <textarea 
+                *ngIf="isEditMode" 
+                [(ngModel)]="editData.education" 
+                rows="6"
+                class="edit-textarea"
+                placeholder="請輸入學歷資訊&#10;例如：&#10;台灣大學資訊工程學系學士（2015-2019）&#10;清華大學資訊工程研究所碩士（2019-2021）"
+              ></textarea>
+              <div *ngIf="!isEditMode">
+                <div *ngIf="educationItems.length === 0" class="empty-content">
+                  目前沒有學歷資料
+                </div>
+                <div *ngIf="educationItems.length > 0" class="education-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>項次</th>
+                        <th>學歷資訊</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of educationItems; let i = index">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ item }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-            <div *ngIf="educations.length > 0" class="list-content">
-              <div *ngFor="let edu of educations; let i = index" class="list-item">
-                <span class="item-index">{{ i + 1 }}.</span>
-                <span class="item-text">{{ edu }}</span>
+          </div>
+
+          <!-- 經歷 -->
+          <div *ngIf="activeTab === 'experience'" class="tab-content">
+            <div class="tab-edit-field">
+              <label>經歷（單位，職稱，任職期間）</label>
+              <textarea 
+                *ngIf="isEditMode" 
+                [(ngModel)]="editData.experience" 
+                rows="6"
+                class="edit-textarea"
+                placeholder="格式：單位，職稱，任職期間（每行一筆資料）&#10;例如：&#10;台積電，軟體工程師，2021-2023&#10;聯發科，資深工程師，2023-至今"
+              ></textarea>
+              <div *ngIf="!isEditMode">
+                <div *ngIf="experienceItems.length === 0" class="empty-content">
+                  目前沒有經歷資料
+                </div>
+                <div *ngIf="experienceItems.length > 0" class="experience-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>項次</th>
+                        <th>單位</th>
+                        <th>職稱</th>
+                        <th>任職期間</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of experienceItems">
+                        <td>{{ item.index }}</td>
+                        <td>{{ item.unit }}</td>
+                        <td>{{ item.position }}</td>
+                        <td>{{ item.period }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- 網路帳號 -->
-          <div *ngIf="activeTab === 'accounts'" class="tab-content">
-            <div *ngIf="onlineAccounts.length === 0" class="empty-content">
-              目前沒有網路帳號資料
-            </div>
-            <div *ngIf="onlineAccounts.length > 0" class="list-content">
-              <div *ngFor="let account of onlineAccounts; let i = index" class="list-item">
-                <span class="item-index">{{ i + 1 }}.</span>
-                <span class="item-text">{{ account }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 出國紀錄 -->
-          <div *ngIf="activeTab === 'travel'" class="tab-content">
-            <div *ngIf="travelRecords.length === 0" class="empty-content">
-              目前沒有出國紀錄資料
-            </div>
-            <div *ngIf="travelRecords.length > 0" class="list-content">
-              <div *ngFor="let travel of travelRecords; let i = index" class="list-item">
-                <span class="item-index">{{ i + 1 }}.</span>
-                <span class="item-text">{{ travel }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 參與活動 -->
-          <div *ngIf="activeTab === 'activities'" class="tab-content">
-            <div *ngIf="activities.length === 0" class="empty-content">
-              目前沒有參與活動資料
-            </div>
-            <div *ngIf="activities.length > 0" class="list-content">
-              <div *ngFor="let activity of activities; let i = index" class="list-item">
-                <span class="item-index">{{ i + 1 }}.</span>
-                <span class="item-text">{{ activity }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 經常出入場所 -->
-          <div *ngIf="activeTab === 'places'" class="tab-content">
-            <div *ngIf="frequentPlaces.length === 0" class="empty-content">
-              目前沒有經常出入場所資料
-            </div>
-            <div *ngIf="frequentPlaces.length > 0" class="list-content">
-              <div *ngFor="let place of frequentPlaces; let i = index" class="list-item">
-                <span class="item-index">{{ i + 1 }}.</span>
-                <span class="item-text">{{ place }}</span>
+          <div *ngIf="activeTab === 'online'" class="tab-content">
+            <div class="tab-edit-field">
+              <label>網路帳號</label>
+              <textarea 
+                *ngIf="isEditMode" 
+                [(ngModel)]="editData.onlineAccounts" 
+                rows="6"
+                class="edit-textarea"
+                placeholder="請輸入網路帳號資訊&#10;例如：&#10;Facebook: john.doe&#10;Instagram: @john123&#10;LinkedIn: john-doe-engineer&#10;Email: john@example.com"
+              ></textarea>
+              <div *ngIf="!isEditMode">
+                <div *ngIf="onlineAccountItems.length === 0" class="empty-content">
+                  目前沒有網路帳號資料
+                </div>
+                <div *ngIf="onlineAccountItems.length > 0" class="online-accounts-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>項次</th>
+                        <th>網路帳號資訊</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of onlineAccountItems; let i = index">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ item }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- 著作 -->
           <div *ngIf="activeTab === 'publications'" class="tab-content">
-            <div *ngIf="publications.length === 0" class="empty-content">
-              目前沒有著作資料
+            <div class="tab-edit-field">
+              <label>著作（名稱，共同作者）</label>
+              <textarea 
+                *ngIf="isEditMode" 
+                [(ngModel)]="editData.publications" 
+                rows="6"
+                class="edit-textarea"
+                placeholder="格式：名稱，共同作者（每行一筆資料）&#10;例如：&#10;人工智慧導論，李教授、王研究員&#10;機器學習實戰，獨著"
+              ></textarea>
+              <div *ngIf="!isEditMode">
+                <div *ngIf="publicationItems.length === 0" class="empty-content">
+                  目前沒有著作資料
+                </div>
+                <div *ngIf="publicationItems.length > 0" class="publications-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>項次</th>
+                        <th>著作名稱</th>
+                        <th>共同作者</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of publicationItems">
+                        <td>{{ item.index }}</td>
+                        <td>{{ item.title }}</td>
+                        <td>{{ item.coAuthors }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-            <div *ngIf="publications.length > 0" class="list-content">
-              <div *ngFor="let publication of publications; let i = index" class="list-item">
-                <span class="item-index">{{ i + 1 }}.</span>
-                <span class="item-text">{{ publication }}</span>
+          </div>
+
+          <!-- 參與活動 -->
+          <div *ngIf="activeTab === 'activities'" class="tab-content">
+            <div class="tab-edit-field">
+              <label>參與活動（活動名稱，參與人士）</label>
+              <textarea 
+                *ngIf="isEditMode" 
+                [(ngModel)]="editData.activities" 
+                rows="6"
+                class="edit-textarea"
+                placeholder="格式：活動名稱，參與人士（每行一筆資料）&#10;例如：&#10;2023科技研討會，張教授、李博士&#10;產業交流會，業界專家群"
+              ></textarea>
+              <div *ngIf="!isEditMode">
+                <div *ngIf="activityItems.length === 0" class="empty-content">
+                  目前沒有參與活動資料
+                </div>
+                <div *ngIf="activityItems.length > 0" class="activities-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>項次</th>
+                        <th>活動名稱</th>
+                        <th>參與人士</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of activityItems">
+                        <td>{{ item.index }}</td>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.participants }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 經常出入場所 -->
+          <div *ngIf="activeTab === 'places'" class="tab-content">
+            <div class="tab-edit-field">
+              <label>經常出入場所</label>
+              <textarea 
+                *ngIf="isEditMode" 
+                [(ngModel)]="editData.frequentPlaces" 
+                rows="6"
+                class="edit-textarea"
+                placeholder="請輸入經常出入的場所&#10;例如：&#10;台北101辦公大樓&#10;信義區星巴克&#10;台大圖書館&#10;內湖科學園區"
+              ></textarea>
+              <div *ngIf="!isEditMode">
+                <div *ngIf="frequentPlaceItems.length === 0" class="empty-content">
+                  目前沒有經常出入場所資料
+                </div>
+                <div *ngIf="frequentPlaceItems.length > 0" class="frequent-places-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>項次</th>
+                        <th>場所名稱</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of frequentPlaceItems; let i = index">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ item }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 出國紀錄 -->
+          <div *ngIf="activeTab === 'travel'" class="tab-content">
+            <div class="tab-edit-field">
+              <label>出國紀錄</label>
+              <textarea 
+                *ngIf="isEditMode" 
+                [(ngModel)]="editData.travelRecords" 
+                rows="6"
+                class="edit-textarea"
+                placeholder="請輸入出國紀錄&#10;例如：&#10;2023/01/15-2023/01/22 日本東京商務出差&#10;2023/06/10-2023/06/20 美國舊金山參加會議&#10;2023/12/01-2023/12/07 新加坡度假"
+              ></textarea>
+              <div *ngIf="!isEditMode">
+                <div *ngIf="travelRecordItems.length === 0" class="empty-content">
+                  目前沒有出國紀錄資料
+                </div>
+                <div *ngIf="travelRecordItems.length > 0" class="travel-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>項次</th>
+                        <th>期間</th>
+                        <th>目的地</th>
+                        <th>目的</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of travelRecordItems">
+                        <td>{{ item.index }}</td>
+                        <td>{{ item.period }}</td>
+                        <td>{{ item.destination }}</td>
+                        <td>{{ item.purpose }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 備註 -->
+          <div *ngIf="activeTab === 'notes'" class="tab-content">
+            <div class="tab-edit-field">
+              <label>備註</label>
+              <textarea 
+                *ngIf="isEditMode" 
+                [(ngModel)]="editData.notes" 
+                rows="6"
+                class="edit-textarea"
+                placeholder="請輸入其他備註資訊"
+              ></textarea>
+              <div *ngIf="!isEditMode">
+                <div *ngIf="noteItems.length === 0" class="empty-content">
+                  目前沒有備註資料
+                </div>
+                <div *ngIf="noteItems.length > 0" class="notes-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>項次</th>
+                        <th>備註內容</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of noteItems; let i = index">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ item }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>

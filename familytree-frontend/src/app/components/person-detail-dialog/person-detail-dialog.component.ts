@@ -1,15 +1,46 @@
-// 個人詳細資料對話框組件 - 顯示完整的個人資料信息，包含基本資料和各種關聯資料的標籤頁
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+// 人員詳細資料對話框組件 - 支援查看和編輯模式，保持原本的UI設計
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PersonDataService, PersonDataModel } from '../../services/person-data.service';
+import { PersonDataService, PersonDataModel, PersonDataRequest } from '../../services/person-data.service';
 
 interface RelationshipItem {
   index: number;
   name: string;
-  birthday: string;
-  gender: string;
   relationship: string;
+}
+
+interface FriendItem {
+  index: number;
+  name: string;
+  unit: string;
+  event: string;
+}
+
+interface ExperienceItem {
+  index: number;
+  unit: string;
+  position: string;
+  period: string;
+}
+
+interface PublicationItem {
+  index: number;
+  title: string;
+  coAuthors: string;
+}
+
+interface ActivityItem {
+  index: number;
+  name: string;
+  participants: string;
+}
+
+interface TravelRecordItem {
+  index: number;
+  period: string;
+  destination: string;
+  purpose: string;
 }
 
 @Component({
@@ -19,56 +50,54 @@ interface RelationshipItem {
   standalone: true,
   imports: [CommonModule, FormsModule]
 })
-export class PersonDetailDialogComponent implements OnInit, OnChanges {
+export class PersonDetailDialogComponent implements OnChanges {
   @Input() personId: number | null = null;
-  @Input() isVisible = false;
+  @Input() isVisible: boolean = false;
   @Output() close = new EventEmitter<void>();
 
   personData: PersonDataModel | null = null;
+  editData: PersonDataRequest = this.getEmptyEditData();
+  originalData: PersonDataRequest = this.getEmptyEditData();
+  
   loading = false;
+  saving = false;
   error = '';
+  isEditMode = false;
   activeTab = 'relationships'; // 預設顯示親屬關係
 
   // 解析後的資料
   relationshipItems: RelationshipItem[] = [];
-  importantFriends: string[] = [];
-  experiences: string[] = [];
-  educations: string[] = [];
-  onlineAccounts: string[] = [];
-  travelRecords: string[] = [];
-  activities: string[] = [];
-  frequentPlaces: string[] = [];
-  publications: string[] = [];
+  friendsItems: FriendItem[] = [];
+  educationItems: string[] = [];
+  experienceItems: ExperienceItem[] = [];
+  onlineAccountItems: string[] = [];
+  publicationItems: PublicationItem[] = [];
+  activityItems: ActivityItem[] = [];
+  frequentPlaceItems: string[] = [];
+  travelRecordItems: TravelRecordItem[] = [];
+  noteItems: string[] = [];
 
   constructor(private personDataService: PersonDataService) {
     console.log('[PersonDetailDialog] 組件已建立');
   }
 
-  ngOnInit(): void {
-    console.log('[PersonDetailDialog] ngOnInit - personId:', this.personId, 'isVisible:', this.isVisible);
-    if (this.personId && this.isVisible) {
-      this.loadPersonData();
-    }
-  }
-
   ngOnChanges(changes: SimpleChanges): void {
     console.log('[PersonDetailDialog] ngOnChanges - 變更:', changes);
     
-    if (changes['personId'] || changes['isVisible']) {
-      console.log('[PersonDetailDialog] 偵測到重要屬性變更 - personId:', this.personId, 'isVisible:', this.isVisible);
-      
-      if (this.personId && this.isVisible) {
-        console.log('[PersonDetailDialog] 條件符合，開始載入資料');
+    if (changes['personId'] && this.personId && this.isVisible) {
+      this.loadPersonData();
+    }
+    
+    if (changes['isVisible']) {
+      if (!this.isVisible) {
+        this.resetDialog();
+      } else if (this.personId) {
         this.loadPersonData();
-      } else {
-        console.log('[PersonDetailDialog] 條件不符合，清空資料');
-        this.personData = null;
-        this.error = '';
       }
     }
   }
 
-  loadPersonData(): void {
+  private loadPersonData(): void {
     if (!this.personId) {
       console.error('[PersonDetailDialog] loadPersonData - personId 為空');
       return;
@@ -87,21 +116,60 @@ export class PersonDetailDialogComponent implements OnInit, OnChanges {
         if (response.success && response.personData) {
           console.log('[PersonDetailDialog] 資料載入成功:', response.personData);
           this.personData = response.personData;
+          this.setEditDataFromPersonData();
           this.parseData();
         } else {
-          console.error('[PersonDetailDialog] API 回應失敗:', response.message);
-          this.error = response.message || '載入失敗';
+          console.error('[PersonDetailDialog] API 回應失敗');
+          this.error = response.message || '載入人員資料失敗';
         }
       },
       error: (err: any) => {
         console.error('[PersonDetailDialog] API 錯誤:', err);
         this.loading = false;
-        this.error = '載入人員詳細資料失敗';
+        this.error = '載入人員資料時發生錯誤';
       }
     });
   }
 
-  parseData(): void {
+  private setEditDataFromPersonData(): void {
+    if (!this.personData) return;
+    
+    this.editData = {
+      photo: this.personData.photo || '',
+      name: this.personData.name || '',
+      discoveryProcess: this.personData.discoveryProcess || '',
+      gender: this.personData.gender || '',
+      birthday: this.formatDateForInput(this.personData.birthday) || '',
+      birthplace: this.personData.birthplace || '',
+      nationality: this.personData.nationality || '',
+      ethnicity: this.personData.ethnicity || '',
+      ancestralHome: this.personData.ancestralHome || '',
+      politicalParty: this.personData.politicalParty || '',
+      idNumber: this.personData.idNumber || '',
+      passportNumber: this.personData.passportNumber || '',
+      phone: this.personData.phone || '',
+      mobile: this.personData.mobile || '',
+      email: this.personData.email || '',
+      currentWorkplace: this.personData.currentWorkplace || '',
+      currentAddress: this.personData.currentAddress || '',
+      mailingAddress: this.personData.mailingAddress || '',
+      familyRelationships: this.personData.familyRelationships || '',
+      experience: this.personData.experience || '',
+      education: this.personData.education || '',
+      onlineAccounts: this.personData.onlineAccounts || '',
+      publications: this.personData.publications || '',
+      activities: this.personData.activities || '',
+      importantFriends: this.personData.importantFriends || '',
+      frequentPlaces: this.personData.frequentPlaces || '',
+      travelRecords: this.personData.travelRecords || '',
+      notes: this.personData.notes || ''
+    };
+    
+    // 保存原始資料用於取消編輯
+    this.originalData = { ...this.editData };
+  }
+
+  private parseData(): void {
     if (!this.personData) {
       console.warn('[PersonDetailDialog] parseData - personData 為空');
       return;
@@ -114,21 +182,22 @@ export class PersonDetailDialogComponent implements OnInit, OnChanges {
     this.relationshipItems = this.parseRelationships(this.personData.familyRelationships);
     console.log('[PersonDetailDialog] 解析後的親屬關係:', this.relationshipItems);
     
+    // 解析朋友資料
+    this.friendsItems = this.parseFriends(this.personData.importantFriends);
+    console.log('[PersonDetailDialog] 解析後的朋友資料:', this.friendsItems);
+    
     // 解析其他資料
-    this.importantFriends = this.parseList(this.personData.importantFriends);
-    this.experiences = this.parseList(this.personData.experience);
-    this.educations = this.parseList(this.personData.education);
-    this.onlineAccounts = this.parseList(this.personData.onlineAccounts);
-    this.travelRecords = this.parseList(this.personData.travelRecords);
-    this.activities = this.parseList(this.personData.activities);
-    this.frequentPlaces = this.parseList(this.personData.frequentPlaces);
-    this.publications = this.parseList(this.personData.publications);
-
-    console.log('[PersonDetailDialog] 所有解析完成 - 重要友人:', this.importantFriends.length, 
-                '工作經歷:', this.experiences.length, '學歷:', this.educations.length);
+    this.educationItems = this.parseList(this.personData.education);
+    this.experienceItems = this.parseExperience(this.personData.experience);
+    this.onlineAccountItems = this.parseList(this.personData.onlineAccounts);
+    this.publicationItems = this.parsePublications(this.personData.publications);
+    this.activityItems = this.parseActivities(this.personData.activities);
+    this.frequentPlaceItems = this.parseList(this.personData.frequentPlaces);
+    this.travelRecordItems = this.parseTravelRecords(this.personData.travelRecords);
+    this.noteItems = this.parseList(this.personData.notes);
   }
 
-  parseRelationships(data: string | undefined | null): RelationshipItem[] {
+  private parseRelationships(data: string | undefined | null): RelationshipItem[] {
     console.log('[PersonDetailDialog] parseRelationships - 輸入資料:', data);
     
     if (!data || data.trim() === '') {
@@ -160,12 +229,11 @@ export class PersonDetailDialogComponent implements OnInit, OnChanges {
           console.log('[PersonDetailDialog] 處理第', index + 1, '行:', parts);
           
           if (parts.length >= 1) {
+            // 格式：職稱，姓名
             items.push({
               index: index + 1,
-              name: parts[0] || '',
-              birthday: parts[1] || '--',
-              gender: this.parseGender(parts[2]) || '--',
-              relationship: parts[3] || '--'
+              relationship: parts[0] || '--', // 第一個是職稱（關係）
+              name: parts[1] || '--'         // 第二個是姓名
             });
           }
         }
@@ -179,7 +247,154 @@ export class PersonDetailDialogComponent implements OnInit, OnChanges {
     }
   }
 
-  parseList(data: string | undefined | null): string[] {
+  private parseFriends(data: string | undefined | null): FriendItem[] {
+    if (!data || data.trim() === '') return [];
+    
+    try {
+      const items: FriendItem[] = [];
+      const lines = this.splitData(data);
+      
+      lines.forEach((line, index) => {
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+          const parts = trimmedLine.split(',').map(p => p.trim());
+          items.push({
+            index: index + 1,
+            name: parts[0] || '--',
+            unit: parts[1] || '--',
+            event: parts[2] || '--'
+          });
+        }
+      });
+      
+      return items;
+    } catch (error) {
+      console.error('[PersonDetailDialog] 解析朋友資料時發生錯誤:', error);
+      return [];
+    }
+  }
+
+  private parseExperience(data: string | undefined | null): ExperienceItem[] {
+    if (!data || data.trim() === '') return [];
+    
+    try {
+      const items: ExperienceItem[] = [];
+      const lines = this.splitData(data);
+      
+      lines.forEach((line, index) => {
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+          const parts = trimmedLine.split(',').map(p => p.trim());
+          items.push({
+            index: index + 1,
+            unit: parts[0] || '--',
+            position: parts[1] || '--',
+            period: parts[2] || '--'
+          });
+        }
+      });
+      
+      return items;
+    } catch (error) {
+      console.error('[PersonDetailDialog] 解析經歷資料時發生錯誤:', error);
+      return [];
+    }
+  }
+
+  private parsePublications(data: string | undefined | null): PublicationItem[] {
+    if (!data || data.trim() === '') return [];
+    
+    try {
+      const items: PublicationItem[] = [];
+      const lines = this.splitData(data);
+      
+      lines.forEach((line, index) => {
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+          const parts = trimmedLine.split(',').map(p => p.trim());
+          items.push({
+            index: index + 1,
+            title: parts[0] || '--',
+            coAuthors: parts[1] || '--'
+          });
+        }
+      });
+      
+      return items;
+    } catch (error) {
+      console.error('[PersonDetailDialog] 解析著作資料時發生錯誤:', error);
+      return [];
+    }
+  }
+
+  private parseActivities(data: string | undefined | null): ActivityItem[] {
+    if (!data || data.trim() === '') return [];
+    
+    try {
+      const items: ActivityItem[] = [];
+      const lines = this.splitData(data);
+      
+      lines.forEach((line, index) => {
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+          const parts = trimmedLine.split(',').map(p => p.trim());
+          items.push({
+            index: index + 1,
+            name: parts[0] || '--',
+            participants: parts[1] || '--'
+          });
+        }
+      });
+      
+      return items;
+    } catch (error) {
+      console.error('[PersonDetailDialog] 解析活動資料時發生錯誤:', error);
+      return [];
+    }
+  }
+
+  private parseTravelRecords(data: string | undefined | null): TravelRecordItem[] {
+    if (!data || data.trim() === '') return [];
+    
+    try {
+      const items: TravelRecordItem[] = [];
+      const lines = this.splitData(data);
+      
+      lines.forEach((line, index) => {
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+          const parts = trimmedLine.split(' ').map(p => p.trim());
+          if (parts.length >= 2) {
+            items.push({
+              index: index + 1,
+              period: parts[0] || '--',
+              destination: parts[1] || '--',
+              purpose: parts.slice(2).join(' ') || '--'
+            });
+          }
+        }
+      });
+      
+      return items;
+    } catch (error) {
+      console.error('[PersonDetailDialog] 解析出國紀錄時發生錯誤:', error);
+      return [];
+    }
+  }
+
+  private splitData(data: string): string[] {
+    if (data.includes(';')) {
+      return data.split(';');
+    } else if (data.includes('\n')) {
+      return data.split('\n');
+    } else if (data.includes('|')) {
+      return data.split('|');
+    } else {
+      return [data];
+    }
+  }
+
+  private parseList(data: string | undefined | null): string[] {
     console.log('[PersonDetailDialog] parseList - 輸入資料:', data);
     
     if (!data || data.trim() === '') {
@@ -204,12 +419,91 @@ export class PersonDetailDialogComponent implements OnInit, OnChanges {
     return result;
   }
 
-  parseGender(gender: string | undefined | null): string {
-    if (!gender) return '';
-    const g = gender.toLowerCase().trim();
-    if (g === 'm' || g === '男' || g === 'male') return '男';
-    if (g === 'f' || g === '女' || g === 'female') return '女';
-    return gender;
+  private formatDateForInput(dateString: string | undefined): string {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '';
+      return date.toISOString().split('T')[0];
+    } catch {
+      return '';
+    }
+  }
+
+  private getEmptyEditData(): PersonDataRequest {
+    return {
+      photo: '',
+      name: '',
+      discoveryProcess: '',
+      gender: '',
+      birthday: '',
+      birthplace: '',
+      nationality: '',
+      ethnicity: '',
+      ancestralHome: '',
+      politicalParty: '',
+      idNumber: '',
+      passportNumber: '',
+      phone: '',
+      mobile: '',
+      email: '',
+      currentWorkplace: '',
+      currentAddress: '',
+      mailingAddress: '',
+      familyRelationships: '',
+      experience: '',
+      education: '',
+      onlineAccounts: '',
+      publications: '',
+      activities: '',
+      importantFriends: '',
+      frequentPlaces: '',
+      travelRecords: '',
+      notes: ''
+    };
+  }
+
+  enterEditMode(): void {
+    this.isEditMode = true;
+    // 重新設定編輯資料，確保是最新的
+    this.setEditDataFromPersonData();
+  }
+
+  cancelEdit(): void {
+    this.isEditMode = false;
+    // 恢復原始資料
+    this.editData = { ...this.originalData };
+  }
+
+  saveChanges(): void {
+    if (!this.personId || this.saving) return;
+
+    // 基本驗證
+    if (!this.editData.name.trim()) {
+      alert('姓名為必填欄位');
+      return;
+    }
+
+    this.saving = true;
+
+    this.personDataService.updatePersonData(this.personId, this.editData).subscribe({
+      next: (response: any) => {
+        this.saving = false;
+        if (response.success) {
+          // 更新成功，重新載入資料
+          this.isEditMode = false;
+          this.loadPersonData();
+          alert('資料更新成功！');
+        } else {
+          alert(`更新失敗: ${response.message}`);
+        }
+      },
+      error: (err: any) => {
+        this.saving = false;
+        console.error('更新人員資料錯誤:', err);
+        alert('更新人員資料時發生錯誤');
+      }
+    });
   }
 
   setActiveTab(tab: string): void {
@@ -220,42 +514,91 @@ export class PersonDetailDialogComponent implements OnInit, OnChanges {
   getTabCount(tab: string): number {
     switch (tab) {
       case 'relationships': return this.relationshipItems.length;
-      case 'friends': return this.importantFriends.length;
-      case 'experience': return this.experiences.length;
-      case 'education': return this.educations.length;
-      case 'accounts': return this.onlineAccounts.length;
-      case 'travel': return this.travelRecords.length;
-      case 'activities': return this.activities.length;
-      case 'places': return this.frequentPlaces.length;
-      case 'publications': return this.publications.length;
+      case 'friends': return this.friendsItems.length;
+      case 'education': return this.educationItems.length;
+      case 'experience': return this.experienceItems.length;
+      case 'online': return this.onlineAccountItems.length;
+      case 'publications': return this.publicationItems.length;
+      case 'activities': return this.activityItems.length;
+      case 'places': return this.frequentPlaceItems.length;
+      case 'travel': return this.travelRecordItems.length;
+      case 'notes': return this.noteItems.length;
       default: return 0;
     }
   }
 
-  formatDate(dateString: string | undefined | null): string {
-    if (!dateString) return '--';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('zh-TW');
-    } catch {
-      return dateString;
+  onClose(): void {
+    if (this.saving) return;
+    
+    if (this.isEditMode) {
+      if (confirm('您有未儲存的變更，確定要關閉嗎？')) {
+        this.resetDialog();
+        this.close.emit();
+      }
+    } else {
+      this.resetDialog();
+      this.close.emit();
     }
   }
 
-  getGenderText(gender: string | undefined | null): string {
-    if (!gender) return '未知';
-    return gender === 'M' ? '男' : gender === 'F' ? '女' : gender;
-  }
-
-  onClose(): void {
-    console.log('[PersonDetailDialog] 關閉對話框');
-    this.close.emit();
-  }
-
-  onOverlayClick(event: Event): void {
+  onOverlayClick(event: MouseEvent): void {
     if (event.target === event.currentTarget) {
-      console.log('[PersonDetailDialog] 點擊背景關閉');
       this.onClose();
     }
+  }
+
+  private resetDialog(): void {
+    this.isEditMode = false;
+    this.personData = null;
+    this.editData = this.getEmptyEditData();
+    this.originalData = this.getEmptyEditData();
+    this.loading = false;
+    this.saving = false;
+    this.error = '';
+    this.activeTab = 'relationships';
+    this.relationshipItems = [];
+    this.friendsItems = [];
+    this.educationItems = [];
+    this.experienceItems = [];
+    this.onlineAccountItems = [];
+    this.publicationItems = [];
+    this.activityItems = [];
+    this.frequentPlaceItems = [];
+    this.travelRecordItems = [];
+    this.noteItems = [];
+  }
+
+  // 輔助方法
+  formatDate(dateString: string | undefined): string {
+    if (!dateString || dateString === '0001-01-01T00:00:00') return '-';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '-';
+      return date.toLocaleDateString('zh-TW');
+    } catch {
+      return '-';
+    }
+  }
+
+  formatDateTime(dateString: string | undefined): string {
+    if (!dateString || dateString === '0001-01-01T00:00:00') return '--';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '--';
+      return date.toLocaleString('zh-TW', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return '--';
+    }
+  }
+
+  getGenderText(gender: string | undefined): string {
+    if (!gender) return '-';
+    return gender === 'M' ? '男' : gender === 'F' ? '女' : gender;
   }
 } 
