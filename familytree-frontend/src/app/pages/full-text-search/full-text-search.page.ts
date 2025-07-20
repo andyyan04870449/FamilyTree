@@ -4,8 +4,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { PersonDetailDialogComponent } from '../../components/person-detail-dialog/person-detail-dialog.component';
-import { RelationshipGraphComponent } from '../../components/relationship-graph/relationship-graph.component';
 import { FullTextSearchService } from '../../services/fulltext-search.service';
 import { FavoritesService } from '../../services/favorites.service';
 
@@ -39,7 +39,7 @@ interface Favorite {
 @Component({
   selector: 'app-full-text-search',
   standalone: true,
-  imports: [CommonModule, FormsModule, PersonDetailDialogComponent, RelationshipGraphComponent],
+  imports: [CommonModule, FormsModule, PersonDetailDialogComponent],
   templateUrl: './full-text-search.page.html',
   styleUrls: ['./full-text-search.page.scss']
 })
@@ -69,11 +69,11 @@ export class FullTextSearchPage implements OnInit {
   // 對話框控制
   showDetailDialog: boolean = false;
   selectedPersonId: number | null = null;
-  showGraphDialog: boolean = false;
 
   constructor(
     private fullTextSearchService: FullTextSearchService,
-    private favoritesService: FavoritesService
+    private favoritesService: FavoritesService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -376,10 +376,12 @@ export class FullTextSearchPage implements OnInit {
     if (this.getSelectedCount() === 0) {
       return;
     }
-    this.showGraphDialog = true;
-  }
-
-  closeGraphDialog(): void {
-    this.showGraphDialog = false;
+    
+    // 獲取選中的人員ID並跳轉到關聯圖譜頁面
+    const selectedIds = this.getSelectedPersonIds();
+    const personIdsParam = selectedIds.join(',');
+    
+    console.log('🔗 跳轉到關聯圖譜頁面，選中人員ID:', selectedIds);
+    this.router.navigate(['/relationship-graph', personIdsParam]);
   }
 } 

@@ -181,39 +181,46 @@ namespace familytree_backend.Controllers
                 var personIds = string.Join(",", request.PersonIds);
                 var maxDepth = request.MaxDepth ?? 3;
 
+                _logger.LogInformation("🔍 開始遞迴查找相關人員，初始人員ID: {personIds}, 最大深度: {maxDepth}", 
+                    string.Join(",", request.PersonIds), maxDepth);
+
+                // 獲取選定人員及其相關人員（包括手動建立的關係）
                 var persons = await connection.QueryAsync<PersonDataModel>(@"
-                    WITH RECURSIVE related_persons AS (
-                        -- 初始人員
-                        SELECT 
-                            id, name, gender, birthday, mobile, 
-                            family_relationships, important_friends, created_at, updated_at,
-                            0 as depth
-                        FROM person_profile 
-                        WHERE id = ANY(@PersonIds)
-                        
-                        UNION ALL
-                        
-                        -- 遞迴查找相關人員
-                        SELECT 
-                            p.id, p.name, p.gender, p.birthday, p.mobile,
-                            p.family_relationships, p.important_friends, p.created_at, p.updated_at,
-                            rp.depth + 1
+                    WITH related_persons AS (
+                        -- 選定的人員
+                        SELECT id FROM person_profile WHERE id = ANY(@PersonIds)
+                        UNION
+                        -- 通過家族關係和朋友關係相關的人員
+                        SELECT DISTINCT p.id
                         FROM person_profile p
-                        INNER JOIN related_persons rp ON (
-                            -- 家族關係
-                            (rp.family_relationships LIKE '%' || p.name || '%') OR
-                            (p.family_relationships LIKE '%' || rp.name || '%') OR
-                            -- 朋友關係
-                            (rp.important_friends LIKE '%' || p.name || '%') OR
-                            (p.important_friends LIKE '%' || rp.name || '%')
+                        WHERE EXISTS (
+                            SELECT 1 FROM person_profile pp 
+                            WHERE pp.id = ANY(@PersonIds)
+                            AND (
+                                -- 家族關係檢查
+                                (pp.family_relationships IS NOT NULL AND pp.family_relationships LIKE '%' || p.name || '%') OR
+                                (p.family_relationships IS NOT NULL AND p.family_relationships LIKE '%' || pp.name || '%') OR
+                                -- 朋友關係檢查
+                                (pp.important_friends IS NOT NULL AND pp.important_friends LIKE '%' || p.name || '%') OR
+                                (p.important_friends IS NOT NULL AND p.important_friends LIKE '%' || pp.name || '%')
+                            )
                         )
-                        WHERE rp.depth < @MaxDepth
+                        UNION
+                        -- 手動建立的關係中的相關人員
+                        SELECT DISTINCT rl.target_person_id
+                        FROM relationship_layers rl
+                        WHERE rl.source_person_id = ANY(@PersonIds)
+                        UNION
+                        SELECT DISTINCT rl.source_person_id
+                        FROM relationship_layers rl
+                        WHERE rl.target_person_id = ANY(@PersonIds)
                     )
                     SELECT DISTINCT 
-                        id, name, gender, birthday, mobile,
-                        family_relationships, important_friends, created_at, updated_at
-                    FROM related_persons
-                    ORDER BY name", new { PersonIds = request.PersonIds, MaxDepth = maxDepth });
+                        pp.id, pp.name, pp.gender, pp.birthday, pp.mobile,
+                        pp.family_relationships, pp.important_friends, pp.created_at, pp.updated_at
+                    FROM person_profile pp
+                    INNER JOIN related_persons rp ON pp.id = rp.id
+                    ORDER BY pp.name", new { PersonIds = request.PersonIds });
 
                 _logger.LogInformation("✅ 獲取相關人員資料成功，共 {count} 筆", persons.Count());
 

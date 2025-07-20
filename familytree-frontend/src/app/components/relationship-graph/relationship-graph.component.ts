@@ -464,12 +464,12 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
       });
     });
 
-    // 創建力導向模擬 - 保持原本距離但減少力道
+    // 創建力導向模擬 - 適中的力道讓佈局平衡
     this.simulation = d3.forceSimulation()
-      .force('link', d3.forceLink().id((d: any) => d.id).distance(100)) // 恢復原本的連線距離 100
-      .force('charge', d3.forceManyBody().strength(-30)) // 進一步減少排斥力到 -30
+      .force('link', d3.forceLink().id((d: any) => d.id).distance(100)) // 保持連線距離 100
+      .force('charge', d3.forceManyBody().strength(-20)) // 適中的排斥力 -20
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(25)); // 恢復原本的碰撞半徑 25
+      .force('collision', d3.forceCollide().radius(22)); // 適中的碰撞半徑 22
 
     // 如果沒有連線，使用靜態佈局
     if (this.graphData.links.length === 0) {
@@ -520,6 +520,18 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
       .style('stroke', (d: any) => d.isFamily ? '#ff6b35' : '#666')
       .style('stroke-width', 2)
       .style('opacity', 0.6);
+
+    // 更新連線標籤
+    const linkLabel = graphGroup.selectAll('.link-label')
+      .data(visibleLinks)
+      .join('text')
+      .attr('class', 'link-label')
+      .style('text-anchor', 'middle')
+      .style('font-size', '10px')
+      .style('fill', '#e0e0e0')
+      .style('pointer-events', 'none')
+      .style('font-weight', 'bold')
+      .text((d: any) => d.type || '關係');
 
     // 更新節點
     const node = graphGroup.selectAll('.node')
@@ -596,6 +608,11 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
             .attr('y1', (d: any) => d.source.y)
             .attr('x2', (d: any) => d.target.x)
             .attr('y2', (d: any) => d.target.y);
+
+          // 更新連線標籤位置
+          linkLabel
+            .attr('x', (d: any) => (d.source.x + d.target.x) / 2)
+            .attr('y', (d: any) => (d.source.y + d.target.y) / 2);
 
           node
             .attr('transform', (d: any) => `translate(${d.x},${d.y})`);

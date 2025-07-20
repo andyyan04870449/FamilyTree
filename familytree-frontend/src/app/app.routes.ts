@@ -37,6 +37,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/relationship-graph/relationship-graph.page').then(m => m.RelationshipGraphPage)
   },
   {
+    path: 'relationship-graph/:personIds',
+    loadComponent: () => import('./pages/relationship-graph/relationship-graph.page').then(m => m.RelationshipGraphPage)
+  },
+  {
     path: 'organization-chart',
     loadComponent: () => import('./pages/organization-chart/organization-chart.page').then(m => m.OrganizationChartComponent)
   },
