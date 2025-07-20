@@ -5,22 +5,64 @@
   </div>
   
   <div class="upload-section">
-    <div class="upload-area">
-      <div class="upload-placeholder">
+    <div class="upload-area" 
+         [class.drag-over]="dragOver"
+         (dragover)="onDragOver($event)"
+         (dragleave)="onDragLeave($event)"
+         (drop)="onDrop($event)">
+      
+      <div class="upload-placeholder" *ngIf="!selectedFile">
         <span class="upload-icon">📤</span>
         <h3>拖拽檔案到此處或點擊上傳</h3>
-        <p>支援的檔案格式：PDF, DOC, DOCX, TXT, CSV</p>
-        <button class="upload-btn">選擇檔案</button>
+        <p>支援的檔案格式：XLS, XLSX</p>
+        <input type="file" 
+               #fileInput 
+               accept=".xls,.xlsx" 
+               (change)="onFileSelected($event)" 
+               style="display: none;">
+        <button class="upload-btn" (click)="fileInput.click()">選擇檔案</button>
       </div>
+      
+      <div class="file-selected" *ngIf="selectedFile">
+        <div class="selected-file-info">
+          <span class="file-icon">📊</span>
+          <div class="file-details">
+            <h4>{{ selectedFile.name }}</h4>
+            <p>{{ formatFileSize(selectedFile.size) }}</p>
+          </div>
+        </div>
+        <div class="file-actions">
+          <button class="upload-btn primary" 
+                  (click)="uploadFile()" 
+                  [disabled]="isUploading">
+            {{ isUploading ? '上傳中...' : '開始上傳' }}
+          </button>
+          <button class="upload-btn secondary" 
+                  (click)="clearSelection()" 
+                  [disabled]="isUploading">
+            重新選擇
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 上傳進度 -->
+    <div class="upload-progress" *ngIf="isUploading || uploadProgress > 0">
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="uploadProgress"></div>
+      </div>
+      <p class="progress-text">{{ uploadProgress }}%</p>
+    </div>
+    
+    <!-- 上傳訊息 -->
+    <div class="upload-message" *ngIf="uploadMessage">
+      <p [class]="uploadMessage.includes('❌') ? 'error' : uploadMessage.includes('✅') ? 'success' : 'info'">
+        {{ uploadMessage }}
+      </p>
     </div>
   </div>
   
   <div class="file-list-section">
-    <h2>已上傳檔案</h2>
-    <div class="file-list">
-      <div class="no-files">
-        <p>尚未上傳任何檔案</p>
-      </div>
-    </div>
+    <app-file-list></app-file-list>
   </div>
 </div> 

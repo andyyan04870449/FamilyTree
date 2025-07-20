@@ -43,6 +43,9 @@ builder.Services.AddSingleton<familytree_backend.Services.AIService>();
 builder.Services.AddSingleton<familytree_backend.Services.AnalysisBackgroundService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<familytree_backend.Services.AnalysisBackgroundService>());
 
+// Add File Upload Service
+builder.Services.AddScoped<familytree_backend.Services.FileUploadService>();
+
 // Add CORS
 builder.Services.AddCors(options =>
 {

@@ -1,0 +1,56 @@
+<div class="file-list-container">
+  <div class="file-list-header">
+    <h3>📁 已上傳檔案</h3>
+    <button class="refresh-btn" (click)="refreshList()" [disabled]="loading">
+      🔄 重新整理
+    </button>
+  </div>
+
+  <div class="file-list-content">
+    <!-- 載入中 -->
+    <div *ngIf="loading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>載入檔案列表中...</p>
+    </div>
+
+    <!-- 錯誤訊息 -->
+    <div *ngIf="error && !loading" class="error-message">
+      <span class="error-icon">❌</span>
+      <p>{{ error }}</p>
+    </div>
+
+    <!-- 檔案列表 -->
+    <div *ngIf="!loading && !error" class="file-list">
+      <div *ngIf="files.length === 0" class="no-files">
+        <div class="no-files-icon">📄</div>
+        <p>尚未上傳任何檔案</p>
+        <small>上傳的檔案將顯示在這裡</small>
+      </div>
+
+      <div *ngFor="let file of files" class="file-item">
+        <div class="file-info">
+          <div class="file-icon">📊</div>
+          <div class="file-details">
+            <div class="file-name">{{ file.originalFilename }}</div>
+            <div class="file-meta">
+              <span class="file-size">{{ formatFileSize(file.fileSize) }}</span>
+              <span class="file-date">{{ formatDate(file.uploadTime) }}</span>
+            </div>
+            <div class="file-status">
+              <span class="status-badge" [class]="'status-' + getStatusColor(file.status)">
+                {{ getStatusText(file.status) }}
+              </span>
+              <span *ngIf="file.isMerged" class="merged-badge">已合併</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="file-actions">
+          <button class="delete-btn" (click)="deleteFile(file)" title="刪除檔案">
+            🗑️
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

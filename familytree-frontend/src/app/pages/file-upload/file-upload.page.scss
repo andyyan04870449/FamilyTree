@@ -1,7 +1,7 @@
 .file-upload-page {
-  padding: 20px;
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
+  padding: 20px;
 }
 
 .page-header {
@@ -9,13 +9,14 @@
   margin-bottom: 40px;
   
   h1 {
+    font-size: 2.5rem;
     color: #333;
     margin-bottom: 10px;
   }
   
   p {
+    font-size: 1.1rem;
     color: #666;
-    font-size: 16px;
   }
 }
 
@@ -24,65 +25,212 @@
 }
 
 .upload-area {
-  border: 2px dashed #ddd;
-  border-radius: 8px;
-  padding: 40px;
+  border: 3px dashed #ddd;
+  border-radius: 12px;
+  padding: 60px 20px;
   text-align: center;
-  background-color: #fafafa;
+  background: #fafafa;
   transition: all 0.3s ease;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   
   &:hover {
-    border-color: #007bff;
-    background-color: #f8f9fa;
+    border-color: #667eea;
+    background: #f8f9ff;
+  }
+  
+  &.drag-over {
+    border-color: #667eea;
+    background: #f0f4ff;
+    transform: scale(1.02);
   }
 }
 
 .upload-placeholder {
   .upload-icon {
-    font-size: 48px;
-    display: block;
+    font-size: 4rem;
+    color: #667eea;
     margin-bottom: 20px;
+    display: block;
   }
   
   h3 {
+    font-size: 1.5rem;
     color: #333;
     margin-bottom: 10px;
   }
   
   p {
     color: #666;
+    margin-bottom: 30px;
+  }
+}
+
+.file-selected {
+  width: 100%;
+  max-width: 500px;
+  
+  .selected-file-info {
+    display: flex;
+    align-items: center;
     margin-bottom: 20px;
+    
+    .file-icon {
+      font-size: 2rem;
+      color: #667eea;
+      margin-right: 16px;
+    }
+    
+    .file-details {
+      text-align: left;
+      
+      h4 {
+        margin: 0 0 4px 0;
+        color: #333;
+        font-size: 1.1rem;
+      }
+      
+      p {
+        margin: 0;
+        color: #666;
+        font-size: 0.9rem;
+      }
+    }
+  }
+  
+  .file-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
   }
 }
 
 .upload-btn {
-  background-color: #007bff;
-  color: white;
-  border: none;
   padding: 12px 24px;
-  border-radius: 6px;
-  font-size: 16px;
+  border-radius: 8px;
+  font-size: 1rem;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  border: none;
+  font-weight: 500;
   
-  &:hover {
-    background-color: #0056b3;
+  &.primary {
+    background: #667eea;
+    color: white;
+    
+    &:hover:not(:disabled) {
+      background: #5a6fd8;
+      transform: translateY(-2px);
+    }
+    
+    &:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+  
+  &.secondary {
+    background: transparent;
+    color: #667eea;
+    border: 2px solid #667eea;
+    
+    &:hover:not(:disabled) {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+    }
+    
+    &:disabled {
+      border-color: #ccc;
+      color: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+}
+
+.upload-progress {
+  margin-top: 20px;
+  
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      transition: width 0.3s ease;
+    }
+  }
+  
+  .progress-text {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+  }
+}
+
+.upload-message {
+  margin-top: 16px;
+  
+  p {
+    text-align: center;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 0;
+    font-weight: 500;
+    
+    &.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    &.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    &.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
   }
 }
 
 .file-list-section {
-  h2 {
-    color: #333;
-    margin-bottom: 20px;
-  }
+  margin-top: 40px;
 }
 
-.file-list {
-  .no-files {
-    text-align: center;
-    padding: 40px;
-    color: #666;
-    background-color: #f8f9fa;
-    border-radius: 8px;
+// 響應式設計
+@media (max-width: 768px) {
+  .file-upload-page {
+    padding: 16px;
+  }
+  
+  .page-header h1 {
+    font-size: 2rem;
+  }
+  
+  .upload-area {
+    padding: 40px 16px;
+  }
+  
+  .file-selected .file-actions {
+    flex-direction: column;
+  }
+  
+  .upload-btn {
+    width: 100%;
   }
 } 
