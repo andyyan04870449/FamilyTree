@@ -28,10 +28,10 @@ namespace familytree_backend.Controllers
         /// <param name="request">搜索請求</param>
         /// <returns>搜索結果</returns>
         [HttpPost("search")]
-        public async Task<IActionResult> Search([FromBody] SearchRequest request)
+        public async Task<IActionResult> Search([FromBody] SearchRequest request, [FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 收到全文檢索請求: 關鍵字='{keyword}', 搜索類型={searchType}, 頁碼={page}, 頁面大小={pageSize}", 
-                request.Keyword, request.SearchType, request.Page, request.PageSize);
+            _logger.LogInformation("📋 收到全文檢索請求: 關鍵字='{keyword}', 搜索類型={searchType}, 頁碼={page}, 頁面大小={pageSize}, 專案ID={projectId}", 
+                request.Keyword, request.SearchType, request.Page, request.PageSize, project_id);
 
             try
             {

@@ -2,6 +2,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { PersonDataService, PersonDataModel } from '../../services/person-data.service';
 import { PersonDetailDialogComponent } from '../../components/person-detail-dialog/person-detail-dialog.component';
@@ -31,7 +32,10 @@ export class PersonListComponent implements OnInit, OnDestroy {
   
   private subscription = new Subscription();
 
-  constructor(private personDataService: PersonDataService) {
+  constructor(
+    private personDataService: PersonDataService,
+    private router: Router
+  ) {
     console.log('[PersonListPage] 組件已建立');
   }
 
@@ -68,7 +72,16 @@ export class PersonListComponent implements OnInit, OnDestroy {
         error: (err: any) => {
           console.error('[PersonListPage] 載入人員資料API錯誤:', err);
           this.loading = false;
-          this.error = '載入人員資料失敗';
+          
+          if (err.message === '請先選擇專案') {
+            this.error = '請先選擇專案後再檢視人員資料';
+            // 3秒後自動跳轉到專案管理頁面
+            setTimeout(() => {
+              this.router.navigate(['/project-management']);
+            }, 3000);
+          } else {
+            this.error = '載入人員資料失敗';
+          }
         }
       })
     );

@@ -1,9 +1,10 @@
 import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PersonService, Person } from '../../services/person.service';
 import { EventService } from '../../services/event.service';
+import { ProjectService } from '../../services/project.service';
 import { Subscription } from 'rxjs';
 import * as d3 from 'd3';
 import { AppConstants } from '../../constants/app.constants';
@@ -43,7 +44,7 @@ interface SearchCriteria {
   template: `
     <div class="family-tree-page">
       <div class="page-header">
-        <h1>🌳 AI關聯分析系統</h1>
+        <h1>🌳 {{ getCurrentProjectName() }}</h1>
         <p>成員關係網路圖</p>
       </div>
       
@@ -345,10 +346,15 @@ export class FamilyTreeComponent implements OnInit, AfterViewInit, OnDestroy {
     private personService: PersonService, 
     private route: ActivatedRoute,
     private eventService: EventService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private projectService: ProjectService,
+    private router: Router
   ) {}
 
   ngOnInit() {
+    // 檢查是否有當前專案
+    this.checkCurrentProject();
+
     // 訂閱全文檢索點擊事件
     this.eventSubscription = this.eventService.fullTextSearchClick$.subscribe(() => {
       this.showSearchView();
@@ -1485,5 +1491,29 @@ export class FamilyTreeComponent implements OnInit, AfterViewInit, OnDestroy {
         this.showNotification('獲取分析結果時發生錯誤', 'error');
       }
     });
+  }
+
+  /**
+   * 檢查當前專案
+   */
+  private checkCurrentProject(): void {
+    const currentProject = this.projectService.getCurrentProject();
+    
+    if (!currentProject) {
+      console.warn('⚠️ 沒有設置當前專案，導航回專案管理頁面');
+      this.router.navigate(['/']).then(() => {
+        console.log('🔄 已導航回專案管理頁面');
+      });
+    } else {
+      console.log('✅ 當前專案:', currentProject.projectName);
+    }
+  }
+
+  /**
+   * 獲取當前專案名稱
+   */
+  getCurrentProjectName(): string {
+    const currentProject = this.projectService.getCurrentProject();
+    return currentProject ? currentProject.projectName : 'AI關聯分析系統';
   }
 } 

@@ -25,7 +25,7 @@ namespace familytree_backend.Controllers
         }
 
         [HttpPost("start")]
-        public async Task<IActionResult> StartAnalysis([FromBody] AnalysisRequest request)
+        public async Task<IActionResult> StartAnalysis([FromBody] AnalysisRequest request, [FromQuery] string? project_id = null)
         {
             try
             {

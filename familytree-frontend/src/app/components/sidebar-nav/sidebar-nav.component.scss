@@ -139,6 +139,67 @@
     }
   }
 
+  // 當前專案信息樣式
+  .current-project-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    margin: 0 16px 20px 16px;
+    background: rgba($primary, 0.1);
+    border: 1px solid rgba($primary, 0.2);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+
+    .project-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+
+      .project-icon {
+        font-size: 1rem;
+        opacity: 0.8;
+      }
+
+      .project-title {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: $text-primary;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .change-project-btn {
+      background: transparent;
+      border: none;
+      font-size: 1rem;
+      color: $primary;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+
+      &:hover {
+        background: rgba($primary, 0.1);
+        transform: rotate(180deg);
+      }
+
+      &:active {
+        transform: rotate(180deg) scale(0.9);
+      }
+    }
+
+    &:hover {
+      background: rgba($primary, 0.15);
+      border-color: rgba($primary, 0.3);
+    }
+  }
+
   .nav-menu {
     flex: 1;
     overflow-y: auto;

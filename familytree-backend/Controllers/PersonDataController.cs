@@ -20,10 +20,10 @@ namespace familytree_backend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetPersonDataList([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetPersonDataList([FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? project_id = null)
         {
             _logger.LogInformation("=== 收到人員資料列表請求 ===");
-            _logger.LogInformation("請求參數: Page = {Page}, PageSize = {PageSize}", page, pageSize);
+            _logger.LogInformation("請求參數: Page = {Page}, PageSize = {PageSize}, ProjectId = {ProjectId}", page, pageSize, project_id);
             _logger.LogInformation("請求時間: {RequestTime}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
             
             try
@@ -39,9 +39,9 @@ namespace familytree_backend.Controllers
                 _logger.LogInformation("✅ 資料庫連線成功");
 
                 // 取得總數
-                var countSql = "SELECT COUNT(*) FROM person_profile";
+                var countSql = "SELECT COUNT(*) FROM person_profile WHERE (@project_id IS NULL OR @project_id = '' OR project_id = @project_id)";
                 _logger.LogInformation("📋 執行計數查詢: {CountSql}", countSql);
-                var totalCount = await connection.ExecuteScalarAsync<int>(countSql);
+                var totalCount = await connection.ExecuteScalarAsync<int>(countSql, new { project_id });
                 _logger.LogInformation("✅ 總資料筆數: {TotalCount}", totalCount);
 
                 // 取得分頁資料
@@ -51,8 +51,9 @@ namespace familytree_backend.Controllers
                                   address as current_address, mailing_address, family_relationships, experience, 
                                   education, online_accounts, publications, activities, friends as important_friends, 
                                   frequent_locations as frequent_places, travel_history as travel_records, remarks as notes, created_at, created_by, 
-                                  updated_at, updated_by
+                                  updated_at, updated_by, project_id
                            FROM person_profile 
+                           WHERE (@project_id IS NULL OR @project_id = '' OR project_id = @project_id)
                            ORDER BY created_at DESC 
                            LIMIT @pageSize OFFSET @offset";
 
@@ -60,7 +61,7 @@ namespace familytree_backend.Controllers
                 _logger.LogInformation("SQL查詢: {Sql}", sql);
                 _logger.LogInformation("查詢參數: PageSize = {PageSize}, Offset = {Offset}", pageSize, offset);
 
-                var parameters = new { pageSize, offset };
+                var parameters = new { pageSize, offset, project_id };
                 _logger.LogInformation("🔍 開始執行資料查詢...");
                 var personDataList = await connection.QueryAsync<PersonDataModel>(sql, parameters);
                 _logger.LogInformation("✅ 查詢執行成功，取得 {Count} 筆資料", personDataList.Count());

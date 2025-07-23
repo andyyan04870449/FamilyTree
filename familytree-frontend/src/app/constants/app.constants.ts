@@ -10,18 +10,28 @@ export class AppConstants {
     const hostname = window.location.hostname;
     const port = window.location.port;
     
+    console.log('🌐 當前主機資訊:', { hostname, port, protocol: window.location.protocol });
+    
     // 如果是通過ngrok訪問（包含.ngrok.io）
     if (hostname.includes('.ngrok.io')) {
-      // 使用後端的ngrok URL
+      console.log('🔗 使用 ngrok URL');
       return 'https://familytree-backend-dev.ngrok.io/api';
     }
     
     // 如果是本地開發環境
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      console.log('🏠 本地開發環境，使用代理');
       return '/api'; // 使用代理
     }
     
+    // 如果代理失敗，嘗試直接連接（備用方案）
+    if (localStorage.getItem('use-direct-api') === 'true') {
+      console.log('🔧 使用直接 API 連接');
+      return 'http://localhost:5087/api';
+    }
+    
     // 其他環境
+    console.log('🌍 其他環境，使用代理');
     return '/api';
   }
 

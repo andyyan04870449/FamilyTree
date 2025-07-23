@@ -3,7 +3,7 @@ import { Routes } from '@angular/router';
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () => import('./pages/welcome/welcome.page').then(m => m.WelcomeComponent)
+    loadComponent: () => import('./pages/project-management/project-management.page').then(m => m.ProjectManagementComponent)
   },
   // 案件管理模組
   {
@@ -43,6 +43,11 @@ export const routes: Routes = [
   {
     path: 'organization-chart',
     loadComponent: () => import('./pages/organization-chart/organization-chart.page').then(m => m.OrganizationChartComponent)
+  },
+  // 專案管理模組
+  {
+    path: 'project-management',
+    loadComponent: () => import('./pages/project-management/project-management.page').then(m => m.ProjectManagementComponent)
   },
   // 系統管理模組
   {

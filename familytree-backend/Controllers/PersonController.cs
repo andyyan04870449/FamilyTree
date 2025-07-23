@@ -41,11 +41,11 @@ namespace familytree_backend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetPersons()
+        public async Task<IActionResult> GetPersons([FromQuery] string? project_id = null)
         {
             try
             {
-                LogToFile("開始獲取所有人員資料");
+                LogToFile($"開始獲取人員資料 - 專案ID: {project_id}");
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
                 
@@ -54,10 +54,7 @@ namespace familytree_backend.Controllers
                         id,
                         name,
                         TRIM(gender) as gender,
-                        CASE 
-                            WHEN birthday IS NULL OR birthday = '' THEN NULL
-                            ELSE TO_CHAR(birthday::timestamp, 'YYYY-MM-DD')
-                        END as birthday,
+                        birthday,
                         nationality,
                         mobile,
                         phone,
@@ -66,8 +63,8 @@ namespace familytree_backend.Controllers
                         family_relationships as FamilyRelationships,
                         friends as ImportantFriends,
                         extra_data as profiledata,
-                        created_at as CreatedAt,
-                        updated_at as UpdatedAt,
+                        '2025-01-01' as CreatedAt,
+                        '2025-01-01' as UpdatedAt,
                         photo_index as Photo,
                         discovery_source as DiscoveryProcess,
                         birthplace as Birthplace,
@@ -86,14 +83,16 @@ namespace familytree_backend.Controllers
                         frequent_locations as FrequentPlaces,
                         travel_history as TravelRecords,
                         remarks as Notes,
-                        file_md5 as FileMd5
+                        file_md5 as FileMd5,
+                        project_id
                     FROM person_profile
-                    ORDER BY created_at DESC";
+                    WHERE (@project_id IS NULL OR project_id = @project_id)
+                    ORDER BY id DESC";
                 
-                var persons = await connection.QueryAsync<PersonDataModel>(sql);
+                var persons = await connection.QueryAsync<PersonDataModel>(sql, new { project_id });
                 
-                LogToFile($"成功獲取 {persons.Count()} 筆人員資料");
-                return Ok(new PersonDataListResponse 
+                LogToFile($"成功獲取 {persons.Count()} 筆人員資料 - 專案ID: {project_id}");
+                return Ok(new PersonDataListResponse
                 { 
                     Success = true,
                     Message = "成功獲取人員資料",
@@ -112,17 +111,17 @@ namespace familytree_backend.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetPerson(int id)
+        public async Task<IActionResult> GetPerson(int id, [FromQuery] string? project_id = null)
         {
             try
             {
-                LogToFile($"開始獲取ID為 {id} 的人員資料");
+                LogToFile($"開始獲取ID為 {id} 的人員資料 - 專案ID: {project_id}");
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
                 
                 var person = await connection.QueryFirstOrDefaultAsync<Person>(
-                    "SELECT id, name, gender, birthday, nationality, mobile, phone, id_number, passport_number, family_relationships, friends, extra_data as profiledata, created_at, updated_at FROM person_profile WHERE id = @id",
-                    new { id });
+                    "SELECT id, name, gender, birthday, nationality, mobile, phone, id_number, passport_number, family_relationships, friends, extra_data as profiledata, created_at, updated_at FROM person_profile WHERE id = @id AND (@project_id IS NULL OR project_id = @project_id)",
+                    new { id, project_id });
                 
                 if (person == null)
                 {
@@ -290,7 +289,7 @@ namespace familytree_backend.Controllers
         public string? FamilyRelationships { get; set; }
         public string? Friends { get; set; }
         public string? ProfileData { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public string CreatedAt { get; set; } = "";
+        public string UpdatedAt { get; set; } = "";
     }
 } 

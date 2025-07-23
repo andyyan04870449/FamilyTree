@@ -3,6 +3,7 @@ import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { ProjectService } from '../../services/project.service';
 
 @Component({
   selector: 'app-sidebar-nav',
@@ -16,7 +17,10 @@ export class SidebarNavComponent implements OnInit {
   activeRoute: string = 'home';
   isSidebarOpen: boolean = false;
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private projectService: ProjectService
+  ) {}
 
   ngOnInit() {
     // 監聽路由變化，更新當前活動路由
@@ -67,5 +71,23 @@ export class SidebarNavComponent implements OnInit {
     } else if (url.includes('/family-tree')) {
       this.activeRoute = 'family-tree';
     }
+  }
+
+  /**
+   * 獲取當前專案
+   */
+  getCurrentProject() {
+    return this.projectService.getCurrentProject();
+  }
+
+  /**
+   * 切換專案
+   */
+  switchProject(): void {
+    console.log('🔄 切換專案');
+    this.closeSidebar();
+    this.router.navigate(['/']).then(() => {
+      console.log('✅ 導航回專案管理頁面');
+    });
   }
 } 

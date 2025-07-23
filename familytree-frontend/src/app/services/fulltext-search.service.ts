@@ -5,6 +5,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { AppConstants } from '../constants/app.constants';
+import { ProjectService } from './project.service';
 
 // 搜索請求接口
 export interface SearchRequest {
@@ -154,10 +155,31 @@ export class FullTextSearchService {
   private searchHistorySubject = new BehaviorSubject<string[]>([]);
   public searchHistory$ = this.searchHistorySubject.asObservable();
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private projectService: ProjectService
+  ) {
     console.log('📋 FullTextSearchService 初始化');
     // 初始化時載入收藏列表和熱門關鍵字
     this.loadInitialData();
+  }
+
+  /**
+   * 獲取當前專案 ID 並創建 HTTP 參數
+   */
+  private getProjectParams(): HttpParams {
+    const currentProject = this.projectService.getCurrentProject();
+    let params = new HttpParams();
+    
+    if (currentProject) {
+      params = params.set('project_id', currentProject.id);
+      console.log('🎯 [FullTextSearchService] 添加專案 ID 到請求:', currentProject.id);
+    } else {
+      console.warn('⚠️ [FullTextSearchService] 沒有當前專案，不進行 API 請求');
+      throw new Error('請先選擇專案');
+    }
+    
+    return params;
   }
 
   /**
@@ -165,9 +187,13 @@ export class FullTextSearchService {
    */
   private loadInitialData(): void {
     console.log('🔄 載入初始資料');
-    this.loadFavorites();
-    this.loadPopularKeywords();
-    this.loadSearchHistory();
+    try {
+      this.loadFavorites();
+      this.loadPopularKeywords();
+      this.loadSearchHistory();
+    } catch (error) {
+      console.warn('⚠️ 初始化時沒有當前專案，跳過資料載入');
+    }
   }
 
   // ============ 搜索功能 ============
@@ -178,6 +204,7 @@ export class FullTextSearchService {
   search(request: SearchRequest): Observable<SearchResult> {
     console.log('🔍 執行全文檢索搜索:', request);
     
+    const params = this.getProjectParams();
     const searchRequest = {
       keyword: request.keyword,
       searchType: request.type,
@@ -185,7 +212,7 @@ export class FullTextSearchService {
       pageSize: request.pageSize || 10
     };
 
-    return this.http.post<SearchResult>(`${this.searchUrl}/search`, searchRequest);
+    return this.http.post<SearchResult>(`${this.searchUrl}/search`, searchRequest, { params });
   }
 
   /**
@@ -193,7 +220,8 @@ export class FullTextSearchService {
    */
   getPopularKeywords(): Observable<ApiResponse<string[]>> {
     console.log('🔥 獲取熱門關鍵字');
-    return this.http.get<ApiResponse<string[]>>(`${this.searchUrl}/popular-keywords`);
+    const params = this.getProjectParams();
+    return this.http.get<ApiResponse<string[]>>(`${this.searchUrl}/popular-keywords`, { params });
   }
 
   /**
@@ -201,7 +229,8 @@ export class FullTextSearchService {
    */
   getSearchHistory(): Observable<ApiResponse<string[]>> {
     console.log('📚 獲取搜索歷史');
-    return this.http.get<ApiResponse<string[]>>(`${this.searchUrl}/search-history`);
+    const params = this.getProjectParams();
+    return this.http.get<ApiResponse<string[]>>(`${this.searchUrl}/search-history`, { params });
   }
 
   /**
@@ -209,7 +238,8 @@ export class FullTextSearchService {
    */
   clearSearchHistory(): Observable<ApiResponse<any>> {
     console.log('🗑️ 清除搜索歷史');
-    return this.http.delete<ApiResponse<any>>(`${this.searchUrl}/search-history`);
+    const params = this.getProjectParams();
+    return this.http.delete<ApiResponse<any>>(`${this.searchUrl}/search-history`, { params });
   }
 
   /**
@@ -217,7 +247,8 @@ export class FullTextSearchService {
    */
   getSearchStatistics(): Observable<ApiResponse<SearchStatistics>> {
     console.log('📊 獲取搜索統計');
-    return this.http.get<ApiResponse<SearchStatistics>>(`${this.searchUrl}/statistics`);
+    const params = this.getProjectParams();
+    return this.http.get<ApiResponse<SearchStatistics>>(`${this.searchUrl}/statistics`, { params });
   }
 
   /**
@@ -245,7 +276,8 @@ export class FullTextSearchService {
    */
   getFavorites(): Observable<FavoriteListResult> {
     console.log('💖 獲取收藏列表');
-    return this.http.get<FavoriteListResult>(`${this.favoritesUrl}`);
+    const params = this.getProjectParams();
+    return this.http.get<FavoriteListResult>(`${this.favoritesUrl}`, { params });
   }
 
   /**
@@ -253,7 +285,8 @@ export class FullTextSearchService {
    */
   addFavorite(request: FavoriteRequest): Observable<FavoriteResult> {
     console.log('➕ 添加收藏:', request);
-    return this.http.post<FavoriteResult>(`${this.favoritesUrl}`, request);
+    const params = this.getProjectParams();
+    return this.http.post<FavoriteResult>(`${this.favoritesUrl}`, request, { params });
   }
 
   /**
@@ -261,7 +294,8 @@ export class FullTextSearchService {
    */
   removeFavorite(favoriteId: number): Observable<FavoriteResult> {
     console.log('➖ 刪除收藏:', favoriteId);
-    return this.http.delete<FavoriteResult>(`${this.favoritesUrl}/${favoriteId}`);
+    const params = this.getProjectParams();
+    return this.http.delete<FavoriteResult>(`${this.favoritesUrl}/${favoriteId}`, { params });
   }
 
   /**
@@ -269,7 +303,8 @@ export class FullTextSearchService {
    */
   removeFavoriteByPersonId(personId: number): Observable<FavoriteResult> {
     console.log('➖ 通過人員ID刪除收藏:', personId);
-    return this.http.delete<FavoriteResult>(`${this.favoritesUrl}/person/${personId}`);
+    const params = this.getProjectParams();
+    return this.http.delete<FavoriteResult>(`${this.favoritesUrl}/person/${personId}`, { params });
   }
 
   /**
@@ -277,7 +312,8 @@ export class FullTextSearchService {
    */
   checkFavoriteStatus(personId: number): Observable<ApiResponse<any>> {
     console.log('🔍 檢查收藏狀態:', personId);
-    return this.http.get<ApiResponse<any>>(`${this.favoritesUrl}/check/${personId}`);
+    const params = this.getProjectParams();
+    return this.http.get<ApiResponse<any>>(`${this.favoritesUrl}/check/${personId}`, { params });
   }
 
   /**
@@ -285,7 +321,8 @@ export class FullTextSearchService {
    */
   updateViewTime(personId: number): Observable<ApiResponse<any>> {
     console.log('👁️ 更新查看時間:', personId);
-    return this.http.put<ApiResponse<any>>(`${this.favoritesUrl}/view/${personId}`, {});
+    const params = this.getProjectParams();
+    return this.http.put<ApiResponse<any>>(`${this.favoritesUrl}/view/${personId}`, {}, { params });
   }
 
   /**
@@ -293,7 +330,8 @@ export class FullTextSearchService {
    */
   getFavoriteStatistics(): Observable<ApiResponse<any>> {
     console.log('📊 獲取收藏統計');
-    return this.http.get<ApiResponse<any>>(`${this.favoritesUrl}/statistics`);
+    const params = this.getProjectParams();
+    return this.http.get<ApiResponse<any>>(`${this.favoritesUrl}/statistics`, { params });
   }
 
   // ============ 狀態管理方法 ============

@@ -29,6 +29,8 @@ namespace familytree_backend.Models
         
         public string Status { get; set; } = "uploaded";
         
+        public string? ProjectId { get; set; }
+        
         public DateTime CreatedAt { get; set; }
         
         public DateTime UpdatedAt { get; set; }

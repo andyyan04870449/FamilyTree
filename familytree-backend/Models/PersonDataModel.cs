@@ -67,6 +67,8 @@ namespace familytree_backend.Models
         
         public string? Notes { get; set; }                   // 備註
         
+        public string? ProjectId { get; set; }              // 專案ID
+        
         public string? CreatedAt { get; set; }              // 建檔時間
         
         public string? CreatedBy { get; set; }               // 建檔人

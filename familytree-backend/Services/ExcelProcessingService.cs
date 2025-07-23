@@ -22,7 +22,7 @@ namespace familytree_backend.Services
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         }
 
-        public async Task<ExcelProcessingResult> ProcessExcelFileAsync(string filePath, string fileMd5)
+        public async Task<ExcelProcessingResult> ProcessExcelFileAsync(string filePath, string fileMd5, string? projectId = null)
         {
             try
             {
@@ -45,7 +45,7 @@ namespace familytree_backend.Services
                 }
 
                 // 處理每一行資料
-                var result = await ProcessExcelData(excelData, fieldMappings, fileMd5);
+                var result = await ProcessExcelData(excelData, fieldMappings, fileMd5, projectId);
                 
                 // 更新檔案狀態
                 await UpdateFileStatusAsync(fileMd5, "merged");
@@ -189,7 +189,7 @@ namespace familytree_backend.Services
             return result;
         }
 
-        private async Task<ExcelProcessingResult> ProcessExcelData(DataTable excelData, Dictionary<string, string> fieldMappings, string fileMd5)
+        private async Task<ExcelProcessingResult> ProcessExcelData(DataTable excelData, Dictionary<string, string> fieldMappings, string fileMd5, string? projectId = null)
         {
             _logger.LogInformation("=== 開始處理Excel資料 ===");
             _logger.LogInformation("FileMd5: {FileMd5}, 資料行數: {RowCount}", fileMd5, excelData.Rows.Count);
@@ -301,7 +301,7 @@ namespace familytree_backend.Services
                     }
 
                     // 儲存資料
-                    await SavePersonDataAsync(connection, personData);
+                    await SavePersonDataAsync(connection, personData, projectId);
                     result.SuccessRows++;
                     _logger.LogInformation("第 {RowIndex} 行資料處理成功: Name='{Name}'", rowIndex, personData.Name);
                 }
@@ -423,7 +423,7 @@ namespace familytree_backend.Services
             }
         }
 
-        private async Task SavePersonDataAsync(NpgsqlConnection connection, PersonDataModel personData)
+        private async Task SavePersonDataAsync(NpgsqlConnection connection, PersonDataModel personData, string? projectId = null)
         {
             _logger.LogInformation("開始保存人員資料: Name='{Name}', FileMd5='{FileMd5}'", personData.Name, personData.FileMd5);
 
@@ -434,14 +434,14 @@ namespace familytree_backend.Services
                     phone, mobile, email, current_employer, address, mailing_address,
                     family_relationships, experience, education, online_accounts, publications,
                     activities, important_friends, frequent_locations, travel_history, remarks,
-                    created_at, updated_at
+                    project_id, created_at, updated_at
                 ) VALUES (
                     @FileMd5, @Photo, @Name, @DiscoveryProcess, @Gender, @Birthday, @Birthplace,
                     @Nationality, @Ethnicity, @AncestralHome, @PoliticalParty, @IdNumber, @PassportNumber,
                     @Phone, @Mobile, @Email, @CurrentWorkplace, @CurrentAddress, @MailingAddress,
                     @FamilyRelationships, @Experience, @Education, @OnlineAccounts, @Publications,
                     @Activities, @ImportantFriends, @FrequentPlaces, @TravelRecords, @Notes,
-                    @CreatedAt, @UpdatedAt
+                    @ProjectId, @CreatedAt, @UpdatedAt
                 )";
 
             try
@@ -477,6 +477,7 @@ namespace familytree_backend.Services
                     personData.FrequentPlaces,
                     personData.TravelRecords,
                     personData.Notes,
+                    ProjectId = projectId,
                     personData.CreatedAt,
                     personData.UpdatedAt
                 };

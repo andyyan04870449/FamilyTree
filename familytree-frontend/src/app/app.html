@@ -1,9 +1,10 @@
-<app-status-bar></app-status-bar>
+<!-- 只在非專案管理頁面顯示狀態欄和側邊欄 -->
+<app-status-bar *ngIf="!isProjectManagementPage()"></app-status-bar>
 
-<app-sidebar-nav (fullTextSearchClick)="onFullTextSearchClick()"></app-sidebar-nav>
+<app-sidebar-nav *ngIf="!isProjectManagementPage()" (fullTextSearchClick)="onFullTextSearchClick()"></app-sidebar-nav>
 
-<main class="main">
-  <div class="content">
+<main class="main" [class.fullscreen]="isProjectManagementPage()">
+  <div class="content" [class.fullscreen-content]="isProjectManagementPage()">
     <router-outlet></router-outlet>
   </div>
 </main>
@@ -31,12 +32,26 @@
     transition: margin-left 0.3s ease;
   }
 
+  /* 全畫面模式 */
+  main.fullscreen {
+    width: 100vw;
+    margin-left: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+
   .content {
     width: 100%;
     max-width: 1200px;
     box-sizing: border-box;
     word-break: break-word;
     padding: 0 8px;
+  }
+
+  .content.fullscreen-content {
+    max-width: 100vw;
+    width: 100vw;
+    padding: 0;
   }
 
   /* 響應式設計 */

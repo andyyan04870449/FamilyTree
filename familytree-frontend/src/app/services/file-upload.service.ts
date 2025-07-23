@@ -1,9 +1,10 @@
 // 檔案上傳服務 - 處理檔案上傳 API 呼叫和檔案操作
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpEvent, HttpEventType } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpEventType, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AppConstants } from '../constants/app.constants';
+import { ProjectService } from './project.service';
 
 export interface FileUploadModel {
   id: number;
@@ -57,20 +58,53 @@ export class FileUploadService {
   private filesSubject = new BehaviorSubject<FileUploadModel[]>([]);
   public files$ = this.filesSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private projectService: ProjectService
+  ) {}
+
+  /**
+   * 獲取當前專案 ID 並創建 HTTP 參數
+   */
+  private getProjectParams(): HttpParams {
+    const currentProject = this.projectService.getCurrentProject();
+    let params = new HttpParams();
+    
+    if (currentProject) {
+      params = params.set('project_id', currentProject.id);
+      console.log('🎯 [FileUploadService] 添加專案 ID 到請求:', currentProject.id);
+    } else {
+      console.warn('⚠️ [FileUploadService] 沒有當前專案，不進行 API 請求');
+      throw new Error('請先選擇專案');
+    }
+    
+    return params;
+  }
 
   // 上傳檔案
   uploadFile(file: File): Observable<FileUploadResponse> {
+    const currentProject = this.projectService.getCurrentProject();
+    if (!currentProject) {
+      throw new Error('請先選擇專案');
+    }
+
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('project_id', currentProject.id);
 
     return this.http.post<FileUploadResponse>(`${this.apiUrl}/upload`, formData);
   }
 
   // 上傳檔案並監控進度
   uploadFileWithProgress(file: File): Observable<UploadProgress | FileUploadResponse> {
+    const currentProject = this.projectService.getCurrentProject();
+    if (!currentProject) {
+      throw new Error('請先選擇專案');
+    }
+
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('project_id', currentProject.id);
 
     return this.http.post(`${this.apiUrl}/upload`, formData, {
       reportProgress: true,
@@ -96,7 +130,8 @@ export class FileUploadService {
 
   // 取得檔案列表
   getFileList(): Observable<FileListResponse> {
-    return this.http.get<FileListResponse>(`${this.apiUrl}/list`).pipe(
+    const params = this.getProjectParams();
+    return this.http.get<FileListResponse>(`${this.apiUrl}/list`, { params }).pipe(
       map(response => {
         if (response.success) {
           this.filesSubject.next(response.files);
@@ -108,12 +143,14 @@ export class FileUploadService {
 
   // 取得刪除檔案的影響資訊
   getDeleteImpact(fileId: number): Observable<DeleteImpactResponse> {
-    return this.http.get<DeleteImpactResponse>(`${this.apiUrl}/${fileId}/impact`);
+    const params = this.getProjectParams();
+    return this.http.get<DeleteImpactResponse>(`${this.apiUrl}/${fileId}/impact`, { params });
   }
 
   // 刪除檔案
   deleteFile(fileId: number): Observable<FileUploadResponse> {
-    return this.http.delete<FileUploadResponse>(`${this.apiUrl}/${fileId}`).pipe(
+    const params = this.getProjectParams();
+    return this.http.delete<FileUploadResponse>(`${this.apiUrl}/${fileId}`, { params }).pipe(
       map(response => {
         if (response.success) {
           // 從本地列表中移除已刪除的檔案

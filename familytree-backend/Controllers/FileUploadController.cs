@@ -19,7 +19,7 @@ namespace familytree_backend.Controllers
         }
 
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadFile([FromForm] IFormFile file)
+        public async Task<IActionResult> UploadFile([FromForm] IFormFile file, [FromForm] string? project_id = null)
         {
             try
             {
@@ -28,7 +28,9 @@ namespace familytree_backend.Controllers
                     return BadRequest(new { success = false, message = "請選擇要上傳的檔案" });
                 }
 
-                var result = await _fileUploadService.UploadFileAsync(file);
+                _logger.LogInformation("📁 檔案上傳請求 - 檔案: {FileName}, 專案ID: {ProjectId}", file.FileName, project_id);
+
+                var result = await _fileUploadService.UploadFileAsync(file, project_id);
 
                 // 對於重複檔案，返回 200 狀態碼但包含錯誤訊息
                 if (result.Success)
@@ -52,11 +54,12 @@ namespace familytree_backend.Controllers
         }
 
         [HttpGet("list")]
-        public async Task<IActionResult> GetFileList()
+        public async Task<IActionResult> GetFileList([FromQuery] string? project_id = null)
         {
             try
             {
-                var result = await _fileUploadService.GetFileListAsync();
+                _logger.LogInformation("📁 檔案列表請求 - 專案ID: {ProjectId}", project_id);
+                var result = await _fileUploadService.GetFileListAsync(project_id);
 
                 if (result.Success)
                 {

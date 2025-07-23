@@ -1,0 +1,688 @@
+@use 'sass:color';
+@import '../../../../src/styles/_variables';
+
+// ============ 專案管理頁面樣式 ============
+
+.project-management-page {
+  width: 100vw;
+  min-height: 100vh;
+  background: $bg-primary;
+  color: $text-primary;
+  padding: $spacing-lg;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+// ============ 頁面標題區 ============
+.page-header {
+  margin-bottom: $spacing-xl;
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: $primary;
+  }
+}
+
+// ============ 控制欄區 ============
+.controls-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-lg;
+  background: $bg-tertiary;
+  border-radius: 8px;
+  border: 1px solid $border-color;
+  margin-bottom: $spacing-xl;
+  width: 100%;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+
+  .search-controls {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    flex: 1;
+    min-width: 0;
+
+    .search-input {
+      padding: $spacing-sm $spacing-md;
+      border: 1px solid $border-color;
+      border-radius: 6px;
+      background: $bg-primary;
+      color: $text-primary;
+      font-size: 0.875rem;
+      width: 100%;
+      max-width: 300px;
+      min-width: 200px;
+
+      &::placeholder {
+        color: $text-secondary;
+      }
+
+      &:focus {
+        outline: none;
+        border-color: $primary;
+        box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+      }
+    }
+
+    .filter-select {
+      padding: $spacing-sm $spacing-md;
+      border: 1px solid $border-color;
+      border-radius: 6px;
+      background: $bg-primary;
+      color: $text-primary;
+      font-size: 0.875rem;
+      min-width: 120px;
+    }
+
+    .icon-button {
+      padding: $spacing-sm;
+      background: $bg-secondary;
+      border: 1px solid $border-color;
+      border-radius: 6px;
+      color: $text-secondary;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      font-size: 1rem;
+
+      &:hover {
+        background: $primary;
+        color: white;
+        border-color: $primary;
+      }
+    }
+  }
+
+  .create-button {
+    padding: $spacing-md $spacing-xl;
+    background: $primary;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+      background: color.adjust($primary, $lightness: -10%);
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+  }
+}
+
+// ============ 統計資訊區 ============
+.statistics-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: $spacing-lg;
+  margin-bottom: $spacing-xl;
+
+  .stat-card {
+    background: $bg-secondary;
+    border: 1px solid $border-color;
+    border-radius: 8px;
+    padding: $spacing-lg;
+    text-align: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-color: $primary;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 700;
+      color: $primary;
+      line-height: 1;
+      margin-bottom: $spacing-xs;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: $text-secondary;
+    }
+  }
+}
+
+// ============ 載入狀態 ============
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-3xl;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid $border-color;
+    border-top-color: $primary;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: $spacing-lg;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: 1rem;
+  }
+}
+
+// ============ 專案區域 ============
+.projects-section {
+  width: 100%;
+  box-sizing: border-box;
+
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: $spacing-lg;
+    width: 100%;
+  }
+
+  .projects-list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+
+    .project-card {
+      display: flex;
+      flex-direction: row;
+      height: auto;
+      min-height: 160px;
+
+      .project-header {
+        flex-shrink: 0;
+        width: 200px;
+      }
+
+      .project-content {
+        flex: 1;
+      }
+    }
+  }
+}
+
+// ============ 專案卡片 ============
+.project-card {
+  background: $bg-secondary;
+  border: 1px solid $border-color;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-color: $primary;
+
+    .project-actions {
+      opacity: 1;
+    }
+  }
+
+  .project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: $spacing-lg;
+    border-bottom: 1px solid $border-color;
+    background: linear-gradient(135deg, $primary 0%, color.adjust($primary, $lightness: -20%) 100%);
+    color: white;
+
+    h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .project-actions {
+      display: flex;
+      gap: $spacing-xs;
+      opacity: 0.7;
+      transition: opacity 0.3s ease;
+
+      .action-button {
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        backdrop-filter: blur(10px);
+        font-size: 1rem;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.3);
+          transform: scale(1.1);
+        }
+
+        &.edit:hover {
+          background: rgba(59, 130, 246, 0.3);
+        }
+
+        &.delete:hover {
+          background: rgba(239, 68, 68, 0.3);
+        }
+      }
+    }
+  }
+
+  .project-content {
+    padding: $spacing-lg;
+
+    .project-description {
+      color: $text-secondary;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      margin: 0 0 $spacing-md 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .project-stats {
+      display: flex;
+      gap: $spacing-md;
+      margin-bottom: $spacing-md;
+
+      .stat-item {
+        font-size: 0.875rem;
+        color: $text-secondary;
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+      }
+    }
+
+    .project-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: $spacing-md;
+
+      .status-badge {
+        padding: $spacing-xs $spacing-sm;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+
+        &.status-active {
+          background: rgba(34, 197, 94, 0.1);
+          color: #059669;
+        }
+
+        &.status-completed {
+          background: rgba(59, 130, 246, 0.1);
+          color: #2563eb;
+        }
+
+        &.status-archived {
+          background: rgba(107, 114, 128, 0.1);
+          color: #6b7280;
+        }
+
+        &.status-draft {
+          background: rgba(251, 191, 36, 0.1);
+          color: #d97706;
+        }
+      }
+
+      .created-date {
+        font-size: 0.75rem;
+        color: $text-secondary;
+      }
+    }
+
+    .project-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $spacing-xs;
+
+      .tag {
+        background: rgba(74, 144, 226, 0.1);
+        color: $primary;
+        padding: $spacing-xs $spacing-sm;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// ============ 空狀態 ============
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: $spacing-3xl;
+  grid-column: 1 / -1;
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: $spacing-xl;
+    opacity: 0.6;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    color: $text-primary;
+    margin: 0 0 $spacing-md 0;
+  }
+
+  p {
+    color: $text-secondary;
+    margin: 0 0 $spacing-xl 0;
+    max-width: 400px;
+    line-height: 1.5;
+  }
+}
+
+// ============ 對話框樣式 ============
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+
+  .dialog {
+    background: $bg-secondary;
+    border-radius: 12px;
+    border: 1px solid $border-color;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow: hidden;
+
+    .dialog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: $spacing-lg $spacing-xl;
+      border-bottom: 1px solid $border-color;
+
+      h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: $text-primary;
+      }
+
+      .close-button {
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        color: $text-secondary;
+        cursor: pointer;
+        padding: $spacing-xs;
+        line-height: 1;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+
+        &:hover {
+          background: rgba(0, 0, 0, 0.1);
+          color: $text-primary;
+        }
+      }
+    }
+
+    .dialog-content {
+      padding: $spacing-xl;
+      max-height: 60vh;
+      overflow-y: auto;
+
+      .warning-text {
+        color: $error;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .form-group {
+        margin-bottom: $spacing-lg;
+
+        label {
+          display: block;
+          margin-bottom: $spacing-sm;
+          font-weight: 500;
+          color: $text-primary;
+        }
+
+        .form-input,
+        .form-textarea,
+        .form-select {
+          width: 100%;
+          padding: $spacing-md;
+          border: 1px solid $border-color;
+          border-radius: 6px;
+          background: $bg-primary;
+          color: $text-primary;
+          font-size: 0.875rem;
+          box-sizing: border-box;
+
+          &:focus {
+            outline: none;
+            border-color: $primary;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+          }
+        }
+
+        .form-textarea {
+          resize: vertical;
+          min-height: 80px;
+          font-family: inherit;
+        }
+      }
+    }
+
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: $spacing-md;
+      padding: $spacing-lg $spacing-xl;
+      border-top: 1px solid $border-color;
+      background: $bg-tertiary;
+
+      .cancel-button {
+        padding: $spacing-sm $spacing-lg;
+        background: $bg-primary;
+        border: 1px solid $border-color;
+        border-radius: 6px;
+        color: $text-primary;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: $bg-secondary;
+        }
+      }
+
+      .update-button,
+      .delete-button {
+        padding: $spacing-sm $spacing-lg;
+        border: none;
+        border-radius: 6px;
+        color: white;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+
+      .update-button {
+        background: $primary;
+
+        &:hover:not(:disabled) {
+          background: color.adjust($primary, $lightness: -10%);
+        }
+      }
+
+      .delete-button {
+        background: $error;
+
+        &:hover:not(:disabled) {
+          background: color.adjust($error, $lightness: -10%);
+        }
+      }
+    }
+  }
+}
+
+// ============ 響應式設計 ============
+
+// 中等螢幕 (768px - 1199px)
+@media (max-width: 1199px) and (min-width: 769px) {
+  .projects-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+// 小螢幕 (480px - 768px)
+@media (max-width: 768px) {
+  .project-management-page {
+    padding: $spacing-md;
+  }
+
+  .page-header {
+    text-align: center;
+
+    h1 {
+      font-size: 1.8rem;
+    }
+  }
+
+  .controls-section {
+    flex-direction: column;
+    gap: $spacing-lg;
+
+    .search-controls {
+      flex-direction: column;
+      width: 100%;
+      gap: $spacing-md;
+
+      .search-input {
+        max-width: none;
+        min-width: auto;
+      }
+
+      .filter-select {
+        min-width: auto;
+      }
+    }
+  }
+
+  .statistics-section {
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-md;
+  }
+
+  .projects-grid {
+    grid-template-columns: 1fr;
+    gap: $spacing-md;
+  }
+
+  .dialog {
+    width: 95% !important;
+    margin: $spacing-md;
+  }
+}
+
+// 極小螢幕 (480px以下)
+@media (max-width: 480px) {
+  .project-management-page {
+    padding: $spacing-sm;
+  }
+
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .controls-section {
+    padding: $spacing-md;
+  }
+
+  .statistics-section {
+    grid-template-columns: 1fr;
+    gap: $spacing-sm;
+  }
+
+  .projects-grid {
+    gap: $spacing-sm;
+  }
+
+  .dialog {
+    width: 98% !important;
+    margin: $spacing-sm;
+  }
+}
+
+// ============ 動畫 ============
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// 卡片進場動畫
+.project-card {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+} 

@@ -2,9 +2,10 @@
 // 主要功能：數據轉換、關係分析、圖譜生成
 
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AppConstants } from '../constants/app.constants';
+import { ProjectService } from './project.service';
 
 export interface GraphNode {
   id: string;
@@ -68,8 +69,29 @@ export interface CreateRelationshipResponse {
 export class RelationshipGraphService {
   private baseUrl = AppConstants.API_BASE_URL;
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private projectService: ProjectService
+  ) {
     console.log('🔗 RelationshipGraphService 初始化');
+  }
+
+  /**
+   * 獲取當前專案 ID 並創建 HTTP 參數
+   */
+  private getProjectParams(): HttpParams {
+    const currentProject = this.projectService.getCurrentProject();
+    let params = new HttpParams();
+    
+    if (currentProject) {
+      params = params.set('project_id', currentProject.id);
+      console.log('🎯 [RelationshipGraphService] 添加專案 ID 到請求:', currentProject.id);
+    } else {
+      console.warn('⚠️ [RelationshipGraphService] 沒有當前專案，不進行 API 請求');
+      throw new Error('請先選擇專案');
+    }
+    
+    return params;
   }
 
   /**
@@ -77,7 +99,8 @@ export class RelationshipGraphService {
    */
   analyzeAllPersons(): Observable<AnalysisResponse> {
     console.log('📊 分析所有人員關聯關係');
-    return this.http.post<AnalysisResponse>(`${this.baseUrl}/RelationshipGraph/analyze-all`, {});
+    const params = this.getProjectParams();
+    return this.http.post<AnalysisResponse>(`${this.baseUrl}/RelationshipGraph/analyze-all`, {}, { params });
   }
 
   /**
@@ -85,10 +108,11 @@ export class RelationshipGraphService {
    */
   analyzeSelectedPersons(personIds: number[]): Observable<AnalysisResponse> {
     console.log('📊 分析選定人員關聯關係:', personIds);
+    const params = this.getProjectParams();
     return this.http.post<AnalysisResponse>(`${this.baseUrl}/RelationshipGraph/analyze-selected`, {
       personIds,
       maxDepth: 3
-    });
+    }, { params });
   }
 
   /**
@@ -96,7 +120,8 @@ export class RelationshipGraphService {
    */
   createRelationship(request: CreateRelationshipRequest): Observable<CreateRelationshipResponse> {
     console.log('🔗 建立人員關係:', request);
-    return this.http.post<CreateRelationshipResponse>(`${this.baseUrl}/RelationshipGraph/create-relationship`, request);
+    const params = this.getProjectParams();
+    return this.http.post<CreateRelationshipResponse>(`${this.baseUrl}/RelationshipGraph/create-relationship`, request, { params });
   }
 
   /**

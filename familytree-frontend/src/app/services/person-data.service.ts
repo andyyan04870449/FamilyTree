@@ -1,8 +1,9 @@
 // 人員資料服務 - 處理人員資料的API呼叫
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AppConstants } from '../constants/app.constants';
+import { ProjectService } from './project.service';
 
 export interface PersonDataModel {
   id: number;
@@ -96,17 +97,39 @@ export interface PersonDataRequest {
 export class PersonDataService {
   private apiUrl = `${AppConstants.API_BASE_URL}/PersonData`;
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private projectService: ProjectService
+  ) {
     console.log('[PersonDataService] 初始化，API URL:', this.apiUrl);
+  }
+
+  /**
+   * 獲取當前專案 ID 並創建 HTTP 參數
+   */
+  private getProjectParams(): HttpParams {
+    const currentProject = this.projectService.getCurrentProject();
+    let params = new HttpParams();
+    
+    if (currentProject) {
+      params = params.set('project_id', currentProject.id);
+      console.log('🎯 [PersonDataService] 添加專案 ID 到請求:', currentProject.id);
+    } else {
+      console.warn('⚠️ [PersonDataService] 沒有當前專案，不進行 API 請求');
+      // 拋出錯誤或返回預設值
+      throw new Error('請先選擇專案');
+    }
+    
+    return params;
   }
 
   // 取得人員資料列表
   getPersonDataList(page: number = 1, pageSize: number = 20): Observable<PersonDataListResponse> {
     console.log('[PersonDataService] 獲取人員列表 - 頁面:', page, '每頁數量:', pageSize);
-    const params = {
-      page: page.toString(),
-      pageSize: pageSize.toString()
-    };
+    let params = this.getProjectParams();
+    params = params.set('page', page.toString());
+    params = params.set('pageSize', pageSize.toString());
+    
     return this.http.get<PersonDataListResponse>(this.apiUrl, { params });
   }
 

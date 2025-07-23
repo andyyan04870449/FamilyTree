@@ -1,0 +1,507 @@
+@use 'sass:color';
+@import '../../../../src/styles/_variables';
+
+// ============ 組織圖頁面樣式 ============
+
+.organization-chart-page {
+  width: 100%;
+  height: 100vh;
+  background: $bg-primary;
+  color: $text-primary;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+// ============ 頁面標題區 ============
+.page-header {
+  padding: $spacing-xl;
+  background: $bg-secondary;
+  border-bottom: 1px solid $border-color;
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: $primary;
+  }
+
+  p {
+    margin: $spacing-sm 0 0 0;
+    color: $text-secondary;
+    font-size: 1rem;
+  }
+}
+
+// ============ 工具列區 ============
+.toolbar-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-lg;
+  background: $bg-tertiary;
+  border-bottom: 1px solid $border-color;
+
+  .toolbar-left,
+  .toolbar-right {
+    display: flex;
+    gap: $spacing-md;
+  }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-lg;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    .btn-icon {
+      font-size: 1rem;
+    }
+
+    .btn-text {
+      white-space: nowrap;
+    }
+
+    &.btn-primary {
+      background: $primary;
+      color: white;
+
+      &:hover {
+        background: color.adjust($primary, $lightness: -10%);
+      }
+    }
+
+    &.btn-secondary {
+      background: $secondary;
+      color: white;
+
+      &:hover {
+        background: color.adjust($secondary, $lightness: -10%);
+      }
+    }
+
+    &.btn-info {
+      background: $info;
+      color: white;
+
+      &:hover {
+        background: color.adjust($info, $lightness: -10%);
+      }
+    }
+
+    &.btn-warning {
+      background: #f59e0b;
+      color: white;
+
+      &:hover {
+        background: color.adjust(#f59e0b, $lightness: -10%);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// ============ 統計資訊區 ============
+.stats-section {
+  display: flex;
+  gap: $spacing-3xl;
+  padding: $spacing-lg;
+  background: $bg-secondary;
+  border-bottom: 1px solid $border-color;
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+
+    .stat-number {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: $primary;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: $text-secondary;
+      margin-top: $spacing-xs;
+    }
+  }
+}
+
+// ============ 載入與錯誤狀態 ============
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: $spacing-3xl;
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid $border-color;
+    border-top-color: $primary;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: $spacing-lg;
+  }
+
+  .error-icon {
+    font-size: 3rem;
+    margin-bottom: $spacing-lg;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: 1rem;
+    margin-bottom: $spacing-lg;
+  }
+}
+
+// ============ 圖表容器 ============
+.chart-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+
+  .chart-viewport {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background: $bg-primary;
+    position: relative;
+  }
+
+  .org-chart-wrapper {
+    min-width: 100%;
+    min-height: 100%;
+    position: relative;
+    padding: $spacing-3xl;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+// ============ 簡化組織圖樣式 ============
+.simple-org-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  position: relative;
+  padding: $spacing-xl;
+
+  .org-node {
+    position: relative;
+
+    &.root-node {
+      margin-bottom: 80px; // 為連接線留空間
+    }
+
+    .node-card {
+      background: linear-gradient(135deg, #4a90e2 0%, #357abd 50%, #2563eb 100%);
+      border-radius: 12px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+      padding: $spacing-lg;
+      min-width: 200px;
+      display: flex;
+      align-items: center;
+      gap: $spacing-md;
+      transition: all 0.3s ease;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      }
+
+      .node-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.8);
+        flex-shrink: 0;
+      }
+
+      .node-info {
+        flex: 1;
+
+        h3 {
+          margin: 0 0 $spacing-xs 0;
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: white;
+        }
+
+        p {
+          margin: 0 0 $spacing-xs 0;
+          font-size: 0.875rem;
+          color: rgba(255, 255, 255, 0.9);
+          font-weight: 500;
+        }
+
+        span {
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.7);
+          font-family: monospace;
+          letter-spacing: 0.5px;
+        }
+      }
+    }
+  }
+
+  // 子節點容器
+  .child-nodes {
+    display: flex;
+    gap: 60px;
+    position: relative;
+
+    .org-node .node-card {
+      background: linear-gradient(135deg, #6b7280 0%, #4b5563 50%, #374151 100%);
+
+      &:hover {
+        background: linear-gradient(135deg, #4a90e2 0%, #357abd 50%, #2563eb 100%);
+      }
+    }
+  }
+
+  // 連接線容器
+  .connection-lines {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+
+    .vertical-line {
+      position: absolute;
+      width: 3px;
+      height: 60px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 2px;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .horizontal-line {
+      position: absolute;
+      height: 3px;
+      width: 140px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 2px;
+      top: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+
+      // 添加垂直連接線
+      &::before,
+      &::after {
+        content: '';
+        position: absolute;
+        width: 3px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 2px;
+        top: 0;
+      }
+
+      &::before {
+        left: 0;
+      }
+
+      &::after {
+        right: 0;
+      }
+    }
+  }
+}
+
+// ============ 圖表控制按鈕 ============
+.chart-controls {
+  position: absolute;
+  top: $spacing-lg;
+  right: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  z-index: 10;
+
+  .control-btn {
+    background: $bg-secondary;
+    border: 1px solid $border-color;
+    border-radius: 6px;
+    padding: $spacing-sm;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $text-secondary;
+
+    &:hover {
+      background: $bg-tertiary;
+      border-color: $primary;
+      color: $primary;
+      transform: scale(1.05);
+    }
+  }
+}
+
+// ============ 空狀態 ============
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: $spacing-3xl;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: $spacing-xl;
+    opacity: 0.6;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    color: $text-primary;
+    margin: 0 0 $spacing-md 0;
+  }
+
+  p {
+    color: $text-secondary;
+    margin: 0 0 $spacing-xl 0;
+  }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-xl;
+    background: $primary;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: color.adjust($primary, $lightness: -10%);
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// ============ 響應式設計 ============
+@media (max-width: 768px) {
+  .organization-chart-page {
+    .toolbar-section {
+      flex-direction: column;
+      gap: $spacing-md;
+
+      .toolbar-left,
+      .toolbar-right {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    .stats-section {
+      gap: $spacing-lg;
+      
+      .stat-item .stat-number {
+        font-size: 1.125rem;
+      }
+    }
+
+    .simple-org-chart {
+      .child-nodes {
+        flex-direction: column;
+        gap: $spacing-lg;
+      }
+
+      .org-node .node-card {
+        min-width: 250px;
+        padding: $spacing-md;
+
+        .node-avatar {
+          width: 40px;
+          height: 40px;
+          font-size: 1.25rem;
+        }
+
+        .node-info {
+          h3 {
+            font-size: 1rem;
+          }
+
+          p {
+            font-size: 0.75rem;
+          }
+
+          span {
+            font-size: 0.625rem;
+          }
+        }
+      }
+    }
+
+    .chart-controls {
+      flex-direction: row;
+      top: auto;
+      bottom: $spacing-lg;
+      right: 50%;
+      transform: translateX(50%);
+    }
+  }
+}
+
+// ============ 動畫 ============
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// 節點動畫
+.org-node {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+} 

@@ -2,9 +2,10 @@
 // 主要功能：添加收藏、移除收藏、清空收藏、獲取收藏列表
 
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AppConstants } from '../constants/app.constants';
+import { ProjectService } from './project.service';
 
 export interface Favorite {
   id: number;
@@ -30,8 +31,29 @@ export class FavoritesService {
   private baseUrl = AppConstants.API_BASE_URL;
   private favoritesUrl = `${this.baseUrl}/Favorites`;
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private projectService: ProjectService
+  ) {
     console.log('💖 FavoritesService 初始化');
+  }
+
+  /**
+   * 獲取當前專案 ID 並創建 HTTP 參數
+   */
+  private getProjectParams(): HttpParams {
+    const currentProject = this.projectService.getCurrentProject();
+    let params = new HttpParams();
+    
+    if (currentProject) {
+      params = params.set('project_id', currentProject.id);
+      console.log('🎯 [FavoritesService] 添加專案 ID 到請求:', currentProject.id);
+    } else {
+      console.warn('⚠️ [FavoritesService] 沒有當前專案，不進行 API 請求');
+      throw new Error('請先選擇專案');
+    }
+    
+    return params;
   }
 
   /**
@@ -40,7 +62,8 @@ export class FavoritesService {
   getFavorites(): Promise<Favorite[]> {
     console.log('📋 獲取收藏列表');
     return new Promise((resolve, reject) => {
-      this.http.get<any>(this.favoritesUrl).subscribe({
+      const params = this.getProjectParams();
+      this.http.get<any>(this.favoritesUrl, { params }).subscribe({
         next: (response) => {
           console.log('📋 後端收藏回應:', response);
           if (response.success && response.data) {

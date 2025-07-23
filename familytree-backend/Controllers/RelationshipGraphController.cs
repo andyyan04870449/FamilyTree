@@ -27,9 +27,9 @@ namespace familytree_backend.Controllers
         /// </summary>
         /// <returns>關聯圖譜數據</returns>
         [HttpPost("analyze-all")]
-        public async Task<IActionResult> AnalyzeAllPersons()
+        public async Task<IActionResult> AnalyzeAllPersons([FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📊 開始分析所有人員關聯關係");
+            _logger.LogInformation("📊 開始分析所有人員關聯關係 - 專案ID: {ProjectId}", project_id);
             _logger.LogInformation("🔍 請求時間: {RequestTime}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
 
             try
@@ -50,7 +50,8 @@ namespace familytree_backend.Controllers
                         created_at,
                         updated_at
                     FROM person_profile 
-                    ORDER BY name");
+                    WHERE (@project_id IS NULL OR project_id = @project_id)
+                    ORDER BY name", new { project_id });
 
                 _logger.LogInformation("✅ 獲取人員資料成功，共 {count} 筆", persons.Count());
                 _logger.LogInformation("🔍 人員詳情: {persons}", string.Join(", ", persons.Select(p => $"{p.Id}:{p.Name}")));
@@ -168,9 +169,9 @@ namespace familytree_backend.Controllers
         /// <param name="request">分析請求</param>
         /// <returns>關聯圖譜數據</returns>
         [HttpPost("analyze-selected")]
-        public async Task<IActionResult> AnalyzeSelectedPersons([FromBody] RelationshipAnalysisRequest request)
+        public async Task<IActionResult> AnalyzeSelectedPersons([FromBody] RelationshipAnalysisRequest request, [FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📊 開始分析選定人員關聯關係，人員數量：{count}", request.PersonIds.Count);
+            _logger.LogInformation("📊 開始分析選定人員關聯關係，人員數量：{count}，專案ID: {ProjectId}", request.PersonIds.Count, project_id);
 
             try
             {
@@ -188,14 +189,15 @@ namespace familytree_backend.Controllers
                 var persons = await connection.QueryAsync<PersonDataModel>(@"
                     WITH related_persons AS (
                         -- 選定的人員
-                        SELECT id FROM person_profile WHERE id = ANY(@PersonIds)
+                        SELECT id FROM person_profile WHERE id = ANY(@PersonIds) AND (@project_id IS NULL OR project_id = @project_id)
                         UNION
                         -- 通過家族關係和朋友關係相關的人員
                         SELECT DISTINCT p.id
                         FROM person_profile p
-                        WHERE EXISTS (
+                        WHERE (@project_id IS NULL OR p.project_id = @project_id)
+                        AND EXISTS (
                             SELECT 1 FROM person_profile pp 
-                            WHERE pp.id = ANY(@PersonIds)
+                            WHERE pp.id = ANY(@PersonIds) AND (@project_id IS NULL OR pp.project_id = @project_id)
                             AND (
                                 -- 家族關係檢查
                                 (pp.family_relationships IS NOT NULL AND pp.family_relationships LIKE '%' || p.name || '%') OR
@@ -220,7 +222,8 @@ namespace familytree_backend.Controllers
                         pp.family_relationships, pp.important_friends, pp.created_at, pp.updated_at
                     FROM person_profile pp
                     INNER JOIN related_persons rp ON pp.id = rp.id
-                    ORDER BY pp.name", new { PersonIds = request.PersonIds });
+                    WHERE (@project_id IS NULL OR pp.project_id = @project_id)
+                    ORDER BY pp.name", new { PersonIds = request.PersonIds, project_id });
 
                 _logger.LogInformation("✅ 獲取相關人員資料成功，共 {count} 筆", persons.Count());
 

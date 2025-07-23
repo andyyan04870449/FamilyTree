@@ -30,7 +30,7 @@ namespace familytree_backend.Services
             }
         }
 
-        public async Task<FileUploadResponse> UploadFileAsync(IFormFile file)
+        public async Task<FileUploadResponse> UploadFileAsync(IFormFile file, string? projectId = null)
         {
             try
             {
@@ -79,7 +79,8 @@ namespace familytree_backend.Services
                     FileSize = file.Length,
                     Md5Hash = md5Hash,
                     UploadTime = DateTime.UtcNow,
-                    Status = "uploaded"
+                    Status = "uploaded",
+                    ProjectId = projectId
                 };
 
                 var savedFile = await SaveFileToDatabaseAsync(fileInfo);
@@ -90,7 +91,7 @@ namespace familytree_backend.Services
                 try
                 {
                     _logger.LogInformation("開始處理Excel檔案: {FilePath}", filePath);
-                    var processingResult = await _excelProcessingService.ProcessExcelFileAsync(filePath, md5Hash);
+                    var processingResult = await _excelProcessingService.ProcessExcelFileAsync(filePath, md5Hash, projectId);
                     
                     if (processingResult.Success)
                     {
@@ -126,7 +127,7 @@ namespace familytree_backend.Services
             }
         }
 
-        public async Task<FileListResponse> GetFileListAsync()
+        public async Task<FileListResponse> GetFileListAsync(string? projectId = null)
         {
             try
             {
@@ -134,11 +135,12 @@ namespace familytree_backend.Services
                 await connection.OpenAsync();
 
                 var sql = @"SELECT id, filename, original_filename, file_path, file_size, md5_hash, 
-                                  upload_time, is_merged, merge_time, status, created_at, updated_at 
+                                  upload_time, is_merged, merge_time, status, created_at, updated_at, project_id
                            FROM user_update_file 
+                           WHERE (@projectId IS NULL OR project_id = @projectId)
                            ORDER BY upload_time DESC";
 
-                var files = await connection.QueryAsync<dynamic>(sql);
+                var files = await connection.QueryAsync<dynamic>(sql, new { projectId });
                 var fileList = new List<FileUploadModel>();
                 
                 foreach (var file in files)
@@ -155,6 +157,7 @@ namespace familytree_backend.Services
                         IsMerged = file.is_merged,
                         MergeTime = file.merge_time,
                         Status = file.status,
+                        ProjectId = file.project_id,
                         CreatedAt = file.created_at,
                         UpdatedAt = file.updated_at
                     });
@@ -190,7 +193,7 @@ namespace familytree_backend.Services
                 var file = await connection.QueryFirstOrDefaultAsync<FileUploadModel>(
                     @"SELECT id, filename, original_filename as OriginalFilename, file_path as FilePath, 
                              file_size as FileSize, md5_hash as Md5Hash, upload_time as UploadTime, 
-                             is_merged as IsMerged, merge_time as MergeTime, status, 
+                             is_merged as IsMerged, merge_time as MergeTime, status, project_id as ProjectId,
                              created_at as CreatedAt, updated_at as UpdatedAt 
                       FROM user_update_file WHERE id = @id", new { id = fileId });
 
@@ -228,7 +231,7 @@ namespace familytree_backend.Services
 
                 // 處理Excel檔案
                 _logger.LogInformation("開始處理Excel檔案: {FilePath}", file.FilePath);
-                var processingResult = await _excelProcessingService.ProcessExcelFileAsync(file.FilePath, file.Md5Hash);
+                var processingResult = await _excelProcessingService.ProcessExcelFileAsync(file.FilePath, file.Md5Hash, file.ProjectId);
                 
                 if (processingResult.Success)
                 {
@@ -448,9 +451,9 @@ namespace familytree_backend.Services
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var sql = @"INSERT INTO user_update_file (filename, original_filename, file_path, file_size, md5_hash, upload_time, status) 
-                       VALUES (@Filename, @OriginalFilename, @FilePath, @FileSize, @Md5Hash, @UploadTime, @Status) 
-                       RETURNING id, filename, original_filename, file_path, file_size, md5_hash, upload_time, is_merged, merge_time, status, created_at, updated_at";
+            var sql = @"INSERT INTO user_update_file (filename, original_filename, file_path, file_size, md5_hash, upload_time, status, project_id) 
+                       VALUES (@Filename, @OriginalFilename, @FilePath, @FileSize, @Md5Hash, @UploadTime, @Status, @ProjectId) 
+                       RETURNING id, filename, original_filename, file_path, file_size, md5_hash, upload_time, is_merged, merge_time, status, created_at, updated_at, project_id";
 
             var result = await connection.QueryFirstAsync<FileUploadModel>(sql, fileInfo);
             
