@@ -39,17 +39,17 @@ export class RelationshipGraphPage implements OnInit {
   ngOnInit(): void {
     console.log('📊 關聯圖譜頁面載入完成');
     
-    // 從路由參數獲取選中的人員ID
-    this.route.params.subscribe(params => {
-      if (params['personIds']) {
+    // 從路由查詢參數獲取選中的人員ID
+    this.route.queryParams.subscribe(queryParams => {
+      if (queryParams['personIds']) {
         try {
-          // 解析URL參數中的personIds
-          this.selectedPersonIds = params['personIds']
+          // 解析URL查詢參數中的personIds
+          this.selectedPersonIds = queryParams['personIds']
             .split(',')
             .map((id: string) => parseInt(id.trim()))
             .filter((id: number) => !isNaN(id));
           
-          console.log('📋 從路由獲取選中人員ID:', this.selectedPersonIds);
+          console.log('📋 從查詢參數獲取選中人員ID:', this.selectedPersonIds);
         } catch (error) {
           console.error('解析人員ID參數失敗:', error);
           this.selectedPersonIds = [];

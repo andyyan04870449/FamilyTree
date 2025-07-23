@@ -40,11 +40,21 @@ export class FavoritesService {
   getFavorites(): Promise<Favorite[]> {
     console.log('📋 獲取收藏列表');
     return new Promise((resolve, reject) => {
-      this.http.get<ApiResponse<Favorite[]>>(this.favoritesUrl).subscribe({
+      this.http.get<any>(this.favoritesUrl).subscribe({
         next: (response) => {
+          console.log('📋 後端收藏回應:', response);
           if (response.success && response.data) {
-            console.log('✅ 收藏列表獲取成功:', response.data);
-            resolve(response.data);
+            // 後端返回的是 FavoriteListResult 結構，data 是 FavoriteItem 陣列
+            const favorites = response.data.map((item: any) => {
+              console.log('📋 處理收藏項目:', item);
+              return {
+                id: item.personId || item.id,
+                name: item.personName || item.name || '未知姓名',
+                addedAt: item.favoritedAt || item.addedAt || new Date().toISOString()
+              };
+            });
+            console.log('✅ 收藏列表獲取成功，處理後:', favorites);
+            resolve(favorites);
           } else {
             console.warn('⚠️ 收藏列表獲取失敗:', response.message);
             resolve([]);

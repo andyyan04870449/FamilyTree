@@ -185,6 +185,14 @@
                   >
                     {{ result.isFavorited ? '⭐' : '☆' }}
                   </button>
+                  <button 
+                    class="btn-icon"
+                    [class.in-analysis]="result.selected"
+                    (click)="toggleResultSelection(result)"
+                    [title]="result.selected ? '從分析清單移除' : '加入分析清單'"
+                  >
+                    {{ result.selected ? '📊' : '📈' }}
+                  </button>
                 </td>
               </tr>
             </tbody>

@@ -103,7 +103,11 @@ export class PersonDataService {
   // 取得人員資料列表
   getPersonDataList(page: number = 1, pageSize: number = 20): Observable<PersonDataListResponse> {
     console.log('[PersonDataService] 獲取人員列表 - 頁面:', page, '每頁數量:', pageSize);
-    return this.http.get<PersonDataListResponse>(this.apiUrl);
+    const params = {
+      page: page.toString(),
+      pageSize: pageSize.toString()
+    };
+    return this.http.get<PersonDataListResponse>(this.apiUrl, { params });
   }
 
   // 取得單一人員資料
@@ -133,7 +137,10 @@ export class PersonDataService {
   // 搜尋人員資料
   searchPersonData(name?: string, page: number = 1, pageSize: number = 20): Observable<any> {
     console.log('[PersonDataService] 搜尋人員資料 - 名稱:', name, '頁面:', page, '每頁數量:', pageSize);
-    const params: any = {};
+    const params: any = {
+      page: page.toString(),
+      pageSize: pageSize.toString()
+    };
     if (name) {
       params.name = name;
     }

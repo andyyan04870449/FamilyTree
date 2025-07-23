@@ -166,7 +166,7 @@
   }
 }
 
-.person-grid-container {
+.person-table-container {
   .empty-placeholder {
     text-align: center;
     padding: 4rem 2rem;
@@ -188,127 +188,104 @@
       margin: 0;
     }
   }
-  
-  .person-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+}
+
+.person-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: $bg-secondary;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  overflow: hidden;
+  margin-bottom: 2rem;
+
+  th, td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid $border-color;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  th {
+    background: $bg-tertiary;
+    font-weight: 600;
+    color: $text-primary;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  tbody tr {
+    transition: background-color 0.2s;
     
-    .person-card {
-      background-color: $bg-secondary;
-      border: 1px solid $border-color;
+    &:hover {
+      background-color: rgba($primary, 0.05);
+    }
+    
+    &:last-child td {
+      border-bottom: none;
+    }
+  }
+
+  td {
+    font-size: 0.9rem;
+    
+    &:first-child {
+      font-weight: 500;
+      color: $text-secondary;
+    }
+    
+    &:nth-child(2) {
+      font-weight: 600;
+      color: $text-primary;
+    }
+  }
+
+  .actions {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: center;
+    align-items: center;
+
+    button {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
       border-radius: $border-radius;
-      padding: 1.5rem;
       transition: all 0.2s;
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+
+    .view-btn {
+      color: $primary;
       
       &:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        transform: translateY(-2px);
-        border-color: $primary;
+        background: rgba($primary, 0.1);
       }
+    }
+
+    .delete-btn {
+      color: $error;
       
-      .person-header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 1rem;
-        
-        .person-avatar {
-          width: 50px;
-          height: 50px;
-          background-color: $primary;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          
-          .avatar-text {
-            color: white;
-            font-size: 1.25rem;
-            font-weight: 700;
-          }
-        }
-        
-        .person-name {
-          font-size: 1.125rem;
-          font-weight: 600;
-          color: $text-primary;
-          flex: 1;
-        }
+      &:hover {
+        background: rgba($error, 0.1);
       }
+    }
+
+    .favorite-btn {
+      color: $secondary;
       
-      .person-info {
-        flex: 1;
-        margin-bottom: 1rem;
-        
-        .info-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 0.5rem;
-          font-size: 0.875rem;
-          
-          &:last-child {
-            margin-bottom: 0;
-          }
-          
-          .info-label {
-            color: $text-secondary;
-            font-weight: 500;
-          }
-          
-          .info-value {
-            color: $text-primary;
-            text-align: right;
-            max-width: 60%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-        }
-      }
-      
-      .person-actions {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: flex-end;
-        
-        .edit-btn, .delete-btn {
-          width: 36px;
-          height: 36px;
-          border: none;
-          border-radius: $border-radius;
-          font-size: 1rem;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .edit-btn {
-          background-color: $bg-tertiary;
-          color: $text-primary;
-          
-          &:hover {
-            background-color: $primary;
-            color: white;
-          }
-        }
-        
-        .delete-btn {
-          background-color: $bg-tertiary;
-          color: $text-primary;
-          
-          &:hover {
-            background-color: $error;
-            color: white;
-          }
-        }
+      &:hover {
+        background: rgba($secondary, 0.1);
       }
     }
   }

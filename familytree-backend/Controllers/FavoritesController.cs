@@ -36,8 +36,13 @@ namespace familytree_backend.Controllers
                 await connection.OpenAsync();
 
                 var sql = @"
-                    SELECT f.id, f.person_id, f.person_name, f.last_viewed_time, f.favorited_at,
-                           f.created_at, f.updated_at
+                    SELECT f.id as Id, 
+                           f.person_id as PersonId, 
+                           f.person_name as PersonName, 
+                           f.last_viewed_time as LastViewedTime, 
+                           f.favorited_at as FavoritedAt,
+                           f.created_at as CreatedAt, 
+                           f.updated_at as UpdatedAt
                     FROM user_favorites f
                     ORDER BY 
                         CASE WHEN f.last_viewed_time IS NOT NULL THEN f.last_viewed_time ELSE f.favorited_at END DESC";

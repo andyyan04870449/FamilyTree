@@ -14,6 +14,7 @@ import { CommonModule } from '@angular/common';
 export class SidebarNavComponent implements OnInit {
 
   activeRoute: string = 'home';
+  isSidebarOpen: boolean = false;
 
   constructor(private router: Router) {}
 
@@ -27,6 +28,21 @@ export class SidebarNavComponent implements OnInit {
 
     // 初始化當前路由
     this.updateActiveRoute(this.router.url);
+  }
+
+  toggleSidebar() {
+    this.isSidebarOpen = !this.isSidebarOpen;
+    // 防止背景滾動
+    if (this.isSidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  }
+
+  closeSidebar() {
+    this.isSidebarOpen = false;
+    document.body.style.overflow = '';
   }
 
   private updateActiveRoute(url: string) {
@@ -52,6 +68,4 @@ export class SidebarNavComponent implements OnInit {
       this.activeRoute = 'family-tree';
     }
   }
-
-
 } 

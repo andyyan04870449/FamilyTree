@@ -1,7 +1,7 @@
 // 通用關聯圖譜組件：接收外部數據並呈現互動式圖譜
 // 主要功能：D3.js 圖譜渲染、互動控制、數據可視化
 
-import { Component, Input, OnInit, ElementRef, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, ElementRef, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RelationshipGraphService, GraphData, GraphNode, GraphLink, CreateRelationshipResponse } from '../../services/relationship-graph.service';
@@ -211,7 +211,7 @@ import * as d3 from 'd3';
   `,
   styleUrls: ['./relationship-graph.component.scss']
 })
-export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDestroy {
+export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   @ViewChild('graphContainer', { static: false }) graphContainer!: ElementRef;
   @ViewChild('graphViewport', { static: false }) graphViewport!: ElementRef;
   @ViewChild('relationshipInput', { static: false }) relationshipInput!: ElementRef;
@@ -263,6 +263,21 @@ export class RelationshipGraphComponent implements OnInit, AfterViewInit, OnDest
     private logService: LogService
   ) {
     this.logService.info('RelationshipGraphComponent', '組件已初始化');
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    this.logService.info('RelationshipGraphComponent', 'ngOnChanges 被調用', {
+      changes: Object.keys(changes),
+      selectedPersonIds: this.selectedPersonIds
+    });
+
+    // 當 selectedPersonIds 變更且組件已經初始化時，重新執行分析
+    if (changes['selectedPersonIds'] && !changes['selectedPersonIds'].firstChange) {
+      this.logService.info('RelationshipGraphComponent', 'selectedPersonIds 已變更，重新執行分析');
+      if (this.autoAnalyze) {
+        this.performAnalysis();
+      }
+    }
   }
 
   ngOnInit(): void {

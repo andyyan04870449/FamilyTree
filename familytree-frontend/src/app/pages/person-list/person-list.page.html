@@ -52,51 +52,38 @@
   </div>
 
   <!-- 人員 Grid 列表 -->
-  <div *ngIf="!loading && !error" class="person-grid-container">
+  <div *ngIf="!loading && !error" class="person-table-container">
     <div *ngIf="personDataList.length === 0" class="empty-placeholder">
       <div class="placeholder-icon">👥</div>
       <h3>目前沒有人員資料</h3>
       <p>上傳Excel檔案或手動新增人員資料</p>
     </div>
-
-    <div class="person-grid">
-      <div *ngFor="let person of personDataList" class="person-card">
-        <div class="person-header">
-          <div class="person-avatar">
-            <span class="avatar-text">{{ person.name.charAt(0) }}</span>
-          </div>
-          <div class="person-name">{{ person.name }}</div>
-        </div>
-        
-        <div class="person-info">
-          <div class="info-row" *ngIf="person.gender">
-            <span class="info-label">性別:</span>
-            <span class="info-value">{{ getGenderText(person.gender) }}</span>
-          </div>
-          <div class="info-row" *ngIf="person.birthday">
-            <span class="info-label">生日:</span>
-            <span class="info-value">{{ getBirthdayText(person.birthday) }}</span>
-          </div>
-          <div class="info-row" *ngIf="person.nationality">
-            <span class="info-label">國籍:</span>
-            <span class="info-value">{{ person.nationality }}</span>
-          </div>
-          <div class="info-row" *ngIf="person.mobile">
-            <span class="info-label">手機:</span>
-            <span class="info-value">{{ person.mobile }}</span>
-          </div>
-        </div>
-
-        <div class="person-actions">
-          <button class="edit-btn" (click)="editPersonData(person)" title="編輯">
-            ✏️
-          </button>
-          <button class="delete-btn" (click)="deletePersonData(person)" title="刪除">
-            🗑️
-          </button>
-        </div>
-      </div>
-    </div>
+    <table class="person-table" *ngIf="personDataList.length > 0">
+      <thead>
+        <tr>
+          <th>序號</th>
+          <th>姓名</th>
+          <th>性別</th>
+          <th>來源</th>
+          <th>建立日期</th>
+          <th>功能</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let person of personDataList; let i = index">
+          <td>{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+          <td>{{ person.name }}</td>
+          <td>{{ getGenderText(person.gender) }}</td>
+          <td>{{ getSourceText(person) }}</td>
+          <td>{{ formatDate(person.createdAt) }}</td>
+          <td class="actions">
+            <button class="view-btn" (click)="editPersonData(person)" title="檢視">👁️</button>
+            <button class="delete-btn" (click)="deletePersonData(person)" title="刪除">🗑️</button>
+            <button class="favorite-btn" title="收藏">☆</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- 分頁控制 -->

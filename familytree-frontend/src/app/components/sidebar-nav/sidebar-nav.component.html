@@ -1,8 +1,26 @@
-<div class="sidebar-nav">
+<!-- 漢堡選單按鈕 -->
+<div class="hamburger-menu" (click)="toggleSidebar()">
+  <div class="hamburger-icon" [class.active]="isSidebarOpen">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+
+<!-- 手機版遮罩 -->
+<div class="sidebar-overlay" 
+     [class.active]="isSidebarOpen" 
+     (click)="closeSidebar()">
+</div>
+
+<!-- 側邊欄 -->
+<div class="sidebar-nav" [class.mobile-open]="isSidebarOpen">
   <div class="nav-header">
     <h3>
-      <a routerLink="/" class="sidebar-title-link">🧬 視覺化分析系統</a>
+      <a routerLink="/" class="sidebar-title-link" (click)="closeSidebar()">🧬 視覺化分析系統</a>
     </h3>
+    <!-- 手機版關閉按鈕 -->
+    <button class="close-btn" (click)="closeSidebar()">×</button>
   </div>
   
   <nav class="nav-menu">
@@ -11,13 +29,13 @@
       <h4>📋 案件管理</h4>
       <ul class="nav-list">
         <li class="nav-item" [class.active]="activeRoute === 'file-upload'">
-          <a routerLink="/file-upload">
+          <a routerLink="/file-upload" (click)="closeSidebar()">
             <span class="nav-icon">📤</span>
             <span class="nav-text">檔案上傳</span>
           </a>
         </li>
         <li class="nav-item" [class.active]="activeRoute === 'person-list'">
-          <a routerLink="/person-list">
+          <a routerLink="/person-list" (click)="closeSidebar()">
             <span class="nav-icon">📋</span>
             <span class="nav-text">人員列表</span>
           </a>
@@ -30,19 +48,19 @@
       <h4>📊 視覺化分析</h4>
       <ul class="nav-list">
         <li class="nav-item" [class.active]="activeRoute === 'full-text-search'">
-          <a routerLink="/full-text-search">
+          <a routerLink="/full-text-search" (click)="closeSidebar()">
             <span class="nav-icon">🔍</span>
             <span class="nav-text">全文檢索</span>
           </a>
         </li>
         <li class="nav-item" [class.active]="activeRoute === 'relationship-graph'">
-          <a routerLink="/relationship-graph">
+          <a routerLink="/relationship-graph" (click)="closeSidebar()">
             <span class="nav-icon">📊</span>
             <span class="nav-text">關係圖譜</span>
           </a>
         </li>
         <li class="nav-item" [class.active]="activeRoute === 'organization-chart'">
-          <a routerLink="/organization-chart">
+          <a routerLink="/organization-chart" (click)="closeSidebar()">
             <span class="nav-icon">🏢</span>
             <span class="nav-text">組織圖</span>
           </a>
@@ -55,15 +73,9 @@
       <h4>⚙️ 系統管理</h4>
       <ul class="nav-list">
         <li class="nav-item" [class.active]="activeRoute === 'system-settings'">
-          <a routerLink="/system-settings">
+          <a routerLink="/system-settings" (click)="closeSidebar()">
             <span class="nav-icon">⚙️</span>
             <span class="nav-text">系統設定</span>
-          </a>
-        </li>
-        <li class="nav-item" [class.active]="activeRoute === 'favorites'">
-          <a routerLink="/favorites">
-            <span class="nav-icon">⭐</span>
-            <span class="nav-text">收藏管理</span>
           </a>
         </li>
       </ul>

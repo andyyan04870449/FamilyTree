@@ -2,6 +2,7 @@
 // 此檔案的目的：定義全文檢索功能所需的所有資料模型，包括搜索請求、結果、收藏等
 
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace familytree_backend.Models
 {

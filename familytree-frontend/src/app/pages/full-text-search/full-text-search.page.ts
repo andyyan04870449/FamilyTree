@@ -147,14 +147,13 @@ export class FullTextSearchPage implements OnInit {
   // 載入收藏列表
   private async loadFavorites(): Promise<void> {
     try {
+      console.log('🔄 開始載入收藏列表');
       const response = await this.favoritesService.getFavorites();
-      this.favorites = response.map((item: any) => ({
-        id: item.personId || item.id,
-        name: item.personName || item.name,
-        addedAt: item.favoritedAt || item.addedAt
-      }));
+      console.log('📋 收藏服務回應:', response);
+      this.favorites = response; // 服務已經處理了數據映射
+      console.log('✅ 收藏列表載入完成:', this.favorites);
     } catch (error) {
-      console.error('載入收藏列表失敗:', error);
+      console.error('❌ 載入收藏列表失敗:', error);
     }
   }
 

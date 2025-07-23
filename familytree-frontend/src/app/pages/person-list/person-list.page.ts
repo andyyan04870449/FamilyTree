@@ -211,7 +211,7 @@ export class PersonListComponent implements OnInit, OnDestroy {
     });
   }
 
-  getGenderText(gender: string | null): string {
+  getGenderText(gender: string | null | undefined): string {
     if (!gender) return '-';
     return gender === 'M' ? '男' : gender === 'F' ? '女' : gender;
   }
@@ -220,5 +220,16 @@ export class PersonListComponent implements OnInit, OnDestroy {
     if (!birthday) return '-';
     const date = new Date(birthday);
     return date.toLocaleDateString('zh-TW');
+  }
+
+  getSourceText(person: PersonDataModel): string {
+    // 根據資料特徵判斷來源
+    if (person.fileMd5) {
+      return '檔案上傳';
+    }
+    if (person.createdBy) {
+      return '手動建立';
+    }
+    return '檔案上傳';
   }
 } 
