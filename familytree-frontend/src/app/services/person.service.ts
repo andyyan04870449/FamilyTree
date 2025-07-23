@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { AppConstants } from '../constants/app.constants';
 import { ProjectService } from './project.service';
 
@@ -122,12 +123,30 @@ export class PersonService {
 
   getPersons(): Observable<Person[]> {
     const params = this.getProjectParams();
-    return this.http.get<Person[]>(this.apiUrl, { params });
+    return this.http.get<any>(this.apiUrl, { params }).pipe(
+      map(response => {
+        // 適配新的後端回應格式 { success: true, data: [...], pagination: {...} }
+        if (response && response.data) {
+          return response.data;
+        }
+        // 如果是舊格式直接返回陣列
+        return Array.isArray(response) ? response : [];
+      })
+    );
   }
 
   getPerson(id: number): Observable<Person> {
     const params = this.getProjectParams();
-    return this.http.get<Person>(`${this.apiUrl}/${id}`, { params });
+    return this.http.get<any>(`${this.apiUrl}/${id}`, { params }).pipe(
+      map(response => {
+        // 適配新的後端回應格式 { success: true, data: {...} }
+        if (response && response.data) {
+          return response.data;
+        }
+        // 如果是舊格式直接返回物件
+        return response;
+      })
+    );
   }
 
   createPerson(person: Omit<Person, 'id' | 'createdAt' | 'updatedAt'>): Observable<Person> {

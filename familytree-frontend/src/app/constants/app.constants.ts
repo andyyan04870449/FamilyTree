@@ -2,7 +2,7 @@
 export class AppConstants {
   // API 相關 - 根據環境自動選擇正確的API URL
   static readonly API_BASE_URL = AppConstants.getApiBaseUrl();
-  static readonly PERSON_API_URL = `${AppConstants.API_BASE_URL}/person`;
+  static readonly PERSON_API_URL = `${AppConstants.API_BASE_URL}/persondata`;
   static readonly ANALYSIS_API_URL = `${AppConstants.API_BASE_URL}/analysis`;
 
   // 動態取得API基礎URL

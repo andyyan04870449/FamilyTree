@@ -54,10 +54,8 @@ export class SidebarNavComponent implements OnInit {
       this.activeRoute = 'home';
     } else if (url.includes('/file-upload')) {
       this.activeRoute = 'file-upload';
-    } else if (url.includes('/file-management')) {
-      this.activeRoute = 'file-management';
-    } else if (url.includes('/person-management')) {
-      this.activeRoute = 'person-management';
+
+
     } else if (url.includes('/person-list')) {
       this.activeRoute = 'person-list';
     } else if (url.includes('/full-text-search')) {
@@ -68,8 +66,7 @@ export class SidebarNavComponent implements OnInit {
       this.activeRoute = 'organization-chart';
     } else if (url.includes('/system-settings')) {
       this.activeRoute = 'system-settings';
-    } else if (url.includes('/family-tree')) {
-      this.activeRoute = 'family-tree';
+
     }
   }
 

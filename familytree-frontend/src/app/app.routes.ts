@@ -11,14 +11,6 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/file-upload/file-upload.page').then(m => m.FileUploadComponent)
   },
   {
-    path: 'file-management',
-    loadComponent: () => import('./pages/file-management/file-management.page').then(m => m.FileManagementComponent)
-  },
-  {
-    path: 'person-management',
-    loadComponent: () => import('./pages/person-management/person-management.page').then(m => m.PersonManagementComponent)
-  },
-  {
     path: 'person-list',
     loadComponent: () => import('./pages/person-list/person-list.page').then(m => m.PersonListComponent)
   },
@@ -26,10 +18,6 @@ export const routes: Routes = [
   {
     path: 'full-text-search',
     loadComponent: () => import('./pages/full-text-search/full-text-search.page').then(m => m.FullTextSearchPage)
-  },
-  {
-    path: 'family-tree',
-    loadComponent: () => import('./pages/family-tree/family-tree.page').then(m => m.FamilyTreeComponent)
   },
   // 視覺化分析模組
   {

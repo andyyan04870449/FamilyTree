@@ -501,9 +501,9 @@ export class ProjectManagementComponent implements OnInit, OnDestroy {
     // 設置當前專案
     this.projectService.setCurrentProject(project);
     
-    // 導航到家族樹頁面（系統主頁）
-    console.log('🚀 導航到家族樹頁面');
-    this.router.navigate(['/family-tree']).then(success => {
+    // 導航到人員列表頁面（專案主要工作區域）
+    console.log('🚀 導航到人員列表頁面');
+    this.router.navigate(['/person-list']).then(success => {
       if (success) {
         console.log('✅ 導航成功');
       } else {
