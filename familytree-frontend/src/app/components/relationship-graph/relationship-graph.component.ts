@@ -1081,9 +1081,9 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
         });
         
         if (response.success) {
-          this.logService.info('RelationshipGraphComponent', '關係保存成功，重新載入圖譜');
+          this.logService.info('RelationshipGraphComponent', '關係保存成功，添加新連線到圖譜');
+          this.addNewRelationshipToGraph();
           this.resetRelationshipCreation();
-          this.performAnalysis(); // 重新載入圖譜
         } else {
           this.logService.error('RelationshipGraphComponent', '關係保存失敗', {
             message: response.message
@@ -1120,6 +1120,178 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       this.cancelRelationshipCreation();
     }
   }
+
+  /**
+   * 添加新關係到現有圖譜中，保持節點位置不變
+   */
+  private addNewRelationshipToGraph(): void {
+    if (!this.firstSelectedNode || !this.secondSelectedNode || !this.relationshipType.trim()) {
+      this.logService.error('RelationshipGraphComponent', '缺少新關係的必要資料');
+      return;
+    }
+
+    if (!this.graphData) {
+      this.logService.error('RelationshipGraphComponent', '圖譜數據不存在，無法添加新關係');
+      return;
+    }
+
+    // 創建新的連線對象
+    const newLink: GraphLink = {
+      source: this.firstSelectedNode.id,
+      target: this.secondSelectedNode.id,
+      type: this.relationshipType.trim(),
+      isFamily: this.relationshipType.includes('父') || 
+                this.relationshipType.includes('母') || 
+                this.relationshipType.includes('子') || 
+                this.relationshipType.includes('女') ||
+                this.relationshipType.includes('夫') ||
+                this.relationshipType.includes('妻') ||
+                this.relationshipType.includes('兄') ||
+                this.relationshipType.includes('弟') ||
+                this.relationshipType.includes('姐') ||
+                this.relationshipType.includes('妹')
+    };
+
+    this.logService.info('RelationshipGraphComponent', '添加新連線到圖譜', {
+      newLink,
+      currentLinksCount: this.graphData.links.length
+    });
+
+    // 添加新連線到圖譜數據
+    this.graphData.links.push(newLink);
+
+    // 更新統計資訊
+    this.updateStatistics();
+
+    // 只更新圖譜顯示，不重置節點位置
+    if (this.svg && this.simulation) {
+      this.updateGraphWithNewLink(newLink);
+    }
+
+    this.logService.info('RelationshipGraphComponent', '新連線添加完成');
+  }
+
+  /**
+   * 更新圖譜顯示，添加新連線但保持節點位置
+   */
+  private updateGraphWithNewLink(newLink: GraphLink): void {
+    if (!this.svg || !this.graphData) {
+      return;
+    }
+
+    const graphGroup = this.svg.select('.graph-group');
+    
+    // 更新連線數據
+    const visibleLinks = this.graphData.links.filter(link => {
+      const sourceVisible = !this.hiddenNodes.has(link.source);
+      const targetVisible = !this.hiddenNodes.has(link.target);
+      return sourceVisible && targetVisible;
+    });
+
+    // 重新綁定連線數據並添加新連線，確保圖層順序
+    const link = graphGroup.selectAll('.link')
+      .data(visibleLinks)
+      .join('line')
+      .attr('class', 'link')
+      .style('stroke', (d: any) => d.isFamily ? '#ff6b35' : '#666')
+      .style('stroke-width', 2)
+      .style('opacity', 0.6);
+
+    // 重新綁定連線標籤
+    const linkLabel = graphGroup.selectAll('.link-label')
+      .data(visibleLinks)
+      .join('text')
+      .attr('class', 'link-label')
+      .style('text-anchor', 'middle')
+      .style('font-size', '10px')
+      .style('fill', '#e0e0e0')
+      .style('pointer-events', 'none')
+      .style('font-weight', 'bold')
+      .text((d: any) => d.type || '關係');
+
+    // 確保節點在最上層：將所有節點元素移到DOM最後
+    graphGroup.selectAll('.node').each(function(this: SVGGElement) {
+      this.parentNode?.appendChild(this);
+    });
+
+    // 立即設置新連線的位置
+    link
+      .attr('x1', (d: any) => {
+        const sourceNode = this.graphData?.nodes.find(n => n.id === d.source || n.id === String(d.source));
+        this.logService.debug('RelationshipGraphComponent', '設置連線源點位置', {
+          linkSource: d.source,
+          sourceNode: sourceNode,
+          position: sourceNode ? { x: sourceNode.x, y: sourceNode.y } : null
+        });
+        return sourceNode?.x || 0;
+      })
+      .attr('y1', (d: any) => {
+        const sourceNode = this.graphData?.nodes.find(n => n.id === d.source || n.id === String(d.source));
+        return sourceNode?.y || 0;
+      })
+      .attr('x2', (d: any) => {
+        const targetNode = this.graphData?.nodes.find(n => n.id === d.target || n.id === String(d.target));
+        this.logService.debug('RelationshipGraphComponent', '設置連線目標位置', {
+          linkTarget: d.target,
+          targetNode: targetNode,
+          position: targetNode ? { x: targetNode.x, y: targetNode.y } : null
+        });
+        return targetNode?.x || 0;
+      })
+      .attr('y2', (d: any) => {
+        const targetNode = this.graphData?.nodes.find(n => n.id === d.target || n.id === String(d.target));
+        return targetNode?.y || 0;
+      });
+
+    // 立即設置連線標籤位置
+    linkLabel
+      .attr('x', (d: any) => {
+        const sourceNode = this.graphData?.nodes.find(n => n.id === d.source || n.id === String(d.source));
+        const targetNode = this.graphData?.nodes.find(n => n.id === d.target || n.id === String(d.target));
+        return ((sourceNode?.x || 0) + (targetNode?.x || 0)) / 2;
+      })
+      .attr('y', (d: any) => {
+        const sourceNode = this.graphData?.nodes.find(n => n.id === d.source || n.id === String(d.source));
+        const targetNode = this.graphData?.nodes.find(n => n.id === d.target || n.id === String(d.target));
+        return ((sourceNode?.y || 0) + (targetNode?.y || 0)) / 2;
+      });
+
+    // 更新力導向模擬的連線，確保新連線參與更新循環
+    if (this.simulation) {
+      // 更新連線力
+      this.simulation.force('link').links(visibleLinks);
+      
+      // 重新設置tick事件處理器，確保包含所有連線（包括新的）
+      this.simulation.on('tick', () => {
+        const currentLinks = graphGroup.selectAll('.link');
+        const currentLinkLabels = graphGroup.selectAll('.link-label');
+        const currentNodes = graphGroup.selectAll('.node');
+        
+        // 更新所有連線位置（包括新添加的）
+        currentLinks
+          .attr('x1', (d: any) => d.source.x || 0)
+          .attr('y1', (d: any) => d.source.y || 0)
+          .attr('x2', (d: any) => d.target.x || 0)
+          .attr('y2', (d: any) => d.target.y || 0);
+
+        // 更新所有連線標籤位置
+        currentLinkLabels
+          .attr('x', (d: any) => ((d.source.x || 0) + (d.target.x || 0)) / 2)
+          .attr('y', (d: any) => ((d.source.y || 0) + (d.target.y || 0)) / 2);
+
+        // 更新所有節點位置
+        currentNodes
+          .attr('transform', (d: any) => `translate(${d.x || 0},${d.y || 0})`);
+      });
+      
+      // 輕微重啟模擬以確保連線正確更新，但設置很低的alpha避免大幅移動節點
+      this.simulation.alpha(0.1).restart();
+    }
+
+    this.logService.info('RelationshipGraphComponent', '圖譜顯示更新完成，節點位置保持不變');
+  }
+
+
 
   /**
    * 重置建立關係狀態
