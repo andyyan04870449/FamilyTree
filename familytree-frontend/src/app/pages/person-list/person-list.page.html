@@ -53,12 +53,12 @@
 
   <!-- 人員 Grid 列表 -->
   <div *ngIf="!loading && !error" class="person-table-container">
-    <div *ngIf="personDataList.length === 0" class="empty-placeholder">
+    <div *ngIf="!personDataList || personDataList.length === 0" class="empty-placeholder">
       <div class="placeholder-icon">👥</div>
       <h3>目前沒有人員資料</h3>
       <p>上傳Excel檔案或手動新增人員資料</p>
     </div>
-    <table class="person-table" *ngIf="personDataList.length > 0">
+    <table class="person-table" *ngIf="personDataList && personDataList.length > 0">
       <thead>
         <tr>
           <th>序號</th>

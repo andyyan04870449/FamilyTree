@@ -21,7 +21,7 @@
 
     <!-- 檔案列表 -->
     <div *ngIf="!loading && !error" class="file-list">
-      <div *ngIf="files.length === 0" class="no-files">
+      <div *ngIf="!files || files.length === 0" class="no-files">
         <div class="no-files-icon">📄</div>
         <p>尚未上傳任何檔案</p>
         <small>上傳的檔案將顯示在這裡</small>

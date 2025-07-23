@@ -1,64 +1,88 @@
 // 全文檢索控制器：提供全文搜索、關鍵字管理、搜索歷史等功能
 // 主要功能：關鍵字搜索（精準/模糊）、搜索歷史管理、熱門關鍵字統計
+// 重要更新：實現專案隔離，確保搜索結果僅限於當前專案
 
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using Dapper;
 using familytree_backend.Models;
+using familytree_backend.Constants;
+using familytree_backend.Services;
 using System.Text;
 
 namespace familytree_backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class FullTextSearchController : ControllerBase
+    public class FullTextSearchController : BaseController
     {
         private readonly string _connectionString;
-        private readonly ILogger<FullTextSearchController> _logger;
+        private readonly SearchConfiguration _searchConfig;
 
-        public FullTextSearchController(IConfiguration configuration, ILogger<FullTextSearchController> logger)
+        /// <summary>
+        /// 全文檢索控制器建構子
+        /// 設計改善：繼承 BaseController，使用配置服務管理設定
+        /// </summary>
+        public FullTextSearchController(
+            ILogger<FullTextSearchController> logger,
+            IConfigurationService configurationService) 
+            : base(logger, configurationService)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("找不到資料庫連接字符串");
-            _logger = logger;
+            _connectionString = configurationService.GetConnectionString();
+            _searchConfig = configurationService.GetSearchConfiguration();
         }
 
         /// <summary>
         /// 全文檢索搜索
+        /// 重大更新：實現專案隔離，確保只搜索當前專案的資料
         /// </summary>
         /// <param name="request">搜索請求</param>
+        /// <param name="project_id">專案 ID</param>
         /// <returns>搜索結果</returns>
         [HttpPost("search")]
         public async Task<IActionResult> Search([FromBody] SearchRequest request, [FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 收到全文檢索請求: 關鍵字='{keyword}', 搜索類型={searchType}, 頁碼={page}, 頁面大小={pageSize}, 專案ID={projectId}", 
-                request.Keyword, request.SearchType, request.Page, request.PageSize, project_id);
-
-            try
+            return await ExecuteWithExceptionHandling(async () =>
             {
-                // 參數驗證
+                LogRequestStart("全文檢索搜索", new { 
+                    Keyword = request.Keyword, 
+                    SearchType = request.SearchType, 
+                    Page = request.Page, 
+                    PageSize = request.PageSize, 
+                    ProjectId = project_id 
+                });
+
+                // 步驟 1：驗證專案 ID（專案隔離的關鍵）
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
+                // 步驟 2：參數驗證
                 if (!ModelState.IsValid)
                 {
                     var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
                     var errorMessage = string.Join("; ", errors);
-                    _logger.LogWarning("⚠️  請求參數驗證失敗: {errors}", errorMessage);
-                    return BadRequest(ApiResponse<object>.ErrorResult($"參數驗證失敗: {errorMessage}"));
+                    Logger.LogWarning("請求參數驗證失敗: {errors}", errorMessage);
+                    return CreateErrorResponse($"參數驗證失敗: {errorMessage}");
                 }
 
                 var startTime = DateTime.UtcNow;
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                _logger.LogInformation("✅ 資料庫連接成功，開始執行搜索");
+                Logger.LogInformation("資料庫連接成功，開始執行搜索");
 
-                // 1. 記錄搜索關鍵字
-                await RecordSearchKeyword(connection, request.Keyword, request.SearchType);
+                // 步驟 3：記錄搜索關鍵字（按專案記錄）
+                await RecordSearchKeyword(connection, request.Keyword, request.SearchType, project_id);
 
-                // 2. 執行搜索
-                var countSql = BuildCountSql(request.SearchType);
-                var parameters = BuildSearchParameters(request.Keyword, request.SearchType);
+                // 步驟 4：執行專案隔離的搜索
+                var countSql = BuildCountSql(request.SearchType, project_id);
+                var parameters = BuildSearchParameters(request.Keyword, request.SearchType, project_id);
                 var totalCount = await connection.QuerySingleAsync<int>(countSql, parameters);
 
-                var sql = BuildSearchSql(request.SearchType);
+                var sql = BuildSearchSql(request.SearchType, project_id);
                 var results = await connection.QueryAsync<dynamic>(sql, parameters);
                 var searchResults = results.Select(r => new PersonSearchResult
                 {
@@ -81,22 +105,20 @@ namespace familytree_backend.Controllers
                     MatchedFields = GetMatchedFields(r, request.Keyword, request.SearchType)
                 }).ToList();
 
-                // 3. 檢查收藏狀態
-                await CheckFavoriteStatus(connection, searchResults);
+                // 步驟 5：檢查收藏狀態（按專案過濾）
+                await CheckFavoriteStatus(connection, searchResults, project_id);
 
-                // 4. 獲取熱門關鍵字
-                var popularKeywords = await GetPopularKeywords(connection);
+                // 步驟 6：獲取專案相關的熱門關鍵字和搜索歷史
+                var popularKeywords = await GetPopularKeywords(connection, project_id, _searchConfig.MaxPopularKeywords);
+                var searchHistory = await GetSearchHistory(connection, project_id, _searchConfig.MaxSearchHistoryItems);
 
-                // 5. 獲取搜索歷史
-                var searchHistory = await GetSearchHistory(connection);
-
-                // 6. 記錄搜索日誌
-                await LogSearchActivity(connection, request, totalCount, GetClientIpAddress(), Request.Headers["User-Agent"].ToString());
+                // 步驟 7：記錄搜索活動
+                await LogSearchActivity(connection, request, totalCount, GetClientIpAddress(), Request.Headers["User-Agent"].ToString(), project_id);
 
                 var endTime = DateTime.UtcNow;
                 var duration = (endTime - startTime).TotalMilliseconds;
 
-                _logger.LogInformation("📊 準備返回結果: {@searchResults}", searchResults);
+                Logger.LogInformation("準備返回結果: {@searchResults}", searchResults);
 
                 var result = new SearchResult
                 {
@@ -115,199 +137,170 @@ namespace familytree_backend.Controllers
                     }
                 };
 
-                _logger.LogInformation("✅ 搜索完成: 關鍵字='{keyword}', 找到{count}筆資料, 耗時{duration}ms", 
-                    request.Keyword, searchResults.Count, duration);
+                Logger.LogInformation("搜索完成: 關鍵字='{keyword}', 專案={projectId}, 找到{count}筆資料, 耗時{duration}ms", 
+                    request.Keyword, project_id, searchResults.Count, duration);
 
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ 全文檢索搜索失敗: 關鍵字='{keyword}', 錯誤={error}", request.Keyword, ex.Message);
-                return StatusCode(500, ApiResponse<object>.ErrorResult("搜索時發生錯誤，請稍後再試"));
-            }
+                LogRequestComplete("全文檢索搜索");
+                return CreateSuccessResponse(result.Data, result.Message);
+
+            }, "全文檢索搜索");
         }
 
         /// <summary>
-        /// 獲取熱門關鍵字
+        /// 獲取熱門關鍵字（按專案過濾）
         /// </summary>
+        /// <param name="project_id">專案 ID</param>
         /// <returns>熱門關鍵字列表</returns>
         [HttpGet("popular-keywords")]
-        public async Task<IActionResult> GetPopularKeywords()
+        public async Task<IActionResult> GetPopularKeywords([FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 獲取熱門關鍵字請求");
-
-            try
+            return await ExecuteWithExceptionHandling(async () =>
             {
+                LogRequestStart("獲取熱門關鍵字", new { ProjectId = project_id });
+
+                // 驗證專案 ID
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                var keywords = await GetPopularKeywords(connection, 10);
+                var keywords = await GetPopularKeywords(connection, project_id, _searchConfig.MaxPopularKeywords);
 
-                _logger.LogInformation("✅ 成功獲取熱門關鍵字: 數量={count}", keywords.Count);
+                Logger.LogInformation("成功獲取熱門關鍵字: 專案={projectId}, 數量={count}", project_id, keywords.Count);
 
-                return Ok(ApiResponse<List<string>>.SuccessResult(keywords, "獲取熱門關鍵字成功"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ 獲取熱門關鍵字失敗: {error}", ex.Message);
-                return StatusCode(500, ApiResponse<object>.ErrorResult("獲取熱門關鍵字時發生錯誤"));
-            }
+                LogRequestComplete("獲取熱門關鍵字");
+                return CreateSuccessResponse(keywords, "獲取熱門關鍵字成功");
+
+            }, "獲取熱門關鍵字");
         }
 
         /// <summary>
-        /// 獲取搜索歷史
+        /// 獲取搜索歷史（按專案過濾）
         /// </summary>
+        /// <param name="project_id">專案 ID</param>
         /// <returns>搜索歷史列表</returns>
         [HttpGet("search-history")]
-        public async Task<IActionResult> GetSearchHistory()
+        public async Task<IActionResult> GetSearchHistory([FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 獲取搜索歷史請求");
-
-            try
+            return await ExecuteWithExceptionHandling(async () =>
             {
+                LogRequestStart("獲取搜索歷史", new { ProjectId = project_id });
+
+                // 驗證專案 ID
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                var history = await GetSearchHistory(connection, 20);
+                var history = await GetSearchHistory(connection, project_id, _searchConfig.MaxSearchHistoryItems);
 
-                _logger.LogInformation("✅ 成功獲取搜索歷史: 數量={count}", history.Count);
+                Logger.LogInformation("成功獲取搜索歷史: 專案={projectId}, 數量={count}", project_id, history.Count);
 
-                return Ok(ApiResponse<List<string>>.SuccessResult(history, "獲取搜索歷史成功"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ 獲取搜索歷史失敗: {error}", ex.Message);
-                return StatusCode(500, ApiResponse<object>.ErrorResult("獲取搜索歷史時發生錯誤"));
-            }
+                LogRequestComplete("獲取搜索歷史");
+                return CreateSuccessResponse(history, "獲取搜索歷史成功");
+
+            }, "獲取搜索歷史");
         }
 
         /// <summary>
-        /// 清除搜索歷史
+        /// 清除搜索歷史（按專案過濾）
         /// </summary>
+        /// <param name="project_id">專案 ID</param>
         /// <returns>操作結果</returns>
         [HttpDelete("search-history")]
-        public async Task<IActionResult> ClearSearchHistory()
+        public async Task<IActionResult> ClearSearchHistory([FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 清除搜索歷史請求");
-
-            try
+            return await ExecuteWithExceptionHandling(async () =>
             {
+                LogRequestStart("清除搜索歷史", new { ProjectId = project_id });
+
+                // 驗證專案 ID
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                var deletedCount = await connection.ExecuteAsync("DELETE FROM search_keywords");
+                var deletedCount = await connection.ExecuteAsync(
+                    "DELETE FROM search_keywords WHERE project_id = @project_id", 
+                    new { project_id });
 
-                _logger.LogInformation("✅ 成功清除搜索歷史: 刪除{count}筆記錄", deletedCount);
+                Logger.LogInformation("成功清除搜索歷史: 專案={projectId}, 刪除{count}筆記錄", project_id, deletedCount);
 
-                return Ok(ApiResponse<object>.SuccessResult(new { deletedCount }, $"成功清除 {deletedCount} 筆搜索歷史"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ 清除搜索歷史失敗: {error}", ex.Message);
-                return StatusCode(500, ApiResponse<object>.ErrorResult("清除搜索歷史時發生錯誤"));
-            }
+                LogRequestComplete("清除搜索歷史");
+                return CreateSuccessResponse(new { deletedCount }, $"成功清除 {deletedCount} 筆搜索歷史");
+
+            }, "清除搜索歷史");
         }
 
         /// <summary>
-        /// 獲取搜索統計
+        /// 獲取搜索統計（按專案過濾）
         /// </summary>
+        /// <param name="project_id">專案 ID</param>
         /// <returns>搜索統計資料</returns>
         [HttpGet("statistics")]
-        public async Task<IActionResult> GetSearchStatistics()
+        public async Task<IActionResult> GetSearchStatistics([FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 獲取搜索統計請求");
-
-            try
+            return await ExecuteWithExceptionHandling(async () =>
             {
+                LogRequestStart("獲取搜索統計", new { ProjectId = project_id });
+
+                // 驗證專案 ID
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
                 var stats = new SearchStatistics
                 {
-                    TotalSearches = await connection.QuerySingleAsync<int>("SELECT COALESCE(SUM(search_count), 0) FROM search_keywords"),
-                    UniqueKeywords = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM search_keywords"),
-                    TotalFavorites = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM user_favorites"),
-                    TopKeywords = await GetTopKeywordsWithDetails(connection, 10),
-                    SearchTypeStats = await GetSearchTypeStatistics(connection)
+                    TotalSearches = await connection.QuerySingleAsync<int>(
+                        "SELECT COALESCE(SUM(search_count), 0) FROM search_keywords WHERE project_id = @project_id", 
+                        new { project_id }),
+                    UniqueKeywords = await connection.QuerySingleAsync<int>(
+                        "SELECT COUNT(*) FROM search_keywords WHERE project_id = @project_id", 
+                        new { project_id }),
+                    TotalFavorites = await connection.QuerySingleAsync<int>(
+                        "SELECT COUNT(*) FROM user_favorites WHERE project_id = @project_id", 
+                        new { project_id }),
+                    TopKeywords = await GetTopKeywordsWithDetails(connection, project_id, _searchConfig.MaxTopKeywords),
+                    SearchTypeStats = await GetSearchTypeStatistics(connection, project_id)
                 };
 
-                _logger.LogInformation("✅ 成功獲取搜索統計: 總搜索={totalSearches}, 唯一關鍵字={uniqueKeywords}, 收藏數={totalFavorites}", 
-                    stats.TotalSearches, stats.UniqueKeywords, stats.TotalFavorites);
+                Logger.LogInformation("成功獲取搜索統計: 專案={projectId}, 總搜索={totalSearches}, 唯一關鍵字={uniqueKeywords}, 收藏數={totalFavorites}", 
+                    project_id, stats.TotalSearches, stats.UniqueKeywords, stats.TotalFavorites);
 
-                return Ok(ApiResponse<SearchStatistics>.SuccessResult(stats, "獲取搜索統計成功"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ 獲取搜索統計失敗: {error}", ex.Message);
-                return StatusCode(500, ApiResponse<object>.ErrorResult("獲取搜索統計時發生錯誤"));
-            }
+                LogRequestComplete("獲取搜索統計");
+                return CreateSuccessResponse(stats, "獲取搜索統計成功");
+
+            }, "獲取搜索統計");
         }
 
-        /// <summary>
-        /// 執行實際的搜索操作
-        /// </summary>
-        private async Task<(List<PersonSearchResult> Results, int TotalCount)> PerformSearch(NpgsqlConnection connection, SearchRequest request)
-        {
-            _logger.LogInformation("🔍 開始執行{searchType}搜索: 關鍵字='{keyword}'", 
-                request.SearchType == "exact" ? "精準" : "模糊", request.Keyword);
-
-            try
-            {
-                // 1. 獲取總數
-                var countSql = BuildCountSql(request.SearchType);
-                var parameters = BuildSearchParameters(request.Keyword, request.SearchType);
-                
-                _logger.LogInformation("🔍 執行計數SQL查詢: {sql} 參數: {@parameters}", countSql, parameters);
-                var totalCount = await connection.QuerySingleAsync<int>(countSql, parameters);
-                
-                // 2. 獲取分頁數據
-                var sql = BuildSearchSql(request.SearchType);
-                _logger.LogInformation("🔍 執行搜索SQL查詢: {sql} 參數: {@parameters}", sql, parameters);
-                
-                var results = await connection.QueryAsync<dynamic>(sql, parameters);
-                
-                _logger.LogInformation("📊 原始查詢結果: {@results}", results);
-                
-                var personResults = results.Select(r => new PersonSearchResult
-                {
-                    Id = (int)r.id,
-                    Name = (string)r.name,
-                    Gender = (string)r.gender,
-                    Birthday = r.birthday?.ToString() ?? "",
-                    Nationality = (string)r.nationality,
-                    Mobile = (string)r.mobile,
-                    Phone = (string)r.phone,
-                    IdNumber = (string)r.id_number,
-                    PassportNumber = (string)r.passport_number,
-                    FamilyRelationships = (string)r.family_relationships,
-                    Friends = (string)r.friends,
-                    ProfileData = BuildProfileData(r),
-                    CreatedAt = r.created_at ?? DateTime.Now,
-                    UpdatedAt = r.updated_at ?? DateTime.Now,
-                    IsFavorited = false,
-                    Source = (string)r.source ?? "檔案上傳",
-                    MatchedFields = GetMatchedFields(r, request.Keyword, request.SearchType)
-                }).ToList();
-
-                _logger.LogInformation("✅ 搜索執行完成: 找到{count}筆結果, 結果: {@personResults}", totalCount, personResults);
-                return (Results: personResults, TotalCount: totalCount);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ 搜索執行失敗: {error}", ex.Message);
-                throw;
-            }
-        }
+        #region 私有輔助方法
 
         /// <summary>
-        /// 建立計數 SQL 語句
+        /// 建立計數 SQL 語句（包含專案隔離）
         /// </summary>
-        private string BuildCountSql(string searchType)
+        private string BuildCountSql(string searchType, string projectId)
         {
             var baseSql = @"
                 SELECT COUNT(*)
                 FROM person_profile 
-                WHERE ";
+                WHERE project_id = @project_id AND ";
 
             if (searchType == "exact")
             {
@@ -368,9 +361,9 @@ namespace familytree_backend.Controllers
         }
 
         /// <summary>
-        /// 建立搜索 SQL 語句
+        /// 建立搜索 SQL 語句（包含專案隔離）
         /// </summary>
-        private string BuildSearchSql(string searchType)
+        private string BuildSearchSql(string searchType, string projectId)
         {
             var baseSql = @"
                 SELECT id, name, gender, birthday, nationality, mobile, phone, 
@@ -378,11 +371,11 @@ namespace familytree_backend.Controllers
                        current_employer, education, activities, experience, publications,
                        email, address, mailing_address, birthplace, ethnicity, 
                        ancestral_origin, political_party, online_accounts, 
-                       frequent_locations, travel_history,                        discovery_source, remarks,
+                       frequent_locations, travel_history, discovery_source, remarks,
                        file_md5, created_at, updated_at,
                        'person_profile' as source_table, COALESCE(discovery_source, '檔案上傳') as source
                 FROM person_profile 
-                WHERE ";
+                WHERE project_id = @project_id AND ";
 
             if (searchType == "exact")
             {
@@ -447,17 +440,17 @@ namespace familytree_backend.Controllers
         }
 
         /// <summary>
-        /// 建立搜索參數
+        /// 建立搜索參數（包含專案 ID）
         /// </summary>
-        private object BuildSearchParameters(string keyword, string searchType)
+        private object BuildSearchParameters(string keyword, string searchType, string projectId)
         {
             if (searchType == "exact")
             {
-                return new { keyword };
+                return new { keyword, project_id = projectId };
             }
             else
             {
-                return new { fuzzyKeyword = $"%{keyword}%" };
+                return new { fuzzyKeyword = $"%{keyword}%", project_id = projectId };
             }
         }
 
@@ -501,18 +494,18 @@ namespace familytree_backend.Controllers
         }
 
         /// <summary>
-        /// 記錄搜索關鍵字
+        /// 記錄搜索關鍵字（按專案記錄）
         /// </summary>
-        private async Task RecordSearchKeyword(NpgsqlConnection connection, string keyword, string searchType)
+        private async Task RecordSearchKeyword(NpgsqlConnection connection, string keyword, string searchType, string projectId)
         {
-            _logger.LogInformation("📝 記錄搜索關鍵字: '{keyword}', 類型={searchType}", keyword, searchType);
+            Logger.LogInformation("記錄搜索關鍵字: '{keyword}', 類型={searchType}, 專案={projectId}", keyword, searchType, projectId);
 
             try
             {
                 var sql = @"
-                    INSERT INTO search_keywords (keyword, search_count, search_type, last_search_time, created_at, updated_at)
-                    VALUES (@keyword, 1, @searchType, @now, @now, @now)
-                    ON CONFLICT (keyword) 
+                    INSERT INTO search_keywords (keyword, search_count, search_type, last_search_time, created_at, updated_at, project_id)
+                    VALUES (@keyword, 1, @searchType, @now, @now, @now, @project_id)
+                    ON CONFLICT (keyword, project_id) 
                     DO UPDATE SET 
                         search_count = search_keywords.search_count + 1,
                         search_type = @searchType,
@@ -520,32 +513,32 @@ namespace familytree_backend.Controllers
                         updated_at = @now";
 
                 var now = DateTime.UtcNow;
-                await connection.ExecuteAsync(sql, new { keyword, searchType, now });
+                await connection.ExecuteAsync(sql, new { keyword, searchType, now, project_id = projectId });
 
-                _logger.LogInformation("✅ 搜索關鍵字記錄成功");
+                Logger.LogInformation("搜索關鍵字記錄成功");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 記錄搜索關鍵字失敗: {error}", ex.Message);
+                Logger.LogError(ex, "記錄搜索關鍵字失敗: {error}", ex.Message);
                 // 不拋出異常，避免影響主要搜索功能
             }
         }
 
         /// <summary>
-        /// 檢查收藏狀態
+        /// 檢查收藏狀態（按專案過濾）
         /// </summary>
-        private async Task CheckFavoriteStatus(NpgsqlConnection connection, List<PersonSearchResult> results)
+        private async Task CheckFavoriteStatus(NpgsqlConnection connection, List<PersonSearchResult> results, string projectId)
         {
             if (results.Count == 0) return;
 
-            _logger.LogInformation("💖 檢查{count}筆結果的收藏狀態", results.Count);
+            Logger.LogInformation("檢查{count}筆結果的收藏狀態", results.Count);
 
             try
             {
                 var personIds = results.Select(r => r.Id).ToArray();
                 var favoritedIds = await connection.QueryAsync<int>(
-                    "SELECT person_id FROM user_favorites WHERE person_id = ANY(@personIds)",
-                    new { personIds });
+                    "SELECT person_id FROM user_favorites WHERE person_id = ANY(@personIds) AND project_id = @project_id",
+                    new { personIds, project_id = projectId });
 
                 var favoritedSet = new HashSet<int>(favoritedIds);
 
@@ -554,65 +547,65 @@ namespace familytree_backend.Controllers
                     result.IsFavorited = favoritedSet.Contains(result.Id);
                 }
 
-                _logger.LogInformation("✅ 收藏狀態檢查完成: {favoritedCount}筆已收藏", favoritedSet.Count);
+                Logger.LogInformation("收藏狀態檢查完成: {favoritedCount}筆已收藏", favoritedSet.Count);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 檢查收藏狀態失敗: {error}", ex.Message);
+                Logger.LogError(ex, "檢查收藏狀態失敗: {error}", ex.Message);
                 // 不拋出異常，收藏狀態不影響主要功能
             }
         }
 
         /// <summary>
-        /// 獲取熱門關鍵字
+        /// 獲取熱門關鍵字（按專案過濾）
         /// </summary>
-        private async Task<List<string>> GetPopularKeywords(NpgsqlConnection connection, int limit = 10)
+        private async Task<List<string>> GetPopularKeywords(NpgsqlConnection connection, string projectId, int limit = 10)
         {
             try
             {
                 var keywords = await connection.QueryAsync<string>(
-                    "SELECT keyword FROM search_keywords ORDER BY search_count DESC, last_search_time DESC LIMIT @limit",
-                    new { limit });
+                    "SELECT keyword FROM search_keywords WHERE project_id = @project_id ORDER BY search_count DESC, last_search_time DESC LIMIT @limit",
+                    new { project_id = projectId, limit });
 
                 return keywords.ToList();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 獲取熱門關鍵字失敗: {error}", ex.Message);
+                Logger.LogError(ex, "獲取熱門關鍵字失敗: {error}", ex.Message);
                 return new List<string>();
             }
         }
 
         /// <summary>
-        /// 獲取搜索歷史
+        /// 獲取搜索歷史（按專案過濾）
         /// </summary>
-        private async Task<List<string>> GetSearchHistory(NpgsqlConnection connection, int limit = 20)
+        private async Task<List<string>> GetSearchHistory(NpgsqlConnection connection, string projectId, int limit = 20)
         {
             try
             {
                 var history = await connection.QueryAsync<string>(
-                    "SELECT keyword FROM search_keywords ORDER BY last_search_time DESC LIMIT @limit",
-                    new { limit });
+                    "SELECT keyword FROM search_keywords WHERE project_id = @project_id ORDER BY last_search_time DESC LIMIT @limit",
+                    new { project_id = projectId, limit });
 
                 return history.ToList();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 獲取搜索歷史失敗: {error}", ex.Message);
+                Logger.LogError(ex, "獲取搜索歷史失敗: {error}", ex.Message);
                 return new List<string>();
             }
         }
 
         /// <summary>
-        /// 記錄搜索活動
+        /// 記錄搜索活動（按專案記錄）
         /// </summary>
-        private async Task LogSearchActivity(NpgsqlConnection connection, SearchRequest request, int resultCount, string ipAddress, string userAgent)
+        private async Task LogSearchActivity(NpgsqlConnection connection, SearchRequest request, int resultCount, string ipAddress, string userAgent, string projectId)
         {
             try
             {
                 var sql = @"
-                    INSERT INTO search_logs (keyword, search_type, result_count, search_time, ip_address, user_agent)
-                    VALUES (@keyword, @searchType, @resultCount, @searchTime, @ipAddress, @userAgent)";
+                    INSERT INTO search_logs (keyword, search_type, result_count, search_time, ip_address, user_agent, project_id)
+                    VALUES (@keyword, @searchType, @resultCount, @searchTime, @ipAddress, @userAgent, @project_id)";
 
                 await connection.ExecuteAsync(sql, new
                 {
@@ -621,22 +614,23 @@ namespace familytree_backend.Controllers
                     resultCount,
                     searchTime = DateTime.UtcNow,
                     ipAddress,
-                    userAgent
+                    userAgent,
+                    project_id = projectId
                 });
 
-                _logger.LogInformation("📊 搜索活動記錄成功");
+                Logger.LogInformation("搜索活動記錄成功");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 記錄搜索活動失敗: {error}", ex.Message);
+                Logger.LogError(ex, "記錄搜索活動失敗: {error}", ex.Message);
                 // 不拋出異常，避免影響主要功能
             }
         }
 
         /// <summary>
-        /// 獲取詳細的熱門關鍵字資訊
+        /// 獲取詳細的熱門關鍵字資訊（按專案過濾）
         /// </summary>
-        private async Task<List<PopularKeyword>> GetTopKeywordsWithDetails(NpgsqlConnection connection, int limit)
+        private async Task<List<PopularKeyword>> GetTopKeywordsWithDetails(NpgsqlConnection connection, string projectId, int limit)
         {
             try
             {
@@ -648,32 +642,34 @@ namespace familytree_backend.Controllers
                                ELSE '一般'
                            END as popularity_level
                     FROM search_keywords 
+                    WHERE project_id = @project_id
                     ORDER BY search_count DESC, last_search_time DESC 
                     LIMIT @limit";
 
-                var results = await connection.QueryAsync<PopularKeyword>(sql, new { limit });
+                var results = await connection.QueryAsync<PopularKeyword>(sql, new { project_id = projectId, limit });
                 return results.ToList();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 獲取詳細熱門關鍵字失敗: {error}", ex.Message);
+                Logger.LogError(ex, "獲取詳細熱門關鍵字失敗: {error}", ex.Message);
                 return new List<PopularKeyword>();
             }
         }
 
         /// <summary>
-        /// 獲取搜索類型統計
+        /// 獲取搜索類型統計（按專案過濾）
         /// </summary>
-        private async Task<Dictionary<string, int>> GetSearchTypeStatistics(NpgsqlConnection connection)
+        private async Task<Dictionary<string, int>> GetSearchTypeStatistics(NpgsqlConnection connection, string projectId)
         {
             try
             {
                 var sql = @"
                     SELECT search_type, SUM(search_count) as total_count
                     FROM search_keywords 
+                    WHERE project_id = @project_id
                     GROUP BY search_type";
 
-                var results = await connection.QueryAsync<dynamic>(sql);
+                var results = await connection.QueryAsync<dynamic>(sql, new { project_id = projectId });
                 return results.ToDictionary(
                     r => (string)r.search_type,
                     r => (int)r.total_count
@@ -681,7 +677,7 @@ namespace familytree_backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 獲取搜索類型統計失敗: {error}", ex.Message);
+                Logger.LogError(ex, "獲取搜索類型統計失敗: {error}", ex.Message);
                 return new Dictionary<string, int>();
             }
         }
@@ -722,5 +718,7 @@ namespace familytree_backend.Controllers
             if (!string.IsNullOrEmpty(r.remarks)) sb.AppendLine($"備註: {r.remarks}");
             return sb.ToString().TrimEnd();
         }
+
+        #endregion
     }
 } 

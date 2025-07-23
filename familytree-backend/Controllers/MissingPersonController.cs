@@ -1,19 +1,24 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 using Dapper;
 using System.ComponentModel.DataAnnotations.Schema;
+using familytree_backend.Constants;
+using familytree_backend.Services;
 
 namespace familytree_backend.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
-    public class MissingPersonController : ControllerBase
+    public class MissingPersonController : BaseController
     {
         private readonly string _connectionString;
 
-        public MissingPersonController(IConfiguration configuration)
+        public MissingPersonController(
+            ILogger<MissingPersonController> logger,
+            IConfigurationService configurationService) 
+            : base(logger, configurationService)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _connectionString = configurationService.GetConnectionString();
         }
 
         /// <summary>

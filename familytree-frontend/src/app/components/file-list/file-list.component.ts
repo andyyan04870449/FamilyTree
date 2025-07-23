@@ -40,15 +40,22 @@ export class FileListComponent implements OnInit, OnDestroy {
 
     this.subscription.add(
       this.fileUploadService.getFileList().subscribe({
-        next: (response) => {
+        next: (response: any) => {
           this.loading = false;
-          if (!response.success) {
-            this.error = response.message;
+          if (response.success) {
+            // 後端現在回應格式是 { success: true, data: [...], message: "..." }
+            // 如果是新格式，使用 data；如果是舊格式，使用 files
+            this.files = response.data || response.files || [];
+            this.error = '';
+          } else {
+            this.error = response.message || '載入檔案列表失敗';
+            this.files = [];
           }
         },
         error: (err) => {
           this.loading = false;
           this.error = '載入檔案列表失敗';
+          this.files = [];
           console.error('載入檔案列表錯誤:', err);
         }
       })

@@ -129,12 +129,14 @@ export class FileUploadService {
   }
 
   // 取得檔案列表
-  getFileList(): Observable<FileListResponse> {
+  getFileList(): Observable<any> {
     const params = this.getProjectParams();
-    return this.http.get<FileListResponse>(`${this.apiUrl}/list`, { params }).pipe(
+    return this.http.get<any>(`${this.apiUrl}/list`, { params }).pipe(
       map(response => {
         if (response.success) {
-          this.filesSubject.next(response.files);
+          // 處理新的回應格式：後端現在回應 { success: true, data: [...], message: "..." }
+          const files = response.data || response.files || [];
+          this.filesSubject.next(files);
         }
         return response;
       })

@@ -2,46 +2,29 @@
 // 主要功能：專案列表、新增、編輯、刪除(軟刪除)、搜尋、統計
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 using Dapper;
-using System.IO;
+using familytree_backend.Constants;
 using familytree_backend.Models;
+using familytree_backend.Services;
 
 namespace familytree_backend.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
-    public class ProjectController : ControllerBase
+    public class ProjectController : BaseController
     {
         private readonly string _connectionString;
-        private readonly IWebHostEnvironment _environment;
 
-        public ProjectController(IConfiguration configuration, IWebHostEnvironment environment)
+        public ProjectController(
+            ILogger<ProjectController> logger,
+            IConfigurationService configurationService) 
+            : base(logger, configurationService)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
-            _environment = environment;
+            _connectionString = configurationService.GetConnectionString();
         }
 
-        private void LogToFile(string message)
-        {
-            try
-            {
-                var logDirectory = Path.Combine(_environment.ContentRootPath, "logs");
-                var logFilePath = Path.Combine(logDirectory, "familytree-projects-.log");
-                
-                if (!Directory.Exists(logDirectory))
-                {
-                    Directory.CreateDirectory(logDirectory);
-                }
-
-                var logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - ProjectController - {message}";
-                System.IO.File.AppendAllText(logFilePath, logEntry + Environment.NewLine);
-            }
-            catch
-            {
-                // 日誌寫入失敗時不中斷主要業務流程
-            }
-        }
+        // 移除硬編碼的 LogToFile 方法，使用繼承自 BaseController 的 Logger
 
         /// <summary>
         /// 獲取所有專案列表（排除已刪除的專案）
@@ -51,7 +34,7 @@ namespace familytree_backend.Controllers
         {
             try
             {
-                LogToFile($"開始獲取專案列表 - 狀態篩選: {status}, 搜尋關鍵字: {search}");
+                Logger.LogInformation($"開始獲取專案列表 - 狀態篩選: {status}, 搜尋關鍵字: {search}");
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
                 
@@ -93,7 +76,7 @@ namespace familytree_backend.Controllers
                 
                 var projects = await connection.QueryAsync<ProjectModel>(sql, parameters);
                 
-                LogToFile($"成功獲取 {projects.Count()} 個專案");
+                Logger.LogInformation($"成功獲取 {projects.Count()} 個專案");
                 return Ok(new ProjectListResponse 
                 { 
                     Success = true,
@@ -104,7 +87,7 @@ namespace familytree_backend.Controllers
             }
             catch (Exception ex)
             {
-                LogToFile($"獲取專案列表時發生錯誤: {ex.Message}");
+                Logger.LogInformation($"獲取專案列表時發生錯誤: {ex.Message}");
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
@@ -117,7 +100,7 @@ namespace familytree_backend.Controllers
         {
             try
             {
-                LogToFile($"開始獲取專案 ID: {id}");
+                Logger.LogInformation($"開始獲取專案 ID: {id}");
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
                 
@@ -140,16 +123,16 @@ namespace familytree_backend.Controllers
                 
                 if (project == null)
                 {
-                    LogToFile($"專案 ID {id} 不存在或已被刪除");
+                    Logger.LogInformation($"專案 ID {id} 不存在或已被刪除");
                     return NotFound(new { success = false, message = "專案不存在" });
                 }
                 
-                LogToFile($"成功獲取專案: {project.ProjectName}");
+                Logger.LogInformation($"成功獲取專案: {project.ProjectName}");
                 return Ok(new { success = true, project });
             }
             catch (Exception ex)
             {
-                LogToFile($"獲取專案 ID {id} 時發生錯誤: {ex.Message}");
+                Logger.LogInformation($"獲取專案 ID {id} 時發生錯誤: {ex.Message}");
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
@@ -162,7 +145,7 @@ namespace familytree_backend.Controllers
         {
             try
             {
-                LogToFile($"開始建立新專案: {request.ProjectName}");
+                Logger.LogInformation($"開始建立新專案: {request.ProjectName}");
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
                 
@@ -202,7 +185,7 @@ namespace familytree_backend.Controllers
                 
                 await connection.ExecuteAsync(sql, parameters);
                 
-                LogToFile($"成功建立專案: {projectId} - {request.ProjectName}");
+                Logger.LogInformation($"成功建立專案: {projectId} - {request.ProjectName}");
                 
                 // 返回新建立的專案資料
                 return CreatedAtAction(nameof(GetProject), new { id = projectId }, new 
@@ -214,7 +197,7 @@ namespace familytree_backend.Controllers
             }
             catch (Exception ex)
             {
-                LogToFile($"建立專案時發生錯誤: {ex.Message}");
+                Logger.LogInformation($"建立專案時發生錯誤: {ex.Message}");
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
@@ -227,7 +210,7 @@ namespace familytree_backend.Controllers
         {
             try
             {
-                LogToFile($"開始更新專案 ID: {id}");
+                Logger.LogInformation($"開始更新專案 ID: {id}");
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
                 
@@ -237,7 +220,7 @@ namespace familytree_backend.Controllers
                 
                 if (exists == 0)
                 {
-                    LogToFile($"專案 ID {id} 不存在或已被刪除");
+                    Logger.LogInformation($"專案 ID {id} 不存在或已被刪除");
                     return NotFound(new { success = false, message = "專案不存在" });
                 }
                 
@@ -268,16 +251,16 @@ namespace familytree_backend.Controllers
                 
                 if (rowsAffected == 0)
                 {
-                    LogToFile($"專案 ID {id} 更新失敗");
+                    Logger.LogInformation($"專案 ID {id} 更新失敗");
                     return NotFound(new { success = false, message = "專案更新失敗" });
                 }
                 
-                LogToFile($"成功更新專案: {id} - {request.ProjectName}");
+                Logger.LogInformation($"成功更新專案: {id} - {request.ProjectName}");
                 return Ok(new { success = true, message = "專案更新成功" });
             }
             catch (Exception ex)
             {
-                LogToFile($"更新專案 ID {id} 時發生錯誤: {ex.Message}");
+                Logger.LogInformation($"更新專案 ID {id} 時發生錯誤: {ex.Message}");
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
@@ -290,7 +273,7 @@ namespace familytree_backend.Controllers
         {
             try
             {
-                LogToFile($"開始軟刪除專案 ID: {id}");
+                Logger.LogInformation($"開始軟刪除專案 ID: {id}");
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
                 
@@ -300,7 +283,7 @@ namespace familytree_backend.Controllers
                 
                 if (exists == 0)
                 {
-                    LogToFile($"專案 ID {id} 不存在或已被刪除");
+                    Logger.LogInformation($"專案 ID {id} 不存在或已被刪除");
                     return NotFound(new { success = false, message = "專案不存在" });
                 }
                 
@@ -316,16 +299,16 @@ namespace familytree_backend.Controllers
                 
                 if (rowsAffected == 0)
                 {
-                    LogToFile($"專案 ID {id} 軟刪除失敗");
+                    Logger.LogInformation($"專案 ID {id} 軟刪除失敗");
                     return BadRequest(new { success = false, message = "專案刪除失敗" });
                 }
                 
-                LogToFile($"成功軟刪除專案: {id}");
+                Logger.LogInformation($"成功軟刪除專案: {id}");
                 return Ok(new { success = true, message = "專案已刪除" });
             }
             catch (Exception ex)
             {
-                LogToFile($"軟刪除專案 ID {id} 時發生錯誤: {ex.Message}");
+                Logger.LogInformation($"軟刪除專案 ID {id} 時發生錯誤: {ex.Message}");
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
@@ -338,19 +321,19 @@ namespace familytree_backend.Controllers
         {
             try
             {
-                LogToFile("開始測試專案資料");
+                Logger.LogInformation("開始測試專案資料");
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
                 
                 var sql = "SELECT id, user_id, project_name, status FROM projects LIMIT 1";
                 var result = await connection.QueryAsync(sql);
                 
-                LogToFile("測試查詢完成");
+                Logger.LogInformation("測試查詢完成");
                 return Ok(new { success = true, rawData = result });
             }
             catch (Exception ex)
             {
-                LogToFile($"測試時發生錯誤: {ex.Message}");
+                Logger.LogInformation($"測試時發生錯誤: {ex.Message}");
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
@@ -363,7 +346,7 @@ namespace familytree_backend.Controllers
         {
             try
             {
-                LogToFile("開始獲取專案統計資訊");
+                Logger.LogInformation("開始獲取專案統計資訊");
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
                 
@@ -380,12 +363,12 @@ namespace familytree_backend.Controllers
                 
                 var statistics = await connection.QueryFirstOrDefaultAsync<ProjectStatistics>(sql);
                 
-                LogToFile("成功獲取專案統計資訊");
+                Logger.LogInformation("成功獲取專案統計資訊");
                 return Ok(new { success = true, statistics });
             }
             catch (Exception ex)
             {
-                LogToFile($"獲取專案統計資訊時發生錯誤: {ex.Message}");
+                Logger.LogInformation($"獲取專案統計資訊時發生錯誤: {ex.Message}");
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }

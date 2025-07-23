@@ -36,6 +36,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// 優化重點：註冊新的配置管理服務，移除硬編碼依賴
+// 註冊配置管理服務 - 提供統一的配置存取介面
+builder.Services.AddScoped<familytree_backend.Services.IConfigurationService, familytree_backend.Services.ConfigurationService>();
+
 // Add AI Service (used internally by AnalysisBackgroundService)
 builder.Services.AddSingleton<familytree_backend.Services.AIService>();
 

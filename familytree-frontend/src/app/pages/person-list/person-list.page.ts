@@ -56,22 +56,25 @@ export class PersonListComponent implements OnInit, OnDestroy {
 
     this.subscription.add(
       this.personDataService.getPersonDataList(this.currentPage, this.pageSize).subscribe({
-        next: (response) => {
+        next: (response: any) => {
           console.log('[PersonListPage] 載入人員資料成功:', response);
           this.loading = false;
           if (response.success) {
-            this.personDataList = response.personDataList;
-            this.totalCount = response.totalCount;
-            this.totalPages = response.totalPages;
+            // 處理新的回應格式：{ success: true, data: [...], pagination: {...} }
+            this.personDataList = response.data || response.personDataList || [];
+            this.totalCount = response.pagination?.totalCount || response.totalCount || 0;
+            this.totalPages = response.pagination?.totalPages || response.totalPages || 0;
             console.log('[PersonListPage] 人員資料列表:', this.personDataList);
           } else {
             this.error = response.message || '載入資料失敗';
+            this.personDataList = [];
             console.error('[PersonListPage] 載入人員資料失敗:', response.message);
           }
         },
         error: (err: any) => {
           console.error('[PersonListPage] 載入人員資料API錯誤:', err);
           this.loading = false;
+          this.personDataList = [];
           
           if (err.message === '請先選擇專案') {
             this.error = '請先選擇專案後再檢視人員資料';
@@ -95,15 +98,17 @@ export class PersonListComponent implements OnInit, OnDestroy {
 
     this.subscription.add(
       this.personDataService.searchPersonData(this.searchName, this.currentPage, this.pageSize).subscribe({
-        next: (response) => {
+        next: (response: any) => {
           console.log('[PersonListPage] 搜尋人員資料成功:', response);
           this.loading = false;
           if (response.success) {
-            this.personDataList = response.personDataList;
-            this.totalCount = response.totalCount;
-            this.totalPages = response.totalPages;
+            // 處理新的回應格式
+            this.personDataList = response.data || response.personDataList || [];
+            this.totalCount = response.pagination?.totalCount || response.totalCount || 0;
+            this.totalPages = response.pagination?.totalPages || response.totalPages || 0;
           } else {
             this.error = response.message || '搜尋資料失敗';
+            this.personDataList = [];
             console.error('[PersonListPage] 搜尋人員資料失敗:', response.message);
           }
         },
@@ -111,6 +116,7 @@ export class PersonListComponent implements OnInit, OnDestroy {
           console.error('[PersonListPage] 搜尋人員資料API錯誤:', err);
           this.loading = false;
           this.error = '搜尋人員資料失敗';
+          this.personDataList = [];
         }
       })
     );
