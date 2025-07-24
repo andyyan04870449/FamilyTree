@@ -1157,8 +1157,6 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       return;
     }
 
-    const wasEmpty = this.graphData.links.length === 0;
-
     // 創建新的連線對象
     const newLink: GraphLink = {
       source: this.firstSelectedNode.id,
@@ -1178,8 +1176,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
 
     this.logService.info('RelationshipGraphComponent', '添加新連線到圖譜', {
       newLink,
-      currentLinksCount: this.graphData.links.length,
-      wasEmpty
+      currentLinksCount: this.graphData.links.length
     });
 
     // 添加新連線到圖譜數據
@@ -1188,12 +1185,8 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     // 更新統計資訊
     this.updateStatistics();
 
-    // 如果原本沒有連線，重新初始化圖譜以啟用力導向模擬
-    if (wasEmpty && this.svg && this.simulation) {
-      this.logService.info('RelationshipGraphComponent', '圖譜原本沒有連線，重新初始化以啟用力導向模擬');
-      this.updateGraph();
-    } else if (this.svg && this.simulation) {
-      // 只更新圖譜顯示，不重置節點位置
+    // 只更新圖譜顯示，不重置節點位置
+    if (this.svg && this.simulation) {
       this.updateGraphWithNewLink(newLink);
     }
 
@@ -1309,34 +1302,47 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
 
     // 更新力導向模擬的連線，確保新連線參與更新循環
     if (this.simulation) {
-      // 更新連線力
-      this.simulation.force('link').links(visibleLinks);
-      
-      // 重新設置tick事件處理器，確保包含所有連線（包括新的）
-      this.simulation.on('tick', () => {
-        const currentLinks = graphGroup.selectAll('.link');
-        const currentLinkLabels = graphGroup.selectAll('.link-label');
-        const currentNodes = graphGroup.selectAll('.node');
-        
-        // 更新所有連線位置（包括新添加的）
-        currentLinks
-          .attr('x1', (d: any) => d.source.x || 0)
-          .attr('y1', (d: any) => d.source.y || 0)
-          .attr('x2', (d: any) => d.target.x || 0)
-          .attr('y2', (d: any) => d.target.y || 0);
+      try {
+        // 如果有連線，確保力導向模擬正在運行
+        if (visibleLinks.length > 0) {
+          // 更新連線力 - 只有在有連線時才設置
+          this.simulation.force('link').links(visibleLinks);
+          
+          // 重新設置tick事件處理器，確保包含所有連線（包括新的）
+          this.simulation.on('tick', () => {
+            const currentLinks = graphGroup.selectAll('.link');
+            const currentLinkLabels = graphGroup.selectAll('.link-label');
+            const currentNodes = graphGroup.selectAll('.node');
+            
+            // 更新所有連線位置（包括新添加的）
+            currentLinks
+              .attr('x1', (d: any) => d.source.x || 0)
+              .attr('y1', (d: any) => d.source.y || 0)
+              .attr('x2', (d: any) => d.target.x || 0)
+              .attr('y2', (d: any) => d.target.y || 0);
 
-        // 更新所有連線標籤位置
-        currentLinkLabels
-          .attr('x', (d: any) => ((d.source.x || 0) + (d.target.x || 0)) / 2)
-          .attr('y', (d: any) => ((d.source.y || 0) + (d.target.y || 0)) / 2);
+            // 更新所有連線標籤位置
+            currentLinkLabels
+              .attr('x', (d: any) => ((d.source.x || 0) + (d.target.x || 0)) / 2)
+              .attr('y', (d: any) => ((d.source.y || 0) + (d.target.y || 0)) / 2);
 
-        // 更新所有節點位置
-        currentNodes
-          .attr('transform', (d: any) => `translate(${d.x || 0},${d.y || 0})`);
-      });
-      
-      // 輕微重啟模擬以確保連線正確更新，但設置很低的alpha避免大幅移動節點
-      this.simulation.alpha(0.1).restart();
+            // 更新所有節點位置
+            currentNodes
+              .attr('transform', (d: any) => `translate(${d.x || 0},${d.y || 0})`);
+          });
+          
+          // 很輕微地重啟模擬，避免大幅移動節點
+          this.simulation.alpha(0.05).restart();
+        } else {
+          // 如果沒有連線，移除連線力並停止模擬
+          this.simulation.force('link').links([]);
+          this.simulation.stop();
+        }
+      } catch (error) {
+        this.logService.error('RelationshipGraphComponent', 'D3.js模擬更新失敗', error);
+        // 如果出現錯誤，至少確保連線在視覺上正確顯示
+        this.logService.info('RelationshipGraphComponent', '降級到靜態連線顯示');
+      }
     }
 
     this.logService.info('RelationshipGraphComponent', '圖譜顯示更新完成，節點位置保持不變');
