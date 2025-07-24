@@ -76,6 +76,7 @@ export class VisualAnalysisComponent implements OnInit {
 
   // 載入視覺化分析資料
   loadVisualAnalysisData(): void {
+    console.log('📊 載入視覺化分析資料');
     this.loading = true;
     this.visualAnalysisService.getVisualAnalysisGraphs(this.pageNumber, this.pageSize).subscribe({
       next: (response) => {
@@ -84,13 +85,14 @@ export class VisualAnalysisComponent implements OnInit {
           this.totalCount = response.totalCount;
           this.totalPages = response.totalPages;
           this.applyFilters(); // 套用篩選器
+          console.log('✅ 視覺化分析資料載入成功', response.graphs.length, '筆');
         } else {
-          console.error('載入視覺化分析資料失敗:', response.message);
+          console.error('❌ 載入視覺化分析資料失敗:', response.message);
         }
         this.loading = false;
       },
       error: (error) => {
-        console.error('載入視覺化分析資料時發生錯誤:', error);
+        console.error('❌ 載入視覺化分析資料時發生錯誤:', error);
         this.loading = false;
       }
     });
@@ -238,6 +240,25 @@ export class VisualAnalysisComponent implements OnInit {
     }
   }
 
+  // 檢查是否有啟用的篩選條件
+  hasActiveFilters(): boolean {
+    return !!(this.searchFilters.name || 
+             this.searchFilters.cases || 
+             this.searchFilters.relationCount || 
+             this.searchFilters.updatedBy || 
+             this.searchFilters.updatedAt);
+  }
+
+  // 重新命名分析圖
+  renameGraph(item: VisualAnalysisGraph): void {
+    const newName = prompt('請輸入新的名稱:', item.name);
+    if (newName && newName.trim() && newName.trim() !== item.name) {
+      console.log('🏷️ 重新命名分析圖:', item.id, '->', newName.trim());
+      // TODO: 實作重新命名API
+      alert('重新命名功能尚未實作');
+    }
+  }
+
   // 確認新增
   confirmAdd(): void {
     if (!this.newAnalysisName.trim()) {
@@ -251,6 +272,8 @@ export class VisualAnalysisComponent implements OnInit {
       return;
     }
 
+    console.log('➕ 建立新分析圖:', this.newAnalysisName);
+
     // 呼叫後端API創建分析圖
     const request: CreateVisualAnalysisRequest = {
       name: this.newAnalysisName,
@@ -258,19 +281,23 @@ export class VisualAnalysisComponent implements OnInit {
       updatedBy: 'user'
     };
 
+    this.loading = true;
     this.visualAnalysisService.createVisualAnalysisGraph(request).subscribe({
       next: (response) => {
         if (response.success) {
-          alert('創建視覺化分析圖成功');
+          console.log('✅ 分析圖建立成功:', response);
           this.loadVisualAnalysisData(); // 重新載入資料
           this.closeAddDialog();
         } else {
-          alert('創建失敗: ' + response.message);
+          console.error('❌ 建立分析圖失敗:', response.message);
+          alert('建立失敗: ' + response.message);
         }
+        this.loading = false;
       },
       error: (error) => {
-        console.error('創建視覺化分析圖時發生錯誤:', error);
-        alert('創建時發生錯誤，請稍後再試');
+        console.error('❌ 建立分析圖時發生錯誤:', error);
+        alert('建立時發生錯誤，請稍後再試');
+        this.loading = false;
       }
     });
   }
