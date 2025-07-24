@@ -489,10 +489,10 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force('collision', d3.forceCollide().radius(22)); // 適中的碰撞半徑 22
 
-    // 如果沒有連線，使用靜態佈局
+    // 即使沒有連線也保持力導向模擬運行，提供節點互動和防重疊效果
     if (this.graphData.links.length === 0) {
-      this.logService.info('RelationshipGraphComponent', '沒有連線，使用靜態佈局');
-      this.simulation.stop(); // 停止力導向模擬
+      this.logService.info('RelationshipGraphComponent', '沒有連線，但保持力導向模擬以提供節點互動');
+      // 不停止模擬，讓節點排斥力、碰撞檢測和拖拽效果正常工作
     }
 
     this.updateGraph();
@@ -615,12 +615,12 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       .style('pointer-events', 'none')
       .text((d: any) => d.name);
 
-    // 更新模擬
-    if (visibleLinks.length > 0) {
-      // 有連線時使用力導向模擬
-      this.simulation
-        .nodes(visibleNodes)
-        .on('tick', () => {
+    // 更新力導向模擬 - 無論是否有連線都使用模擬以提供節點互動
+    this.simulation
+      .nodes(visibleNodes)
+      .on('tick', () => {
+        // 更新連線位置（如果有連線的話）
+        if (visibleLinks.length > 0) {
           link
             .attr('x1', (d: any) => d.source.x)
             .attr('y1', (d: any) => d.source.y)
@@ -631,47 +631,27 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
           linkLabel
             .attr('x', (d: any) => (d.source.x + d.target.x) / 2)
             .attr('y', (d: any) => (d.source.y + d.target.y) / 2);
+        }
 
-          node
-            .attr('transform', (d: any) => `translate(${d.x},${d.y})`);
-        });
+        // 更新節點位置
+        node
+          .attr('transform', (d: any) => `translate(${d.x},${d.y})`);
+      });
 
-      this.simulation.force('link')
-        .links(visibleLinks);
+    // 設置連線力
+    if (visibleLinks.length > 0) {
+      // 有連線時設置連線力
+      this.simulation.force('link').links(visibleLinks);
+      this.logService.info('RelationshipGraphComponent', '啟用力導向模擬（含連線力）', {
+        nodesCount: visibleNodes.length,
+        linksCount: visibleLinks.length
+      });
     } else {
-      // 沒有連線時直接設置節點位置
-      this.logService.info('RelationshipGraphComponent', '沒有連線，直接設置節點位置', {
+      // 沒有連線時移除連線力，但保持其他力（排斥、碰撞、中心力）
+      this.simulation.force('link').links([]);
+      this.logService.info('RelationshipGraphComponent', '啟用力導向模擬（無連線力，僅節點互動力）', {
         nodesCount: visibleNodes.length
       });
-      
-      // 使用網格佈局 - 大幅減少節點間距
-      const cols = Math.ceil(Math.sqrt(visibleNodes.length));
-      const rows = Math.ceil(visibleNodes.length / cols);
-      const nodeSize = 80; // 恢復原本的節點大小
-      const spacing = 120; // 恢復原本的間距
-      
-      // 計算網格佈局的起始位置，讓節點群組居中
-      const totalWidth = cols * spacing;
-      const totalHeight = rows * spacing;
-      const startX = (width - totalWidth) / 2;
-      const startY = (height - totalHeight) / 2;
-      
-      visibleNodes.forEach((node, index) => {
-        const col = index % cols;
-        const row = Math.floor(index / cols);
-        node.x = startX + col * spacing + spacing / 2;
-        node.y = startY + row * spacing + spacing / 2;
-        
-        this.logService.debug('RelationshipGraphComponent', `節點 ${node.name} 網格位置`, {
-          nodeId: node.id,
-          nodeName: node.name,
-          position: { x: node.x, y: node.y },
-          gridPosition: { col, row }
-        });
-      });
-      
-      // 直接更新節點位置
-      node.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
     }
 
     this.logService.info('RelationshipGraphComponent', '圖譜更新完成', {
@@ -1300,15 +1280,20 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
         return ((sourceNode?.y || 0) + (targetNode?.y || 0)) / 2;
       });
 
-    // 為了確保節點位置不變，我們不重啟力導向模擬
-    // 只是靜態地更新力導向的連線數據，不啟動模擬
-    if (this.simulation && visibleLinks.length > 0) {
+    // 更新力導向模擬的連線數據，但不重啟以保持節點位置
+    if (this.simulation) {
       try {
-        // 只更新連線數據，但不重啟模擬
-        this.simulation.force('link').links(visibleLinks);
-        this.logService.info('RelationshipGraphComponent', '已更新力導向連線數據，但保持節點位置不變');
+        if (visibleLinks.length > 0) {
+          // 有連線時：設置連線力
+          this.simulation.force('link').links(visibleLinks);
+          this.logService.info('RelationshipGraphComponent', '已更新力導向連線數據，保持節點位置不變');
+        } else {
+          // 沒有連線時：移除連線力，但保持其他力（節點排斥、碰撞、中心力）運行
+          this.simulation.force('link').links([]);
+          this.logService.info('RelationshipGraphComponent', '已移除連線力，但保持節點互動力運行');
+        }
       } catch (error) {
-        this.logService.error('RelationshipGraphComponent', '更新力導向連線數據失敗', error);
+        this.logService.error('RelationshipGraphComponent', '更新力導向模擬失敗', error);
       }
     }
 
