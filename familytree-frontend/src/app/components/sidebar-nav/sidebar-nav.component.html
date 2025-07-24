@@ -20,10 +20,23 @@
     <button class="close-btn" (click)="closeSidebar()">×</button>
   </div>
 
-
   
   <nav class="nav-menu">
-    <!-- 1. 關鍵字檢索 -->
+
+    <!-- 1. 案件管理 -->
+    <div class="nav-section">
+      <ul class="nav-list">
+        <li class="nav-item" [class.active]="activeRoute === 'case-management'">
+          <a routerLink="/case-management" (click)="closeSidebar()">
+            <span class="nav-icon">📋</span>
+            <span class="nav-text">案件管理</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    
+    <!-- 2. 關鍵字檢索 -->
     <div class="nav-section">
       <ul class="nav-list">
         <li class="nav-item" [class.active]="activeRoute === 'full-text-search'">
@@ -35,25 +48,13 @@
       </ul>
     </div>
     
-    <!-- 2. 視覺化分析 -->
+    <!-- 3. 視覺化分析 -->
     <div class="nav-section">
       <ul class="nav-list">
         <li class="nav-item" [class.active]="activeRoute === 'visual-analysis'">
           <a routerLink="/visual-analysis" (click)="closeSidebar()">
             <span class="nav-icon">📊</span>
             <span class="nav-text">視覺化分析</span>
-          </a>
-        </li>
-      </ul>
-    </div>
-    
-    <!-- 3. 案件管理 -->
-    <div class="nav-section">
-      <ul class="nav-list">
-        <li class="nav-item" [class.active]="activeRoute === 'case-management'">
-          <a routerLink="/case-management" (click)="closeSidebar()">
-            <span class="nav-icon">📋</span>
-            <span class="nav-text">案件管理</span>
           </a>
         </li>
       </ul>

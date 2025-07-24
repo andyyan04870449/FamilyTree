@@ -271,8 +271,35 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
   ngOnChanges(changes: SimpleChanges): void {
     this.logService.info('RelationshipGraphComponent', 'ngOnChanges 被調用', {
       changes: Object.keys(changes),
-      selectedPersonIds: this.selectedPersonIds
+      selectedPersonIds: this.selectedPersonIds,
+      currentGraphDataLinksCount: this.graphData?.links.length || 0
     });
+
+    // 檢查 graphData 是否被外部重置，這可能導致新建立的關聯線丟失
+    if (changes['graphData'] && !changes['graphData'].firstChange) {
+      const oldData = changes['graphData'].previousValue;
+      const newData = changes['graphData'].currentValue;
+      
+      this.logService.warn('RelationshipGraphComponent', 'graphData 被外部更改，可能導致新建立的關聯線丟失', {
+        oldLinksCount: oldData?.links?.length || 0,
+        newLinksCount: newData?.links?.length || 0,
+        oldLinks: oldData?.links?.map((l: any) => ({ source: l.source, target: l.target, type: l.type })) || [],
+        newLinks: newData?.links?.map((l: any) => ({ source: l.source, target: l.target, type: l.type })) || []
+      });
+      
+      // 當 graphData 被外部更改時，更新統計並重新初始化圖譜
+      if (newData) {
+        this.updateStatistics();
+        
+        // 如果容器已經準備好，重新初始化圖譜
+        setTimeout(() => {
+          if (this.graphContainer && this.graphData) {
+            this.logService.info('RelationshipGraphComponent', '因 graphData 外部更改而重新初始化圖譜');
+            this.initGraph();
+          }
+        }, 100);
+      }
+    }
 
     // 當 selectedPersonIds 變更且組件已經初始化時，重新執行分析
     if (changes['selectedPersonIds'] && !changes['selectedPersonIds'].firstChange) {
@@ -473,13 +500,8 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       node.x = width / 2 + Math.cos(angle) * radius;
       node.y = height / 2 + Math.sin(angle) * radius;
       
-      this.logService.debug('RelationshipGraphComponent', `節點 ${node.name} 位置設置`, {
-        nodeId: node.id,
-        nodeName: node.name,
-        position: { x: node.x, y: node.y },
-        angle: angle,
-        radius: radius
-      });
+      // 移除節點位置設置的debug日誌以提高性能
+      // this.logService.debug('RelationshipGraphComponent', `節點 ${node.name} 位置設置`, { ... });
     });
 
     // 創建力導向模擬 - 適中的力道讓佈局平衡
@@ -518,9 +540,39 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     const height = this.svg.node().getBoundingClientRect().height;
     const visibleNodes = this.graphData.nodes.filter(node => !this.hiddenNodes.has(node.id));
     const visibleLinks = this.graphData.links.filter(link => {
-      const sourceVisible = !this.hiddenNodes.has(link.source);
-      const targetVisible = !this.hiddenNodes.has(link.target);
-      return sourceVisible && targetVisible;
+      // 處理D3可能已將source/target轉換為節點對象的情況
+      let sourceId: string;
+      let targetId: string;
+      
+      if (typeof link.source === 'object' && link.source !== null && 'id' in link.source) {
+        sourceId = String((link.source as any).id);
+      } else {
+        sourceId = String(link.source);
+      }
+      
+      if (typeof link.target === 'object' && link.target !== null && 'id' in link.target) {
+        targetId = String((link.target as any).id);
+      } else {
+        targetId = String(link.target);
+      }
+      
+      const sourceVisible = !this.hiddenNodes.has(sourceId);
+      const targetVisible = !this.hiddenNodes.has(targetId);
+      
+      // 檢查節點存在性
+      const sourceExists = this.graphData!.nodes.some(node => 
+        String(node.id) === sourceId
+      );
+      const targetExists = this.graphData!.nodes.some(node => 
+        String(node.id) === targetId
+      );
+      
+      const isVisible = sourceVisible && targetVisible && sourceExists && targetExists;
+      
+      // 移除重複的連線可見性檢查日誌以提高性能
+      // this.logService.info('RelationshipGraphComponent', 'updateGraph連線可見性檢查', { ... });
+      
+      return isVisible;
     });
 
     this.logService.info('RelationshipGraphComponent', '更新圖譜', {
@@ -530,18 +582,26 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       totalLinks: this.graphData.links.length
     });
 
-    // 更新連線
+    // 更新連線，使用唯一鍵值函數確保D3正確識別現有連線
     const link = graphGroup.selectAll('.link')
-      .data(visibleLinks)
+      .data(visibleLinks, (d: any) => {
+        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+        return `${sourceId}-${targetId}-${d.type}`;
+      })
       .join('line')
       .attr('class', 'link')
       .style('stroke', (d: any) => d.isFamily ? '#ff6b35' : '#666')
       .style('stroke-width', 2)
       .style('opacity', 0.6);
 
-    // 更新連線標籤
+    // 更新連線標籤，使用相同的唯一鍵值函數
     const linkLabel = graphGroup.selectAll('.link-label')
-      .data(visibleLinks)
+      .data(visibleLinks, (d: any) => {
+        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+        return `${sourceId}-${targetId}-${d.type}`;
+      })
       .join('text')
       .attr('class', 'link-label')
       .style('text-anchor', 'middle')
@@ -619,15 +679,35 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     this.simulation
       .nodes(visibleNodes)
       .on('tick', () => {
-        // 更新連線位置（如果有連線的話）
-        if (visibleLinks.length > 0) {
-          link
+        // 動態獲取當前的連線，而不是使用方法開始時的快照
+        const currentLinks = this.svg?.select('.graph-group').selectAll('.link');
+        const currentLinkLabels = this.svg?.select('.graph-group').selectAll('.link-label');
+        
+        if (currentLinks && !currentLinks.empty()) {
+          // 臨時調試：檢查tick事件中的連線處理
+          const tickDebugCount = (this as any)._tickDebugCount || 0;
+          if (tickDebugCount < 3) { // 只記錄前3次tick
+            this.logService.info('RelationshipGraphComponent', `tick事件 #${tickDebugCount}`, {
+              currentLinksCount: currentLinks.size(),
+              visibleLinksLength: visibleLinks.length
+            });
+            (this as any)._tickDebugCount = tickDebugCount + 1;
+          }
+          
+          currentLinks
             .attr('x1', (d: any) => {
               // 檢查source是否為節點對象，如果不是則查找對應節點
               if (typeof d.source === 'object' && d.source.x !== undefined) {
                 return d.source.x;
               } else {
-                const sourceNode = visibleNodes.find(n => n.id === d.source);
+                const sourceNode = this.graphData?.nodes.find(n => String(n.id) === String(d.source));
+                if (!sourceNode) {
+                  this.logService.warn('RelationshipGraphComponent', 'tick事件中找不到source節點', {
+                    linkSource: d.source,
+                    linkType: d.type,
+                    availableNodeIds: this.graphData?.nodes.map(n => n.id)
+                  });
+                }
                 return sourceNode ? sourceNode.x : 0;
               }
             })
@@ -635,7 +715,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
               if (typeof d.source === 'object' && d.source.y !== undefined) {
                 return d.source.y;
               } else {
-                const sourceNode = visibleNodes.find(n => n.id === d.source);
+                const sourceNode = this.graphData?.nodes.find(n => String(n.id) === String(d.source));
                 return sourceNode ? sourceNode.y : 0;
               }
             })
@@ -643,7 +723,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
               if (typeof d.target === 'object' && d.target.x !== undefined) {
                 return d.target.x;
               } else {
-                const targetNode = visibleNodes.find(n => n.id === d.target);
+                const targetNode = this.graphData?.nodes.find(n => String(n.id) === String(d.target));
                 return targetNode ? targetNode.x : 0;
               }
             })
@@ -651,32 +731,36 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
               if (typeof d.target === 'object' && d.target.y !== undefined) {
                 return d.target.y;
               } else {
-                const targetNode = visibleNodes.find(n => n.id === d.target);
+                const targetNode = this.graphData?.nodes.find(n => String(n.id) === String(d.target));
                 return targetNode ? targetNode.y : 0;
               }
             });
 
           // 更新連線標籤位置
-          linkLabel
-            .attr('x', (d: any) => {
-              const sourceX = typeof d.source === 'object' && d.source.x !== undefined ? 
-                d.source.x : (visibleNodes.find(n => n.id === d.source)?.x || 0);
-              const targetX = typeof d.target === 'object' && d.target.x !== undefined ? 
-                d.target.x : (visibleNodes.find(n => n.id === d.target)?.x || 0);
-              return (sourceX + targetX) / 2;
-            })
-            .attr('y', (d: any) => {
-              const sourceY = typeof d.source === 'object' && d.source.y !== undefined ? 
-                d.source.y : (visibleNodes.find(n => n.id === d.source)?.y || 0);
-              const targetY = typeof d.target === 'object' && d.target.y !== undefined ? 
-                d.target.y : (visibleNodes.find(n => n.id === d.target)?.y || 0);
-              return (sourceY + targetY) / 2;
-            });
+          if (currentLinkLabels && !currentLinkLabels.empty()) {
+            currentLinkLabels
+              .attr('x', (d: any) => {
+                const sourceX = typeof d.source === 'object' && d.source.x !== undefined ? 
+                  d.source.x : (this.graphData?.nodes.find(n => String(n.id) === String(d.source))?.x || 0);
+                const targetX = typeof d.target === 'object' && d.target.x !== undefined ? 
+                  d.target.x : (this.graphData?.nodes.find(n => String(n.id) === String(d.target))?.x || 0);
+                return (sourceX + targetX) / 2;
+              })
+              .attr('y', (d: any) => {
+                const sourceY = typeof d.source === 'object' && d.source.y !== undefined ? 
+                  d.source.y : (this.graphData?.nodes.find(n => String(n.id) === String(d.source))?.y || 0);
+                const targetY = typeof d.target === 'object' && d.target.y !== undefined ? 
+                  d.target.y : (this.graphData?.nodes.find(n => String(n.id) === String(d.target))?.y || 0);
+                return (sourceY + targetY) / 2;
+              });
+          }
         }
 
         // 更新節點位置
-        node
-          .attr('transform', (d: any) => `translate(${d.x},${d.y})`);
+        const currentNodes = this.svg?.select('.graph-group').selectAll('.node');
+        if (currentNodes && !currentNodes.empty()) {
+          currentNodes.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
+        }
       });
 
     // 設置連線力
@@ -1100,15 +1184,26 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
 
     this.relationshipGraphService.createRelationship(request).subscribe({
       next: (response: CreateRelationshipResponse) => {
-        this.logService.info('RelationshipGraphComponent', '關係保存成功', {
+        this.logService.info('RelationshipGraphComponent', '關係保存響應接收', {
           success: response.success,
-          message: response.message
+          message: response.message,
+          currentGraphDataLinksCount: this.graphData?.links.length || 0
         });
         
         if (response.success) {
-          this.logService.info('RelationshipGraphComponent', '關係保存成功，添加新連線到圖譜');
+          this.logService.info('RelationshipGraphComponent', '關係保存成功，準備添加新連線到圖譜', {
+            firstNode: this.firstSelectedNode?.name,
+            secondNode: this.secondSelectedNode?.name,
+            relationshipType: this.relationshipType,
+            currentLinksCount: this.graphData?.links.length || 0
+          });
+          
           this.addNewRelationshipToGraph();
           this.resetRelationshipCreation();
+          
+          this.logService.info('RelationshipGraphComponent', '新連線添加完成，發出事件給父組件', {
+            finalLinksCount: this.graphData?.links.length || 0
+          });
           
           // 發出關係建立成功事件，通知父組件
           this.relationshipCreated.emit();
@@ -1195,23 +1290,34 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
                 this.relationshipType.includes('妹')
     };
 
-    const wasEmpty = this.graphData.links.length === 0;
-    
-    this.logService.info('RelationshipGraphComponent', '添加新連線到圖譜', {
+    this.logService.info('RelationshipGraphComponent', '添加新連線到圖譜 - 修復前狀態', {
       newLink,
       currentLinksCount: this.graphData.links.length,
-      wasEmpty
+      currentLinks: this.graphData.links.map(l => ({
+        source: l.source,
+        target: l.target,
+        type: l.type
+      }))
     });
 
     // 添加新連線到圖譜數據
     this.graphData.links.push(newLink);
+
+    this.logService.info('RelationshipGraphComponent', '添加新連線到圖譜 - 修復後狀態', {
+      newLinksCount: this.graphData.links.length,
+      allLinks: this.graphData.links.map(l => ({
+        source: l.source,
+        target: l.target,
+        type: l.type
+      }))
+    });
 
     // 更新統計資訊
     this.updateStatistics();
 
     // 只更新圖譜顯示，不重置節點位置
     if (this.svg && this.simulation) {
-      this.updateGraphWithNewLink(newLink, wasEmpty);
+      this.updateGraphWithNewLink(newLink);
     }
 
     this.logService.info('RelationshipGraphComponent', '新連線添加完成');
@@ -1220,7 +1326,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
   /**
    * 更新圖譜顯示，添加新連線但保持節點位置
    */
-  private updateGraphWithNewLink(newLink: GraphLink, wasEmpty: boolean = false): void {
+  private updateGraphWithNewLink(newLink: GraphLink): void {
     if (!this.svg || !this.graphData) {
       return;
     }
@@ -1247,27 +1353,121 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       return;
     }
     
+    this.logService.info('RelationshipGraphComponent', '開始計算可見連線', {
+      totalLinksInGraphData: this.graphData.links.length,
+      hiddenNodesSize: this.hiddenNodes.size,
+      hiddenNodes: Array.from(this.hiddenNodes),
+      allLinksInGraphData: this.graphData.links.map(l => ({
+        source: l.source,
+        target: l.target,
+        type: l.type
+      }))
+    });
+
     // 更新連線數據 - 只包含節點都存在的連線
     const visibleLinks = this.graphData.links.filter(link => {
-      const sourceVisible = !this.hiddenNodes.has(link.source);
-      const targetVisible = !this.hiddenNodes.has(link.target);
-      const sourceExists = this.graphData!.nodes.some(node => node.id === link.source);
-      const targetExists = this.graphData!.nodes.some(node => node.id === link.target);
+      // 處理D3可能已將source/target轉換為節點對象的情況
+      let sourceId: string;
+      let targetId: string;
+      
+      if (typeof link.source === 'object' && link.source !== null && 'id' in link.source) {
+        sourceId = String((link.source as any).id);
+      } else {
+        sourceId = String(link.source);
+      }
+      
+      if (typeof link.target === 'object' && link.target !== null && 'id' in link.target) {
+        targetId = String((link.target as any).id);
+      } else {
+        targetId = String(link.target);
+      }
+      
+      const sourceVisible = !this.hiddenNodes.has(sourceId);
+      const targetVisible = !this.hiddenNodes.has(targetId);
+      
+      // 檢查節點存在性
+      const sourceExists = this.graphData!.nodes.some(node => 
+        String(node.id) === sourceId
+      );
+      const targetExists = this.graphData!.nodes.some(node => 
+        String(node.id) === targetId
+      );
+      
+      // 只對前2條和最後1條連線記錄詳細日誌，避免日誌過多
+      const linkIndex = this.graphData!.links.indexOf(link);
+      const shouldLogDetail = linkIndex < 2 || linkIndex === this.graphData!.links.length - 1;
+      
+      if (shouldLogDetail) {
+        this.logService.info('RelationshipGraphComponent', `updateGraphWithNewLink連線可見性檢查 [${linkIndex}]`, {
+          link: { source: link.source, target: link.target, type: link.type },
+          sourceId,
+          targetId,
+          sourceVisible,
+          targetVisible,
+          sourceExists,
+          targetExists,
+          isVisible: sourceVisible && targetVisible && sourceExists && targetExists,
+          availableNodeIds: this.graphData!.nodes.map(n => n.id),
+          linkSourceType: typeof link.source,
+          linkTargetType: typeof link.target
+        });
+      }
+      
       return sourceVisible && targetVisible && sourceExists && targetExists;
     });
 
-    // 重新綁定連線數據並添加新連線，確保圖層順序
+    this.logService.info('RelationshipGraphComponent', '更新圖譜顯示，保留所有現有連線', {
+      totalLinks: this.graphData.links.length,
+      visibleLinksCount: visibleLinks.length,
+      visibleLinks: visibleLinks.map(l => ({
+        source: l.source,
+        target: l.target,
+        type: l.type
+      })),
+      newLinkAdded: newLink
+    });
+
+    // 記錄D3數據綁定前的狀態
+    const existingLinkElements = graphGroup.selectAll('.link').nodes();
+    this.logService.info('RelationshipGraphComponent', 'D3數據綁定前狀態', {
+      existingLinkElementsCount: existingLinkElements.length,
+      visibleLinksForBinding: visibleLinks.length
+    });
+
+    // 重新綁定連線數據並添加新連線，使用唯一鍵值函數確保D3正確識別現有連線
     const link = graphGroup.selectAll('.link')
-      .data(visibleLinks)
+      .data(visibleLinks, (d: any) => {
+        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+        const key = `${sourceId}-${targetId}-${d.type}`;
+        this.logService.debug('RelationshipGraphComponent', 'D3鍵值生成', {
+          link: { source: d.source, target: d.target, type: d.type },
+          sourceId,
+          targetId,
+          generatedKey: key
+        });
+        return key;
+      })
       .join('line')
       .attr('class', 'link')
       .style('stroke', (d: any) => d.isFamily ? '#ff6b35' : '#666')
       .style('stroke-width', 2)
       .style('opacity', 0.6);
 
-    // 重新綁定連線標籤
+    // 記錄D3數據綁定後的狀態
+    const finalLinkElements = graphGroup.selectAll('.link').nodes();
+    this.logService.info('RelationshipGraphComponent', 'D3數據綁定後狀態', {
+      finalLinkElementsCount: finalLinkElements.length,
+      expectedCount: visibleLinks.length
+    });
+
+    // 重新綁定連線標籤，使用相同的唯一鍵值函數
     const linkLabel = graphGroup.selectAll('.link-label')
-      .data(visibleLinks)
+      .data(visibleLinks, (d: any) => {
+        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+        return `${sourceId}-${targetId}-${d.type}`;
+      })
       .join('text')
       .attr('class', 'link-label')
       .style('text-anchor', 'middle')
@@ -1289,11 +1489,13 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
         if (typeof d.source === 'object' && d.source.x !== undefined) {
           return d.source.x;
         } else {
-          const sourceNode = this.graphData?.nodes.find(n => n.id === d.source || n.id === String(d.source));
-          this.logService.debug('RelationshipGraphComponent', '設置連線源點位置（字符串查找）', {
+          const sourceNode = this.graphData?.nodes.find(n => String(n.id) === String(d.source));
+          this.logService.info('RelationshipGraphComponent', '立即設置連線源點位置', {
             linkSource: d.source,
-            sourceNode: sourceNode,
-            position: sourceNode ? { x: sourceNode.x, y: sourceNode.y } : null
+            linkType: d.type,
+            sourceNode: sourceNode ? { id: sourceNode.id, x: sourceNode.x, y: sourceNode.y } : null,
+            foundNode: !!sourceNode,
+            allNodeIds: this.graphData?.nodes.map(n => n.id)
           });
           return sourceNode?.x || 0;
         }
@@ -1310,11 +1512,12 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
         if (typeof d.target === 'object' && d.target.x !== undefined) {
           return d.target.x;
         } else {
-          const targetNode = this.graphData?.nodes.find(n => n.id === d.target || n.id === String(d.target));
-          this.logService.debug('RelationshipGraphComponent', '設置連線目標位置（字符串查找）', {
+          const targetNode = this.graphData?.nodes.find(n => String(n.id) === String(d.target));
+          this.logService.info('RelationshipGraphComponent', '立即設置連線目標位置', {
             linkTarget: d.target,
-            targetNode: targetNode,
-            position: targetNode ? { x: targetNode.x, y: targetNode.y } : null
+            linkType: d.type,
+            targetNode: targetNode ? { id: targetNode.id, x: targetNode.x, y: targetNode.y } : null,
+            foundNode: !!targetNode
           });
           return targetNode?.x || 0;
         }
@@ -1348,55 +1551,51 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     // 更新力導向模擬的連線數據
     if (this.simulation) {
       try {
+        const previousLinkForce = this.simulation.force('link');
+        const previousLinks = previousLinkForce ? previousLinkForce.links() : [];
+        
+        this.logService.info('RelationshipGraphComponent', '更新力導向模擬前狀態', {
+          previousLinksCount: previousLinks.length,
+          newVisibleLinksCount: visibleLinks.length,
+          previousLinks: previousLinks.map((l: any) => ({
+            source: typeof l.source === 'object' ? l.source.id : l.source,
+            target: typeof l.target === 'object' ? l.target.id : l.target,
+            type: l.type || 'unknown'
+          })),
+          newVisibleLinks: visibleLinks.map(l => ({
+            source: l.source,
+            target: l.target,
+            type: l.type
+          }))
+        });
+        
+        // 無論是否為第一條連線，都只更新力導向的連線數據，不重新初始化整個圖譜
         if (visibleLinks.length > 0) {
-          // 如果這是第一條連線，需要重新初始化整個力導向系統
-          if (wasEmpty) {
-            this.logService.info('RelationshipGraphComponent', '第一條連線：保存節點位置並重新初始化力導向系統');
-            
-            // 保存當前節點位置
-            const savedPositions = new Map<string, {x: number, y: number}>();
-            if (this.graphData) {
-              this.graphData.nodes.forEach(node => {
-                if (node.x !== undefined && node.y !== undefined) {
-                  savedPositions.set(node.id, { x: node.x, y: node.y });
-                }
-              });
+          // 設置連線力，並重新啟動模擬以建立新連線的節點綁定
+          this.simulation.force('link').links(visibleLinks);
+          
+          // 重新啟動模擬讓D3重新建立連線與節點的綁定關係
+          this.simulation.alpha(0.3).restart();
+          
+          const updatedLinkForce = this.simulation.force('link');
+          const updatedLinks = updatedLinkForce ? updatedLinkForce.links() : [];
+          
+          this.logService.info('RelationshipGraphComponent', '已更新力導向連線數據並重啟模擬，重新建立連線節點綁定', {
+            linksCount: visibleLinks.length,
+            actualUpdatedLinksCount: updatedLinks.length,
+            updatedLinks: updatedLinks.map((l: any) => ({
+              source: typeof l.source === 'object' ? l.source.id : l.source,
+              target: typeof l.target === 'object' ? l.target.id : l.target,
+              type: l.type || 'unknown'
+            }))
+          });
+          
+          // 短暫延遲後降低模擬強度，避免節點位置大幅變動
+          setTimeout(() => {
+            if (this.simulation) {
+              this.simulation.alpha(0.1);
             }
-            
-            // 重新初始化整個圖譜以確保連線力正確設置
-            this.updateGraph();
-            
-            // 恢復節點位置
-            setTimeout(() => {
-              if (this.graphData) {
-                this.graphData.nodes.forEach(node => {
-                  const savedPos = savedPositions.get(node.id);
-                  if (savedPos) {
-                    node.x = savedPos.x;
-                    node.y = savedPos.y;
-                    // 固定節點位置，防止力導向改變它們
-                    (node as any).fx = savedPos.x;
-                    (node as any).fy = savedPos.y;
-                  }
-                });
-                
-                // 短暫固定後釋放，讓連線力正常工作
-                setTimeout(() => {
-                  if (this.graphData) {
-                    this.graphData.nodes.forEach(node => {
-                      delete (node as any).fx;
-                      delete (node as any).fy;
-                    });
-                    this.logService.info('RelationshipGraphComponent', '節點位置已恢復，連線力正常運作');
-                  }
-                }, 100);
-              }
-            }, 50);
-          } else {
-            // 有連線時：設置連線力
-            this.simulation.force('link').links(visibleLinks);
-            this.logService.info('RelationshipGraphComponent', '已更新力導向連線數據，保持節點位置不變');
-          }
+          }, 500);
         } else {
           // 沒有連線時：移除連線力，但保持其他力（節點排斥、碰撞、中心力）運行
           this.simulation.force('link').links([]);
@@ -1407,7 +1606,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       }
     }
 
-    this.logService.info('RelationshipGraphComponent', '圖譜顯示更新完成，節點位置保持不變');
+    this.logService.info('RelationshipGraphComponent', '圖譜顯示更新完成，所有節點和連線位置保持不變');
   }
 
 

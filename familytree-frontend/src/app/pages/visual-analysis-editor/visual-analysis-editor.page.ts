@@ -304,9 +304,21 @@ export class VisualAnalysisEditorComponent implements OnInit, OnDestroy {
    * 處理關係建立成功事件
    */
   onRelationshipCreated(): void {
-    this.logService.info('VisualAnalysisEditorComponent', '關係建立成功');
-    // 不重新載入編輯器資料，因為RelationshipGraphComponent已經正確處理了新關係的顯示
-    // 重新載入會導致節點位置重置，影響用戶體驗
-    // this.loadEditorData(); // 移除這行避免節點位置重置
+    this.logService.info('VisualAnalysisEditorComponent', '關係建立成功', {
+      currentGraphDataLinksCount: this.graphData?.links.length || 0
+    });
+    
+    // 關係建立成功後，完全依賴RelationshipGraphComponent的本地圖譜更新
+    // 不重新載入編輯器資料，避免覆蓋新建立的關聯線
+    // 新關聯線已經通過後端API保存，下次重新載入頁面時會正確顯示
+    
+    this.logService.info('VisualAnalysisEditorComponent', '關係建立後的圖譜狀態', {
+      finalGraphDataLinksCount: this.graphData?.links.length || 0,
+      graphDataLinks: this.graphData?.links.map(l => ({
+        source: l.source,
+        target: l.target,
+        type: l.type
+      })) || []
+    });
   }
 }
