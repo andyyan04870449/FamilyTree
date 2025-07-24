@@ -6,8 +6,8 @@
 ## 固定網址設定
 
 ### 當前配置
-- **前端固定網址**: `https://familytree-frontend.ngrok.io`
-- **後端固定網址**: `https://familytree-backend.ngrok.io`
+- **前端固定網址**: `https://KUNYOU-POC-frontend.ngrok.io`
+- **後端固定網址**: `https://KUNYOU-POC-backend.ngrok.io`
 
 ### 修改固定網址
 如果您想要修改固定網址，請編輯 `ngrok-config.sh` 檔案：
@@ -30,8 +30,8 @@ export BACKEND_SUBDOMAIN="your-backend-name"
 ### 2. 查看固定網址
 腳本會自動顯示您的固定網址：
 ```
-📱 前端固定網址: https://familytree-frontend.ngrok.io
-🔧 後端固定網址: https://familytree-backend.ngrok.io
+📱 前端固定網址: https://KUNYOU-POC-frontend.ngrok.io
+🔧 後端固定網址: https://KUNYOU-POC-backend.ngrok.io
 ```
 
 ### 3. 分享給客戶

@@ -34,8 +34,8 @@ case $CURRENT_BRANCH in
         export ASPNETCORE_ENVIRONMENT="Development"
         
         # 開發環境的 ngrok 配置
-        export FRONTEND_SUBDOMAIN="familytree-frontend-dev"
-        export BACKEND_SUBDOMAIN="familytree-backend-dev"
+        export FRONTEND_SUBDOMAIN="KUNYOU-POC-frontend"
+        export BACKEND_SUBDOMAIN="KUNYOU-POC-backend"
         
         echo "✅ 開發環境配置已載入"
         echo "📱 前端網址: https://${FRONTEND_SUBDOMAIN}.ngrok.io"

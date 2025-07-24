@@ -8,8 +8,8 @@
 export NGROK_AUTHTOKEN="2wcEhFbbW0lJlInEZPqKNzHhfFv_6EoK7JfA5h2BjoNca35yu"
 
 # 固定網址設定（付費版功能）
-export FRONTEND_SUBDOMAIN="familytree-frontend-dev"
-export BACKEND_SUBDOMAIN="familytree-backend-dev"
+export FRONTEND_SUBDOMAIN="KUNYOU-POC-frontend"
+export BACKEND_SUBDOMAIN="KUNYOU-POC-backend"
 
 # 本地服務端口
 export FRONTEND_PORT="4200"

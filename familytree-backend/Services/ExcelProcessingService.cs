@@ -29,7 +29,7 @@ namespace familytree_backend.Services
                 _logger.LogInformation("開始處理Excel檔案: {FilePath}", filePath);
 
                 // 讀取欄位對應
-                var fieldMappings = await GetFieldMappingsAsync();
+                var fieldMappings = await GetFieldMappingsAsync(projectId);
                 
                 // 讀取Excel檔案
                 var excelData = await ReadExcelFileAsync(filePath);
@@ -137,15 +137,25 @@ namespace familytree_backend.Services
             return dataTable;
         }
 
-        private async Task<Dictionary<string, string>> GetFieldMappingsAsync()
+        private async Task<Dictionary<string, string>> GetFieldMappingsAsync(string? projectId = null)
         {
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var sql = "SELECT excel_field_name as ExcelFieldName, db_field_name as DbFieldName FROM field_mapping";
+            // field_mapping 是通用常數表，不需要專案過濾
+            string sql = "SELECT excel_field_name as ExcelFieldName, db_field_name as DbFieldName FROM field_mapping";
             var mappings = await connection.QueryAsync<FieldMappingModel>(sql);
+            _logger.LogInformation("查詢通用欄位對應表");
 
             _logger.LogInformation("從資料庫取得 {Count} 個欄位對應", mappings.Count());
+
+            // 詳細記錄所有資料庫中的欄位對應
+            _logger.LogInformation("=== 資料庫中的欄位對應清單 ===");
+            foreach (var mapping in mappings)
+            {
+                _logger.LogInformation("資料庫對應: '{ExcelField}' -> '{DbField}'", mapping.ExcelFieldName, mapping.DbFieldName);
+            }
+            _logger.LogInformation("=== 欄位對應清單結束 ===");
 
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var processedKeys = new List<string>();
@@ -154,7 +164,7 @@ namespace familytree_backend.Services
             foreach (var mapping in mappings)
             {
                 var key = mapping.ExcelFieldName?.Trim();
-                _logger.LogDebug("處理欄位對應: '{ExcelField}' -> '{DbField}'", mapping.ExcelFieldName, mapping.DbFieldName);
+                _logger.LogInformation("處理欄位對應: '{ExcelField}' -> '{DbField}'", mapping.ExcelFieldName, mapping.DbFieldName);
                 
                 if (string.IsNullOrWhiteSpace(key))
                 {
@@ -235,6 +245,25 @@ namespace familytree_backend.Services
 
             _logger.LogInformation("欄位對應統計: 成功對應 {MappedCount} 個欄位, 未對應 {UnmappedCount} 個欄位", 
                 fieldMappings.Count, unmappedFields.Count);
+
+            // 詳細列出所有未對應的欄位和建議的SQL
+            if (unmappedFields.Any())
+            {
+                _logger.LogWarning("=== 未對應的Excel欄位詳細列表 ===");
+                var fieldList = unmappedFields.ToList();
+                for (int i = 0; i < fieldList.Count; i++)
+                {
+                    _logger.LogWarning("未對應欄位 {Index}: '{FieldName}'", i + 1, fieldList[i]);
+                }
+                _logger.LogWarning("=== 建議將以下欄位加入 field_mapping 表 ===");
+                foreach (var field in fieldList)
+                {
+                    var suggestedDbField = SuggestDbFieldName(field);
+                    _logger.LogWarning("INSERT INTO field_mapping (excel_field_name, db_field_name, project_id) VALUES ('{ExcelField}', '{SuggestedDbField}', '{ProjectId}');", 
+                        field, suggestedDbField, projectId ?? "YOUR_PROJECT_ID");
+                }
+                _logger.LogWarning("=== 建議SQL結束 ===");
+            }
 
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -508,6 +537,48 @@ namespace familytree_backend.Services
                        WHERE md5_hash = @fileMd5";
 
             await connection.ExecuteAsync(sql, new { status, mergeTime = DateTime.UtcNow, fileMd5 });
+        }
+
+        // 輔助方法：根據Excel欄位名稱建議資料庫欄位名稱
+        private string SuggestDbFieldName(string excelFieldName)
+        {
+            if (string.IsNullOrEmpty(excelFieldName)) return "unknown_field";
+
+            // 常見對應建議
+            var suggestions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                {"項次", "sequence_number"},
+                {"照片", "photo_path"},
+                {"發掘經過", "discovery_process"},
+                {"出生地", "birth_place"},
+                {"民族", "ethnicity"},
+                {"籍貫", "ancestral_origin"},
+                {"黨派", "political_party"},
+                {"通訊地址", "mailing_address"},
+                {"親屬關係", "family_relationship"},
+                {"經歷", "work_experience"},
+                {"網路帳號", "social_accounts"},
+                {"著作", "publications"},
+                {"參與活動", "activities"},
+                {"重要友人", "important_contacts"},
+                {"經常出入場所", "frequent_locations"},
+                {"出國紀錄", "travel_records"},
+                {"建檔時間", "record_created_time"},
+                {"建檔人", "record_creator"},
+                {"最後更新時間", "record_updated_time"},
+                {"最後更新人", "record_updater"}
+            };
+
+            // 移除特殊字符和括號內容
+            var cleanField = excelFieldName.Split('(')[0].Split('\n')[0].Trim();
+            
+            if (suggestions.ContainsKey(cleanField))
+            {
+                return suggestions[cleanField];
+            }
+
+            // 轉換為英文欄位名稱的通用規則
+            return cleanField.ToLower().Replace(" ", "_").Replace("　", "_");
         }
     }
 } 

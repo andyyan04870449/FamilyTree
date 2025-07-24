@@ -1,5 +1,5 @@
 # 多階段構建 Angular 應用程式
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 # 設置工作目錄
 WORKDIR /app

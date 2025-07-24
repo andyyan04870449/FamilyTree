@@ -15,7 +15,7 @@ export class AppConstants {
     // 如果是通過ngrok訪問（包含.ngrok.io）
     if (hostname.includes('.ngrok.io')) {
       console.log('🔗 使用 ngrok URL');
-      return 'https://familytree-backend-dev.ngrok.io/api';
+      return 'https://KUNYOU-POC-backend.ngrok.io/api';
     }
     
     // 如果是本地開發環境

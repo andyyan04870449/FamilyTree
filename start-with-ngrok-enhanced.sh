@@ -34,8 +34,8 @@ load_ngrok_config() {
     else
         log_warning "找不到 ngrok-config.sh，使用預設配置"
         export NGROK_AUTHTOKEN="2wcEhFbbW0lJlInEZPqKNzHhfFv_6EoK7JfA5h2BjoNca35yu"
-        export FRONTEND_SUBDOMAIN="familytree-frontend"
-        export BACKEND_SUBDOMAIN="familytree-backend"
+        export FRONTEND_SUBDOMAIN="KUNYOU-POC-frontend"
+        export BACKEND_SUBDOMAIN="KUNYOU-POC-backend"
         export FRONTEND_PORT="4200"
         export BACKEND_PORT="5087"
         export NGROK_UI_PORT="4040"

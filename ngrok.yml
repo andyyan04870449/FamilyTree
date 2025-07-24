@@ -1,0 +1,11 @@
+version: "2"
+authtoken: 2wcEhFbbW0lJlInEZPqKNzHhfFv_6EoK7JfA5h2BjoNca35yu
+tunnels:
+  frontend:
+    proto: http
+    addr: familytree-frontend:80
+    domain: KUNYOU-POC-frontend.ngrok.io
+  backend:
+    proto: http
+    addr: familytree-backend:80
+    domain: KUNYOU-POC-backend.ngrok.io 
