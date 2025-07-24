@@ -1142,6 +1142,23 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       return;
     }
 
+    // 驗證節點是否存在於當前圖譜中
+    const sourceExists = this.graphData.nodes.some(node => node.id === this.firstSelectedNode!.id);
+    const targetExists = this.graphData.nodes.some(node => node.id === this.secondSelectedNode!.id);
+
+    if (!sourceExists || !targetExists) {
+      this.logService.error('RelationshipGraphComponent', '選中的節點不存在於當前圖譜中，無法建立關係', {
+        firstNodeId: this.firstSelectedNode.id,
+        secondNodeId: this.secondSelectedNode.id,
+        sourceExists,
+        targetExists,
+        availableNodes: this.graphData.nodes.map(n => n.id)
+      });
+      return;
+    }
+
+    const wasEmpty = this.graphData.links.length === 0;
+
     // 創建新的連線對象
     const newLink: GraphLink = {
       source: this.firstSelectedNode.id,
@@ -1161,7 +1178,8 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
 
     this.logService.info('RelationshipGraphComponent', '添加新連線到圖譜', {
       newLink,
-      currentLinksCount: this.graphData.links.length
+      currentLinksCount: this.graphData.links.length,
+      wasEmpty
     });
 
     // 添加新連線到圖譜數據
@@ -1170,8 +1188,12 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     // 更新統計資訊
     this.updateStatistics();
 
-    // 只更新圖譜顯示，不重置節點位置
-    if (this.svg && this.simulation) {
+    // 如果原本沒有連線，重新初始化圖譜以啟用力導向模擬
+    if (wasEmpty && this.svg && this.simulation) {
+      this.logService.info('RelationshipGraphComponent', '圖譜原本沒有連線，重新初始化以啟用力導向模擬');
+      this.updateGraph();
+    } else if (this.svg && this.simulation) {
+      // 只更新圖譜顯示，不重置節點位置
       this.updateGraphWithNewLink(newLink);
     }
 
@@ -1188,11 +1210,33 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
 
     const graphGroup = this.svg.select('.graph-group');
     
-    // 更新連線數據
+    // 驗證新連線的節點是否存在於當前圖譜中
+    const sourceExists = this.graphData.nodes.some(node => node.id === newLink.source);
+    const targetExists = this.graphData.nodes.some(node => node.id === newLink.target);
+    
+    if (!sourceExists) {
+      this.logService.error('RelationshipGraphComponent', '新連線的源節點不存在於當前圖譜中', {
+        sourceId: newLink.source,
+        availableNodes: this.graphData.nodes.map(n => n.id)
+      });
+      return;
+    }
+    
+    if (!targetExists) {
+      this.logService.error('RelationshipGraphComponent', '新連線的目標節點不存在於當前圖譜中', {
+        targetId: newLink.target,
+        availableNodes: this.graphData.nodes.map(n => n.id)
+      });
+      return;
+    }
+    
+    // 更新連線數據 - 只包含節點都存在的連線
     const visibleLinks = this.graphData.links.filter(link => {
       const sourceVisible = !this.hiddenNodes.has(link.source);
       const targetVisible = !this.hiddenNodes.has(link.target);
-      return sourceVisible && targetVisible;
+      const sourceExists = this.graphData!.nodes.some(node => node.id === link.source);
+      const targetExists = this.graphData!.nodes.some(node => node.id === link.target);
+      return sourceVisible && targetVisible && sourceExists && targetExists;
     });
 
     // 重新綁定連線數據並添加新連線，確保圖層順序
