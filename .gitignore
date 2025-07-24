@@ -137,4 +137,4 @@ test-files/
 
 # Test Excel files (Chinese filenames)
 *客戶基資表*.xlsx
-分公司*.xlsx 
+分公司*.xlsx ngrok-temp.yml
