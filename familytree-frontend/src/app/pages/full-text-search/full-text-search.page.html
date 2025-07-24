@@ -140,13 +140,6 @@
           <table class="table">
             <thead>
               <tr>
-                <th>
-                  <input 
-                    type="checkbox" 
-                    [(ngModel)]="selectAll"
-                    (change)="toggleSelectAll()"
-                  >
-                </th>
                 <th>處理</th>
                 <th>姓名</th>
                 <th>性別</th>
@@ -157,13 +150,6 @@
             </thead>
             <tbody>
               <tr *ngFor="let result of searchResults; let i = index">
-                <td>
-                  <input 
-                    type="checkbox" 
-                    [(ngModel)]="result.selected"
-                    (change)="updateSelectAll()"
-                  >
-                </td>
                 <td>{{ i + 1 }}</td>
                 <td>{{ result.name }}</td>
                 <td>{{ result.gender }}</td>
@@ -185,14 +171,7 @@
                   >
                     {{ result.isFavorited ? '⭐' : '☆' }}
                   </button>
-                  <button 
-                    class="btn-icon"
-                    [class.in-analysis]="result.selected"
-                    (click)="toggleResultSelection(result)"
-                    [title]="result.selected ? '從分析清單移除' : '加入分析清單'"
-                  >
-                    {{ result.selected ? '📊' : '📈' }}
-                  </button>
+
                 </td>
               </tr>
             </tbody>
@@ -275,57 +254,7 @@
         </div>
       </div>
 
-      <!-- 分析清單 -->
-      <div class="analysis-card">
-        <div class="analysis-header">
-          <h3>分析清單</h3>
-          <div class="header-actions">
-            <button 
-              *ngIf="analysisList.length > 0"
-              class="btn btn-primary btn-sm"
-              (click)="showRelationshipGraph()"
-            >
-              🔗 關聯圖分析
-            </button>
-            <button 
-              *ngIf="analysisList.length > 0"
-              class="btn btn-warning btn-sm"
-              (click)="clearAnalysisList()"
-            >
-              清空
-            </button>
-          </div>
-        </div>
 
-        <!-- 空分析清單 -->
-        <div *ngIf="analysisList.length === 0" class="empty-analysis">
-          <div class="empty-icon">📊</div>
-          <p>目前沒有分析項目</p>
-          <small>在搜索結果中勾選人員即可加入分析清單</small>
-        </div>
-
-        <!-- 分析列表 -->
-        <div *ngIf="analysisList.length > 0" class="analysis-list">
-          <div 
-            *ngFor="let item of analysisList" 
-            class="analysis-item"
-          >
-            <span 
-              class="analysis-name"
-              (click)="viewAnalysisItemDetails(item)"
-            >
-              {{ item.name }}
-            </span>
-            <button 
-              class="btn-icon btn-delete"
-              (click)="removeFromAnalysisList(item)"
-              title="移除分析項目"
-            >
-              🗑️
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 

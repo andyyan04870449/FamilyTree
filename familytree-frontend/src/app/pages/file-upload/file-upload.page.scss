@@ -18,6 +18,52 @@
     font-size: 1.1rem;
     color: #666;
   }
+
+  // 當前專案資訊
+  .current-project-info {
+    margin-top: 20px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    display: inline-block;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+    .project-indicator {
+      color: white;
+      font-weight: 500;
+
+      .project-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        margin-right: 8px;
+      }
+
+      .project-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+    }
+  }
+
+  // 無專案警告
+  .no-project-warning {
+    margin-top: 20px;
+    padding: 12px 20px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    color: #856404;
+    display: inline-block;
+    font-weight: 500;
+
+    .warning-icon {
+      margin-right: 8px;
+    }
+
+    .warning-text {
+      font-size: 0.95rem;
+    }
+  }
 }
 
 .upload-type-selector {

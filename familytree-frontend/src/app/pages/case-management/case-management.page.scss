@@ -1,0 +1,583 @@
+// 案件管理頁面樣式：深色主題，匹配提供的截圖設計
+// 主要特色：深色背景、表格式布局、彩色功能按鈕
+
+.case-management-page {
+  background: #1a1a2e;
+  min-height: 100vh;
+  padding: 1.5rem;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+// 頁面標題區域
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem 0;
+
+  .header-left {
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: #ffffff;
+    }
+  }
+
+  .header-right {
+    .btn-new-case {
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 0.5rem 1.2rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #357abd;
+      }
+    }
+  }
+}
+
+// 列表標題
+.list-header {
+  margin-bottom: 1rem;
+
+  .list-title {
+    font-size: 1rem;
+    color: #ffffff;
+    font-weight: 500;
+  }
+}
+
+// 搜尋區域
+.search-section {
+  margin-bottom: 1.5rem;
+
+  .search-box {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 0;
+    border: 1px solid #3a3a5c;
+    border-radius: 4px;
+    overflow: hidden;
+
+    .search-input {
+      background: #2a2a3e;
+      border: none;
+      border-right: 1px solid #3a3a5c;
+      padding: 0.75rem 1rem;
+      color: #ffffff;
+      font-size: 0.9rem;
+
+      &:last-child {
+        border-right: none;
+      }
+
+      &::placeholder {
+        color: #8a8a9a;
+      }
+
+      &:focus {
+        outline: none;
+        background: #353548;
+      }
+    }
+  }
+}
+
+// 載入中
+.loading-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #ffffff;
+
+  .loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #3a3a5c;
+    border-top: 2px solid #4a90e2;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 0.75rem;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// 表格區域
+.table-section {
+  background: #2a2a3e;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+
+  .case-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    thead {
+      background: #3a3a5c;
+
+      th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 500;
+        font-size: 0.9rem;
+        color: #ffffff;
+        border-bottom: 1px solid #4a4a6c;
+
+        &.col-index { 
+          width: 80px; 
+          text-align: center; 
+        }
+        &.col-name { 
+          width: auto; 
+          min-width: 200px; 
+        }
+        &.col-creator { 
+          width: 120px; 
+        }
+        &.col-members { 
+          width: 100px; 
+          text-align: center; 
+        }
+        &.col-date { 
+          width: 140px; 
+        }
+        &.col-actions { 
+          width: 280px; 
+        }
+
+        // 排序箭頭
+        &:hover {
+          background: #4a4a6c;
+          cursor: pointer;
+        }
+      }
+    }
+
+    tbody {
+      .case-row {
+        border-bottom: 1px solid #3a3a5c;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background: #353548;
+        }
+
+        td {
+          padding: 1rem;
+          font-size: 0.9rem;
+          color: #ffffff;
+
+          &.col-index {
+            text-align: center;
+            font-weight: 500;
+            color: #8a8a9a;
+          }
+
+          &.col-name {
+                          .case-name-cell {
+                cursor: pointer;
+
+                .case-title {
+                  color: #ffffff;
+                  
+                  &:hover {
+                    color: #4a90e2;
+                  }
+                }
+              }
+          }
+
+          &.col-creator {
+            color: #ffffff;
+          }
+
+          &.col-members {
+            text-align: center;
+            font-weight: 500;
+            color: #ffffff;
+          }
+
+          &.col-date {
+            color: #8a8a9a;
+            font-size: 0.85rem;
+          }
+
+          &.col-actions {
+            .action-buttons {
+              display: flex;
+              gap: 0.5rem;
+              flex-wrap: wrap;
+
+              .btn-action {
+                padding: 0.4rem 0.8rem;
+                border: none;
+                border-radius: 4px;
+                font-size: 0.8rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                color: white;
+
+                &.btn-edit {
+                  background: #f39c12;
+
+                  &:hover {
+                    background: #e67e22;
+                  }
+                }
+
+                &.btn-upload {
+                  background: #27ae60;
+
+                  &:hover {
+                    background: #229954;
+                  }
+                }
+
+                &.btn-analysis {
+                  background: #3498db;
+
+                  &:hover {
+                    background: #2980b9;
+                  }
+                }
+
+                &.btn-delete {
+                  background: #e74c3c;
+
+                  &:hover {
+                    background: #c0392b;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 空狀態
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #8a8a9a;
+  background: #2a2a3e;
+  border-radius: 4px;
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    margin: 0 0 0.5rem 0;
+    color: #ffffff;
+    font-weight: 500;
+  }
+
+  p {
+    margin: 0 0 1.5rem 0;
+    line-height: 1.5;
+  }
+}
+
+// 分頁控制
+.pagination-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #2a2a3e;
+  border-radius: 4px;
+
+  .pagination-info {
+    font-size: 0.9rem;
+    color: #8a8a9a;
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    .pagination-btn {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #3a3a5c;
+      background: #2a2a3e;
+      color: #ffffff;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background: #353548;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      &.page-number.active {
+        background: #f39c12;
+        color: white;
+        border-color: #f39c12;
+      }
+    }
+
+    .page-numbers {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .page-selector {
+      padding: 0.5rem;
+      border: 1px solid #3a3a5c;
+      border-radius: 4px;
+      background: #2a2a3e;
+      color: #ffffff;
+      font-size: 0.9rem;
+      margin-left: 0.5rem;
+
+      &:focus {
+        outline: none;
+        border-color: #4a90e2;
+      }
+    }
+  }
+}
+
+// 對話框樣式
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+
+  .dialog {
+    background: #2a2a3e;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+
+    .dialog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem;
+      border-bottom: 1px solid #3a3a5c;
+
+      h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #ffffff;
+      }
+
+      .close-button {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #8a8a9a;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover {
+          color: #ffffff;
+        }
+      }
+    }
+
+    .dialog-content {
+      padding: 1.5rem;
+
+      .form-group {
+        margin-bottom: 1.5rem;
+
+        label {
+          display: block;
+          margin-bottom: 0.5rem;
+          font-weight: 500;
+          color: #ffffff;
+          font-size: 0.9rem;
+        }
+
+        .form-input,
+        .form-textarea,
+        .form-select {
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid #3a3a5c;
+          border-radius: 4px;
+          font-size: 0.9rem;
+          background: #1a1a2e;
+          color: #ffffff;
+
+          &:focus {
+            outline: none;
+            border-color: #4a90e2;
+          }
+
+          &::placeholder {
+            color: #8a8a9a;
+          }
+        }
+
+        .form-textarea {
+          resize: vertical;
+          min-height: 80px;
+        }
+      }
+
+      .warning-text {
+        color: #e74c3c;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+      }
+    }
+
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding: 1.5rem;
+      border-top: 1px solid #3a3a5c;
+
+      .btn-cancel {
+        background: #3a3a5c;
+        color: #ffffff;
+        border: 1px solid #3a3a5c;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+
+        &:hover {
+          background: #4a4a6c;
+        }
+      }
+
+      .btn-confirm {
+        background: #4a90e2;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+
+        &:hover:not(:disabled) {
+          background: #357abd;
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+
+      .btn-danger {
+        background: #e74c3c;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+
+        &:hover:not(:disabled) {
+          background: #c0392b;
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+}
+
+// 響應式設計
+@media (max-width: 768px) {
+  .case-management-page {
+    padding: 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .search-section {
+    .search-box {
+      grid-template-columns: 1fr;
+      
+      .search-input {
+        border-right: none;
+        border-bottom: 1px solid #3a3a5c;
+        
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+    }
+  }
+
+  .case-table {
+    font-size: 0.8rem;
+
+    th, td {
+      padding: 0.75rem 0.5rem;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+      gap: 0.25rem;
+
+      .btn-action {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  }
+
+  .pagination-section {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+} 

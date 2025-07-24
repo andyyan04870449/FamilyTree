@@ -14,7 +14,6 @@ interface SearchResult {
   gender: string;
   source: string;
   createdAt: string;
-  selected: boolean;
   isFavorited: boolean;
 }
 
@@ -38,12 +37,7 @@ interface Favorite {
   addedAt: string;
 }
 
-// 分析項目接口
-interface AnalysisItem {
-  id: number;
-  name: string;
-  addedAt: string;
-}
+
 
 @Component({
   selector: 'app-full-text-search',
@@ -66,7 +60,6 @@ export class FullTextSearchPage implements OnInit {
   currentPage: number = 1;
   totalPages: number = 1;
   pageSize: number = 10;
-  selectAll: boolean = false;
 
   // 歷史和熱門關鍵字
   searchHistory: SearchHistory[] = [];
@@ -75,8 +68,7 @@ export class FullTextSearchPage implements OnInit {
   // 收藏相關
   favorites: Favorite[] = [];
 
-  // 分析清單
-  analysisList: AnalysisItem[] = [];
+
 
   // 對話框控制
   showDetailDialog: boolean = false;
@@ -184,15 +176,13 @@ export class FullTextSearchPage implements OnInit {
               gender: item.gender,
               source: item.source,
               createdAt: item.createdAt,
-              selected: false,
               isFavorited: this.favorites.some(f => f.id === item.id)
             }));
             this.totalResults = response.data.totalCount;
             this.totalPages = Math.ceil(this.totalResults / this.pageSize);
             this.hasSearched = true;
             
-            // 更新搜索結果的選中狀態，保持與分析清單的同步
-            this.syncSearchResultsWithAnalysisList();
+
           } else {
             this.error = response?.message || '搜索失敗';
           }
@@ -211,14 +201,7 @@ export class FullTextSearchPage implements OnInit {
     }
   }
 
-  // 同步搜索結果與分析清單的選中狀態
-  private syncSearchResultsWithAnalysisList(): void {
-    this.searchResults.forEach(result => {
-      // 如果該人員在分析清單中，則設為選中狀態
-      result.selected = this.analysisList.some(item => item.id === result.id);
-    });
-    this.updateSelectAll();
-  }
+
 
   // 使用歷史關鍵字
   useHistoryKeyword(keyword: string): void {
@@ -242,70 +225,9 @@ export class FullTextSearchPage implements OnInit {
     this.totalPages = 1;
     this.hasSearched = false;
     this.error = '';
-    this.selectAll = false;
   }
 
-  // 全選/取消全選
-  toggleSelectAll(): void {
-    this.searchResults.forEach(result => {
-      result.selected = this.selectAll;
-    });
-    this.updateAnalysisList();
-  }
 
-  // 更新全選狀態
-  updateSelectAll(): void {
-    this.selectAll = this.searchResults.length > 0 && this.searchResults.every(result => result.selected);
-  }
-
-  // 切換單個結果的選中狀態
-  toggleResultSelection(result: SearchResult): void {
-    result.selected = !result.selected;
-    this.updateAnalysisList();
-    this.updateSelectAll();
-  }
-
-  // 更新分析清單
-  private updateAnalysisList(): void {
-    // 移除未選中的項目
-    this.analysisList = this.analysisList.filter(item => 
-      this.searchResults.some(result => result.id === item.id && result.selected)
-    );
-
-    // 添加新選中的項目
-    this.searchResults.forEach(result => {
-      if (result.selected && !this.analysisList.some(item => item.id === result.id)) {
-        this.analysisList.push({
-          id: result.id,
-          name: result.name,
-          addedAt: new Date().toISOString()
-        });
-      }
-    });
-  }
-
-  // 從分析清單中移除項目
-  removeFromAnalysisList(item: AnalysisItem): void {
-    this.analysisList = this.analysisList.filter(i => i.id !== item.id);
-    
-    // 同步更新搜索結果的選中狀態
-    const searchResult = this.searchResults.find(r => r.id === item.id);
-    if (searchResult) {
-      searchResult.selected = false;
-      this.updateSelectAll();
-    }
-  }
-
-  // 清空分析清單
-  clearAnalysisList(): void {
-    this.analysisList = [];
-    
-    // 同步更新搜索結果的選中狀態
-    this.searchResults.forEach(result => {
-      result.selected = false;
-    });
-    this.selectAll = false;
-  }
 
   // 切換收藏狀態
   async toggleFavorite(result: SearchResult): Promise<void> {
@@ -379,11 +301,7 @@ export class FullTextSearchPage implements OnInit {
     this.showDetailDialog = true;
   }
 
-  // 查看分析項目詳情
-  viewAnalysisItemDetails(item: AnalysisItem): void {
-    this.selectedPersonId = item.id;
-    this.showDetailDialog = true;
-  }
+
 
   // 關閉詳情對話框
   closeDetailDialog(): void {
@@ -394,13 +312,12 @@ export class FullTextSearchPage implements OnInit {
   // 導出結果
   async exportResults(): Promise<void> {
     try {
-      const selectedResults = this.searchResults.filter(result => result.selected);
-      if (selectedResults.length === 0) {
-        this.error = '請先選擇要導出的結果';
+      if (this.searchResults.length === 0) {
+        this.error = '沒有可導出的結果';
         return;
       }
       
-      await this.fullTextSearchService.exportResults(selectedResults);
+      await this.fullTextSearchService.exportResults(this.searchResults);
     } catch (error) {
       console.error('導出失敗:', error);
       this.error = '導出失敗，請稍後再試';
@@ -452,29 +369,7 @@ export class FullTextSearchPage implements OnInit {
     }
   }
 
-  // 獲取選中數量
-  getSelectedCount(): number {
-    return this.searchResults.filter(result => result.selected).length;
-  }
 
-  // 獲取選中的人員ID列表
-  getSelectedPersonIds(): number[] {
-    return this.searchResults
-      .filter(result => result.selected)
-      .map(result => result.id);
-  }
 
-  // 顯示關聯圖譜
-  showRelationshipGraph(): void {
-    const selectedIds = this.getSelectedPersonIds();
-    if (selectedIds.length === 0) {
-      this.error = '請先選擇要分析的人員';
-      return;
-    }
-    
-    // 導航到關聯圖譜頁面
-    this.router.navigate(['/relationship-graph'], {
-      queryParams: { personIds: selectedIds.join(',') }
-    });
-  }
+
 } 

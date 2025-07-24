@@ -2,6 +2,18 @@
   <div class="page-header">
     <h1>📁 檔案上傳</h1>
     <p>上傳和管理家族樹相關檔案</p>
+    
+    <!-- 當前專案資訊 -->
+    <div class="current-project-info" *ngIf="getCurrentProject()">
+      <div class="project-indicator">
+        <span class="project-label">當前案件：</span>
+        <span class="project-name">{{ getCurrentProject()?.projectName }}</span>
+      </div>
+    </div>
+    <div class="no-project-warning" *ngIf="!getCurrentProject()">
+      <span class="warning-icon">⚠️</span>
+      <span class="warning-text">請先從案件管理頁面選擇一個案件</span>
+    </div>
   </div>
 
   <!-- 上傳類型選擇器 -->
@@ -20,7 +32,7 @@
     </button>
   </div>
   
-  <div class="upload-section">
+  <div class="upload-section" *ngIf="getCurrentProject()">
     <div class="upload-area" 
          [class.drag-over]="dragOver"
          (dragover)="onDragOver($event)"

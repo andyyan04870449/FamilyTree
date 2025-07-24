@@ -64,6 +64,8 @@ export class SidebarNavComponent implements OnInit {
       this.activeRoute = 'relationship-graph';
     } else if (url.includes('/organization-chart')) {
       this.activeRoute = 'organization-chart';
+    } else if (url.includes('/case-management')) {
+      this.activeRoute = 'case-management';
     } else if (url.includes('/system-settings')) {
       this.activeRoute = 'system-settings';
 

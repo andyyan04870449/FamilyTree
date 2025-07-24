@@ -37,6 +37,20 @@ export class FileUploadComponent implements OnInit, OnDestroy {
         console.log('📸 [FileUpload] 收到照片列表更新:', photos);
       })
     );
+
+    // 訂閱專案變更，當專案切換時重新載入檔案列表
+    this.subscription.add(
+      this.projectService.currentProject$.subscribe(project => {
+        if (project) {
+          console.log('🔄 [FileUpload] 專案切換到:', project.projectName, '重新載入檔案列表');
+          this.fileUploadService.refreshFileList();
+          this.photoUploadService.refreshPhotoList();
+        } else {
+          console.log('⚠️ [FileUpload] 專案已清除，清空檔案列表');
+          // 清空檔案列表
+        }
+      })
+    );
   }
 
   ngOnInit(): void {
@@ -56,6 +70,13 @@ export class FileUploadComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
+  }
+
+  /**
+   * 獲取當前專案
+   */
+  getCurrentProject() {
+    return this.projectService.getCurrentProject();
   }
 
   onFileSelected(event: any): void {

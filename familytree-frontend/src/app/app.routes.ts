@@ -32,7 +32,12 @@ export const routes: Routes = [
     path: 'organization-chart',
     loadComponent: () => import('./pages/organization-chart/organization-chart.page').then(m => m.OrganizationChartComponent)
   },
-  // 專案管理模組
+  // 案件管理模組 (新)
+  {
+    path: 'case-management',
+    loadComponent: () => import('./pages/case-management/case-management.page').then(m => m.CaseManagementComponent)
+  },
+  // 專案管理模組 (舊，保留備用)
   {
     path: 'project-management',
     loadComponent: () => import('./pages/project-management/project-management.page').then(m => m.ProjectManagementComponent)

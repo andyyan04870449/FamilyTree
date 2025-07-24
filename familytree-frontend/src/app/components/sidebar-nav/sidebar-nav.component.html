@@ -79,6 +79,19 @@
       </ul>
     </div>
     
+    <!-- 案件管理 -->
+    <div class="nav-section">
+      <h4>📋 案件管理</h4>
+      <ul class="nav-list">
+        <li class="nav-item" [class.active]="activeRoute === 'case-management'">
+          <a routerLink="/case-management" (click)="closeSidebar()">
+            <span class="nav-icon">📋</span>
+            <span class="nav-text">案件管理</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+    
     <!-- 系統管理 -->
     <div class="nav-section">
       <h4>⚙️ 系統管理</h4>
