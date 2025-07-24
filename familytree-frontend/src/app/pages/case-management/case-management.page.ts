@@ -29,39 +29,6 @@ import { Subscription } from 'rxjs';
         <span class="list-title">案件列表({{ statistics?.totalProjects || 0 }})</span>
       </div>
 
-      <!-- 搜尋區域 -->
-      <div class="search-section">
-        <div class="search-box">
-          <input 
-            type="text" 
-            [(ngModel)]="searchTerm" 
-            (input)="onSearch()"
-            placeholder="請輸入案件名稱..." 
-            class="search-input">
-          
-          <input 
-            type="text" 
-            [(ngModel)]="creatorFilter" 
-            (input)="onSearch()"
-            placeholder="請輸入建立人..." 
-            class="search-input">
-            
-          <input 
-            type="text" 
-            [(ngModel)]="memberCountFilter" 
-            (input)="onSearch()"
-            placeholder="請輸入相關人數..." 
-            class="search-input">
-            
-          <input 
-            type="text" 
-            [(ngModel)]="dateFilter" 
-            (input)="onSearch()"
-            placeholder="請輸入建立時間..." 
-            class="search-input">
-        </div>
-      </div>
-
       <!-- 載入中指示器 -->
       <div *ngIf="loading" class="loading-section">
         <div class="loading-spinner"></div>
@@ -79,6 +46,47 @@ import { Subscription } from 'rxjs';
               <th class="col-members">相關人數</th>
               <th class="col-date">建立時間</th>
               <th class="col-actions">功能</th>
+            </tr>
+            <!-- 搜尋欄位行 -->
+            <tr class="search-row">
+              <th></th>
+              <th>
+                <input 
+                  type="text" 
+                  class="search-input" 
+                  placeholder="請輸入案件名稱"
+                  [(ngModel)]="searchTerm"
+                  (input)="onSearch()"
+                >
+              </th>
+              <th>
+                <input 
+                  type="text" 
+                  class="search-input" 
+                  placeholder="請輸入建立人"
+                  [(ngModel)]="creatorFilter"
+                  (input)="onSearch()"
+                >
+              </th>
+              <th>
+                <input 
+                  type="text" 
+                  class="search-input" 
+                  placeholder="請輸入人數"
+                  [(ngModel)]="memberCountFilter"
+                  (input)="onSearch()"
+                >
+              </th>
+              <th>
+                <input 
+                  type="text" 
+                  class="search-input" 
+                  placeholder="請輸入日期關鍵字"
+                  [(ngModel)]="dateFilter"
+                  (input)="onSearch()"
+                >
+              </th>
+              <th></th>
             </tr>
           </thead>
           <tbody>

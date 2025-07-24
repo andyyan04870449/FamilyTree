@@ -55,41 +55,7 @@
   }
 }
 
-// 搜尋區域
-.search-section {
-  margin-bottom: 1.5rem;
 
-  .search-box {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
-    gap: 0;
-    border: 1px solid #3a3a5c;
-    border-radius: 4px;
-    overflow: hidden;
-
-    .search-input {
-      background: #2a2a3e;
-      border: none;
-      border-right: 1px solid #3a3a5c;
-      padding: 0.75rem 1rem;
-      color: #ffffff;
-      font-size: 0.9rem;
-
-      &:last-child {
-        border-right: none;
-      }
-
-      &::placeholder {
-        color: #8a8a9a;
-      }
-
-      &:focus {
-        outline: none;
-        background: #353548;
-      }
-    }
-  }
-}
 
 // 載入中
 .loading-section {
@@ -164,6 +130,43 @@
         &:hover {
           background: #4a4a6c;
           cursor: pointer;
+        }
+      }
+
+      // 搜尋列樣式
+      .search-row {
+        background: #2a2a3e;
+
+        th {
+          background: #2a2a3e;
+          padding: 0.75rem 1rem;
+          border-bottom: 1px solid #3a3a5c;
+
+          &:hover {
+            background: #2a2a3e;
+            cursor: default;
+          }
+
+          .search-input {
+            background: #1a1a2e;
+            color: #ffffff;
+            border: 1px solid #3a3a5c;
+            border-radius: 4px;
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+
+            &::placeholder {
+              color: #8a8a9a;
+            }
+
+            &:focus {
+              outline: none;
+              border-color: #4a90e2;
+              background: #353548;
+            }
+          }
         }
       }
     }
@@ -542,26 +545,24 @@
     text-align: center;
   }
 
-  .search-section {
-    .search-box {
-      grid-template-columns: 1fr;
-      
-      .search-input {
-        border-right: none;
-        border-bottom: 1px solid #3a3a5c;
-        
-        &:last-child {
-          border-bottom: none;
-        }
-      }
-    }
-  }
+
 
   .case-table {
     font-size: 0.8rem;
 
     th, td {
       padding: 0.75rem 0.5rem;
+    }
+
+    .search-row {
+      th {
+        padding: 0.5rem 0.25rem;
+
+        .search-input {
+          padding: 0.4rem 0.5rem;
+          font-size: 0.8rem;
+        }
+      }
     }
 
     .action-buttons {
