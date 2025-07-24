@@ -1349,14 +1349,52 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     if (this.simulation) {
       try {
         if (visibleLinks.length > 0) {
-          // 有連線時：設置連線力
-          this.simulation.force('link').links(visibleLinks);
-          
-          // 如果這是第一條連線，需要輕微重啟模擬以啟動連線力
+          // 如果這是第一條連線，需要重新初始化整個力導向系統
           if (wasEmpty) {
-            this.logService.info('RelationshipGraphComponent', '第一條連線：輕微重啟模擬以啟動連線力');
-            this.simulation.alpha(0.01).restart(); // 使用非常小的alpha值
+            this.logService.info('RelationshipGraphComponent', '第一條連線：保存節點位置並重新初始化力導向系統');
+            
+            // 保存當前節點位置
+            const savedPositions = new Map<string, {x: number, y: number}>();
+            if (this.graphData) {
+              this.graphData.nodes.forEach(node => {
+                if (node.x !== undefined && node.y !== undefined) {
+                  savedPositions.set(node.id, { x: node.x, y: node.y });
+                }
+              });
+            }
+            
+            // 重新初始化整個圖譜以確保連線力正確設置
+            this.updateGraph();
+            
+            // 恢復節點位置
+            setTimeout(() => {
+              if (this.graphData) {
+                this.graphData.nodes.forEach(node => {
+                  const savedPos = savedPositions.get(node.id);
+                  if (savedPos) {
+                    node.x = savedPos.x;
+                    node.y = savedPos.y;
+                    // 固定節點位置，防止力導向改變它們
+                    (node as any).fx = savedPos.x;
+                    (node as any).fy = savedPos.y;
+                  }
+                });
+                
+                // 短暫固定後釋放，讓連線力正常工作
+                setTimeout(() => {
+                  if (this.graphData) {
+                    this.graphData.nodes.forEach(node => {
+                      delete (node as any).fx;
+                      delete (node as any).fy;
+                    });
+                    this.logService.info('RelationshipGraphComponent', '節點位置已恢復，連線力正常運作');
+                  }
+                }, 100);
+              }
+            }, 50);
           } else {
+            // 有連線時：設置連線力
+            this.simulation.force('link').links(visibleLinks);
             this.logService.info('RelationshipGraphComponent', '已更新力導向連線數據，保持節點位置不變');
           }
         } else {
