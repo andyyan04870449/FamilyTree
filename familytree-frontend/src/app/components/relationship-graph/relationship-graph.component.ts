@@ -1300,48 +1300,15 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
         return ((sourceNode?.y || 0) + (targetNode?.y || 0)) / 2;
       });
 
-    // 更新力導向模擬的連線，確保新連線參與更新循環
-    if (this.simulation) {
+    // 為了確保節點位置不變，我們不重啟力導向模擬
+    // 只是靜態地更新力導向的連線數據，不啟動模擬
+    if (this.simulation && visibleLinks.length > 0) {
       try {
-        // 如果有連線，確保力導向模擬正在運行
-        if (visibleLinks.length > 0) {
-          // 更新連線力 - 只有在有連線時才設置
-          this.simulation.force('link').links(visibleLinks);
-          
-          // 重新設置tick事件處理器，確保包含所有連線（包括新的）
-          this.simulation.on('tick', () => {
-            const currentLinks = graphGroup.selectAll('.link');
-            const currentLinkLabels = graphGroup.selectAll('.link-label');
-            const currentNodes = graphGroup.selectAll('.node');
-            
-            // 更新所有連線位置（包括新添加的）
-            currentLinks
-              .attr('x1', (d: any) => d.source.x || 0)
-              .attr('y1', (d: any) => d.source.y || 0)
-              .attr('x2', (d: any) => d.target.x || 0)
-              .attr('y2', (d: any) => d.target.y || 0);
-
-            // 更新所有連線標籤位置
-            currentLinkLabels
-              .attr('x', (d: any) => ((d.source.x || 0) + (d.target.x || 0)) / 2)
-              .attr('y', (d: any) => ((d.source.y || 0) + (d.target.y || 0)) / 2);
-
-            // 更新所有節點位置
-            currentNodes
-              .attr('transform', (d: any) => `translate(${d.x || 0},${d.y || 0})`);
-          });
-          
-          // 很輕微地重啟模擬，避免大幅移動節點
-          this.simulation.alpha(0.05).restart();
-        } else {
-          // 如果沒有連線，移除連線力並停止模擬
-          this.simulation.force('link').links([]);
-          this.simulation.stop();
-        }
+        // 只更新連線數據，但不重啟模擬
+        this.simulation.force('link').links(visibleLinks);
+        this.logService.info('RelationshipGraphComponent', '已更新力導向連線數據，但保持節點位置不變');
       } catch (error) {
-        this.logService.error('RelationshipGraphComponent', 'D3.js模擬更新失敗', error);
-        // 如果出現錯誤，至少確保連線在視覺上正確顯示
-        this.logService.info('RelationshipGraphComponent', '降級到靜態連線顯示');
+        this.logService.error('RelationshipGraphComponent', '更新力導向連線數據失敗', error);
       }
     }
 
