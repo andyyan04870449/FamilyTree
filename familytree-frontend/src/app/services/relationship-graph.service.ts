@@ -121,8 +121,8 @@ export class RelationshipGraphService {
    */
   createRelationship(request: CreateRelationshipRequest): Observable<CreateRelationshipResponse> {
     console.log('🔗 建立人員關係:', request);
-    const params = this.getProjectParams();
-    return this.http.post<CreateRelationshipResponse>(`${this.baseUrl}/RelationshipGraph/create-relationship`, request, { params });
+    // 建立關係API不需要project_id查詢參數，因為是通過人員ID來建立關係
+    return this.http.post<CreateRelationshipResponse>(`${this.baseUrl}/RelationshipGraph/create-relationship`, request);
   }
 
   /**

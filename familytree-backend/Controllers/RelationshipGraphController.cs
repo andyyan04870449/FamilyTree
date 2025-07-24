@@ -91,8 +91,35 @@ namespace familytree_backend.Controllers
         public async Task<IActionResult> CreateRelationship([FromBody] CreateRelationshipRequest request)
         {
             _logger.LogInformation("🔗 開始建立人員關係");
-            _logger.LogInformation("🔍 關係詳情: {sourceId} -> {targetId}, 類型: {type}", 
-                request.SourcePersonId, request.TargetPersonId, request.RelationshipType);
+            
+            // 檢查請求是否為空
+            if (request == null)
+            {
+                _logger.LogError("❌ CreateRelationship: 請求物件為空");
+                return BadRequest(new { Success = false, Message = "請求資料不能為空" });
+            }
+            
+            // 檢查必要欄位
+            if (request.SourcePersonId <= 0)
+            {
+                _logger.LogError("❌ CreateRelationship: 來源人員ID無效: {sourceId}", request.SourcePersonId);
+                return BadRequest(new { Success = false, Message = "來源人員ID無效" });
+            }
+            
+            if (request.TargetPersonId <= 0)
+            {
+                _logger.LogError("❌ CreateRelationship: 目標人員ID無效: {targetId}", request.TargetPersonId);
+                return BadRequest(new { Success = false, Message = "目標人員ID無效" });
+            }
+            
+            if (string.IsNullOrWhiteSpace(request.RelationshipType))
+            {
+                _logger.LogError("❌ CreateRelationship: 關係類型為空");
+                return BadRequest(new { Success = false, Message = "關係類型不能為空" });
+            }
+            
+            _logger.LogInformation("🔍 關係詳情: {sourceId} -> {targetId}, 類型: {type}, 視覺化圖表ID: {graphId}", 
+                request.SourcePersonId, request.TargetPersonId, request.RelationshipType, request.VisualAnalysisGraphId);
 
             try
             {
