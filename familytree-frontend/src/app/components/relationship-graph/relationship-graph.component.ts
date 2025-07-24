@@ -622,15 +622,56 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
         // 更新連線位置（如果有連線的話）
         if (visibleLinks.length > 0) {
           link
-            .attr('x1', (d: any) => d.source.x)
-            .attr('y1', (d: any) => d.source.y)
-            .attr('x2', (d: any) => d.target.x)
-            .attr('y2', (d: any) => d.target.y);
+            .attr('x1', (d: any) => {
+              // 檢查source是否為節點對象，如果不是則查找對應節點
+              if (typeof d.source === 'object' && d.source.x !== undefined) {
+                return d.source.x;
+              } else {
+                const sourceNode = visibleNodes.find(n => n.id === d.source);
+                return sourceNode ? sourceNode.x : 0;
+              }
+            })
+            .attr('y1', (d: any) => {
+              if (typeof d.source === 'object' && d.source.y !== undefined) {
+                return d.source.y;
+              } else {
+                const sourceNode = visibleNodes.find(n => n.id === d.source);
+                return sourceNode ? sourceNode.y : 0;
+              }
+            })
+            .attr('x2', (d: any) => {
+              if (typeof d.target === 'object' && d.target.x !== undefined) {
+                return d.target.x;
+              } else {
+                const targetNode = visibleNodes.find(n => n.id === d.target);
+                return targetNode ? targetNode.x : 0;
+              }
+            })
+            .attr('y2', (d: any) => {
+              if (typeof d.target === 'object' && d.target.y !== undefined) {
+                return d.target.y;
+              } else {
+                const targetNode = visibleNodes.find(n => n.id === d.target);
+                return targetNode ? targetNode.y : 0;
+              }
+            });
 
           // 更新連線標籤位置
           linkLabel
-            .attr('x', (d: any) => (d.source.x + d.target.x) / 2)
-            .attr('y', (d: any) => (d.source.y + d.target.y) / 2);
+            .attr('x', (d: any) => {
+              const sourceX = typeof d.source === 'object' && d.source.x !== undefined ? 
+                d.source.x : (visibleNodes.find(n => n.id === d.source)?.x || 0);
+              const targetX = typeof d.target === 'object' && d.target.x !== undefined ? 
+                d.target.x : (visibleNodes.find(n => n.id === d.target)?.x || 0);
+              return (sourceX + targetX) / 2;
+            })
+            .attr('y', (d: any) => {
+              const sourceY = typeof d.source === 'object' && d.source.y !== undefined ? 
+                d.source.y : (visibleNodes.find(n => n.id === d.source)?.y || 0);
+              const targetY = typeof d.target === 'object' && d.target.y !== undefined ? 
+                d.target.y : (visibleNodes.find(n => n.id === d.target)?.y || 0);
+              return (sourceY + targetY) / 2;
+            });
         }
 
         // 更新節點位置
@@ -1238,46 +1279,67 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       this.parentNode?.appendChild(this);
     });
 
-    // 立即設置新連線的位置
+    // 立即設置新連線的位置，處理source/target可能是字符串ID或節點對象的情況
     link
       .attr('x1', (d: any) => {
-        const sourceNode = this.graphData?.nodes.find(n => n.id === d.source || n.id === String(d.source));
-        this.logService.debug('RelationshipGraphComponent', '設置連線源點位置', {
-          linkSource: d.source,
-          sourceNode: sourceNode,
-          position: sourceNode ? { x: sourceNode.x, y: sourceNode.y } : null
-        });
-        return sourceNode?.x || 0;
+        // 檢查source是否為節點對象，如果不是則查找對應節點
+        if (typeof d.source === 'object' && d.source.x !== undefined) {
+          return d.source.x;
+        } else {
+          const sourceNode = this.graphData?.nodes.find(n => n.id === d.source || n.id === String(d.source));
+          this.logService.debug('RelationshipGraphComponent', '設置連線源點位置（字符串查找）', {
+            linkSource: d.source,
+            sourceNode: sourceNode,
+            position: sourceNode ? { x: sourceNode.x, y: sourceNode.y } : null
+          });
+          return sourceNode?.x || 0;
+        }
       })
       .attr('y1', (d: any) => {
-        const sourceNode = this.graphData?.nodes.find(n => n.id === d.source || n.id === String(d.source));
-        return sourceNode?.y || 0;
+        if (typeof d.source === 'object' && d.source.y !== undefined) {
+          return d.source.y;
+        } else {
+          const sourceNode = this.graphData?.nodes.find(n => n.id === d.source || n.id === String(d.source));
+          return sourceNode?.y || 0;
+        }
       })
       .attr('x2', (d: any) => {
-        const targetNode = this.graphData?.nodes.find(n => n.id === d.target || n.id === String(d.target));
-        this.logService.debug('RelationshipGraphComponent', '設置連線目標位置', {
-          linkTarget: d.target,
-          targetNode: targetNode,
-          position: targetNode ? { x: targetNode.x, y: targetNode.y } : null
-        });
-        return targetNode?.x || 0;
+        if (typeof d.target === 'object' && d.target.x !== undefined) {
+          return d.target.x;
+        } else {
+          const targetNode = this.graphData?.nodes.find(n => n.id === d.target || n.id === String(d.target));
+          this.logService.debug('RelationshipGraphComponent', '設置連線目標位置（字符串查找）', {
+            linkTarget: d.target,
+            targetNode: targetNode,
+            position: targetNode ? { x: targetNode.x, y: targetNode.y } : null
+          });
+          return targetNode?.x || 0;
+        }
       })
       .attr('y2', (d: any) => {
-        const targetNode = this.graphData?.nodes.find(n => n.id === d.target || n.id === String(d.target));
-        return targetNode?.y || 0;
+        if (typeof d.target === 'object' && d.target.y !== undefined) {
+          return d.target.y;
+        } else {
+          const targetNode = this.graphData?.nodes.find(n => n.id === d.target || n.id === String(d.target));
+          return targetNode?.y || 0;
+        }
       });
 
     // 立即設置連線標籤位置
     linkLabel
       .attr('x', (d: any) => {
-        const sourceNode = this.graphData?.nodes.find(n => n.id === d.source || n.id === String(d.source));
-        const targetNode = this.graphData?.nodes.find(n => n.id === d.target || n.id === String(d.target));
-        return ((sourceNode?.x || 0) + (targetNode?.x || 0)) / 2;
+        const sourceX = typeof d.source === 'object' && d.source.x !== undefined ? 
+          d.source.x : (this.graphData?.nodes.find(n => n.id === d.source || n.id === String(d.source))?.x || 0);
+        const targetX = typeof d.target === 'object' && d.target.x !== undefined ? 
+          d.target.x : (this.graphData?.nodes.find(n => n.id === d.target || n.id === String(d.target))?.x || 0);
+        return (sourceX + targetX) / 2;
       })
       .attr('y', (d: any) => {
-        const sourceNode = this.graphData?.nodes.find(n => n.id === d.source || n.id === String(d.source));
-        const targetNode = this.graphData?.nodes.find(n => n.id === d.target || n.id === String(d.target));
-        return ((sourceNode?.y || 0) + (targetNode?.y || 0)) / 2;
+        const sourceY = typeof d.source === 'object' && d.source.y !== undefined ? 
+          d.source.y : (this.graphData?.nodes.find(n => n.id === d.source || n.id === String(d.source))?.y || 0);
+        const targetY = typeof d.target === 'object' && d.target.y !== undefined ? 
+          d.target.y : (this.graphData?.nodes.find(n => n.id === d.target || n.id === String(d.target))?.y || 0);
+        return (sourceY + targetY) / 2;
       });
 
     // 更新力導向模擬的連線數據，但不重啟以保持節點位置
