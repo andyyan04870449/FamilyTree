@@ -1,7 +1,7 @@
 // 通用關聯圖譜組件：接收外部數據並呈現互動式圖譜
 // 主要功能：D3.js 圖譜渲染、互動控制、數據可視化
 
-import { Component, Input, OnInit, OnChanges, SimpleChanges, ElementRef, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, ElementRef, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RelationshipGraphService, GraphData, GraphNode, GraphLink, CreateRelationshipResponse } from '../../services/relationship-graph.service';
@@ -219,6 +219,9 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
   @Input() graphData?: GraphData;
   @Input() autoAnalyze: boolean = false;
   @Input() selectedPersonIds: number[] = [];
+  @Input() visualAnalysisGraphId?: number; // 視覺化分析圖表ID，用於建立關係時傳遞
+
+  @Output() relationshipCreated = new EventEmitter<void>(); // 關係建立成功事件
 
   private svg: any;
   private simulation: any;
@@ -1068,7 +1071,8 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     const request = {
       sourcePersonId: parseInt(this.firstSelectedNode.id),
       targetPersonId: parseInt(this.secondSelectedNode.id),
-      relationshipType: this.relationshipType.trim()
+      relationshipType: this.relationshipType.trim(),
+      visualAnalysisGraphId: this.visualAnalysisGraphId // 傳遞視覺化分析圖表ID
     };
 
     this.logService.info('RelationshipGraphComponent', '開始保存關係到資料庫', request);
@@ -1084,6 +1088,9 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
           this.logService.info('RelationshipGraphComponent', '關係保存成功，添加新連線到圖譜');
           this.addNewRelationshipToGraph();
           this.resetRelationshipCreation();
+          
+          // 發出關係建立成功事件，通知父組件
+          this.relationshipCreated.emit();
         } else {
           this.logService.error('RelationshipGraphComponent', '關係保存失敗', {
             message: response.message

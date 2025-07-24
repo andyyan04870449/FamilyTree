@@ -137,19 +137,51 @@ namespace familytree_backend.Controllers
                 // 生成分析會話ID
                 var sessionId = $"manual_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid():N}";
 
-                // 插入關係資料
-                var insertSql = @"
-                    INSERT INTO relationship_layers 
-                    (source_person_id, target_person_id, relation_type, source_field, layer_depth, analysis_session_id)
-                    VALUES (@SourceId, @TargetId, @Type, 'manual', 1, @SessionId)";
-
-                await connection.ExecuteAsync(insertSql, new
+                // 插入關係資料 - 先嘗試包含 visual_analysis_graph_id，如果失敗則不包含
+                string insertSql;
+                object parameters;
+                
+                try
                 {
-                    SourceId = request.SourcePersonId,
-                    TargetId = request.TargetPersonId,
-                    Type = request.RelationshipType,
-                    SessionId = sessionId
-                });
+                    // 嘗試包含 visual_analysis_graph_id 欄位
+                    insertSql = @"
+                        INSERT INTO relationship_layers 
+                        (source_person_id, target_person_id, relation_type, source_field, layer_depth, analysis_session_id, visual_analysis_graph_id)
+                        VALUES (@SourceId, @TargetId, @Type, 'manual', 1, @SessionId, @VisualAnalysisGraphId)";
+
+                    parameters = new
+                    {
+                        SourceId = request.SourcePersonId,
+                        TargetId = request.TargetPersonId,
+                        Type = request.RelationshipType,
+                        SessionId = sessionId,
+                        VisualAnalysisGraphId = request.VisualAnalysisGraphId
+                    };
+
+                    await connection.ExecuteAsync(insertSql, parameters);
+                    _logger.LogInformation("✅ 關係建立成功(包含視覺化圖表ID): {graphId}", request.VisualAnalysisGraphId);
+                }
+                catch (Exception ex) when (ex.Message.Contains("visual_analysis_graph_id"))
+                {
+                    // 如果 visual_analysis_graph_id 欄位不存在，使用舊版SQL
+                    _logger.LogWarning("⚠️ visual_analysis_graph_id 欄位不存在，使用舊版SQL插入");
+                    
+                    insertSql = @"
+                        INSERT INTO relationship_layers 
+                        (source_person_id, target_person_id, relation_type, source_field, layer_depth, analysis_session_id)
+                        VALUES (@SourceId, @TargetId, @Type, 'manual', 1, @SessionId)";
+
+                    parameters = new
+                    {
+                        SourceId = request.SourcePersonId,
+                        TargetId = request.TargetPersonId,
+                        Type = request.RelationshipType,
+                        SessionId = sessionId
+                    };
+
+                    await connection.ExecuteAsync(insertSql, parameters);
+                    _logger.LogInformation("✅ 關係建立成功(不包含視覺化圖表ID)");
+                }
 
                 _logger.LogInformation("✅ 關係建立成功: {sourceName} -> {targetName}, 類型: {type}", 
                     sourcePerson.Name, targetPerson.Name, request.RelationshipType);
@@ -610,5 +642,6 @@ namespace familytree_backend.Controllers
         public int SourcePersonId { get; set; }
         public int TargetPersonId { get; set; }
         public string RelationshipType { get; set; } = "";
+        public int? VisualAnalysisGraphId { get; set; } // 視覺化分析圖表ID，可為空
     }
 } 

@@ -56,6 +56,7 @@ export interface CreateRelationshipRequest {
   sourcePersonId: number;
   targetPersonId: number;
   relationshipType: string;
+  visualAnalysisGraphId?: number; // 視覺化分析圖表ID，可為空
 }
 
 export interface CreateRelationshipResponse {

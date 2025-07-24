@@ -1,0 +1,210 @@
+<div class="visual-analysis-page">
+  <!-- 頁面標題 -->
+  <div class="page-header">
+    <h1>🎯 視覺化聯絡分析</h1>
+  </div>
+
+  <!-- 視覺化列表區塊 -->
+  <div class="visualization-list">
+    <div class="list-header">
+      <h2>視覺化列表</h2>
+      <div class="header-buttons">
+        <button class="add-btn" (click)="openAddDialog()">新增</button>
+        <button class="clear-filters-btn" (click)="clearAllFilters()" 
+                *ngIf="searchFilters.name || searchFilters.cases || searchFilters.relationCount || searchFilters.updatedBy || searchFilters.updatedAt">
+          🗑️ 清除篩選
+        </button>
+      </div>
+    </div>
+
+    <!-- 表格 -->
+    <div class="table-container">
+      <table class="analysis-table">
+        <thead>
+          <tr>
+            <th>項次</th>
+            <th>關聯分析圖名稱 <span class="sort-icon">⇅</span></th>
+            <th>分析案件 <span class="sort-icon">⇅</span></th>
+            <th>關聯人數 <span class="sort-icon">⇅</span></th>
+            <th>最後更新人 <span class="sort-icon">⇅</span></th>
+            <th>最後更新日期 <span class="sort-icon">⇅</span></th>
+            <th>功能</th>
+          </tr>
+          <!-- 搜尋欄位行 -->
+          <tr class="search-row">
+            <th></th>
+            <th>
+              <input 
+                type="text" 
+                class="search-input" 
+                placeholder="請輸入分析圖名稱"
+                [(ngModel)]="searchFilters.name"
+                (input)="onFilterChange()"
+              >
+            </th>
+            <th>
+              <input 
+                type="text" 
+                class="search-input" 
+                placeholder="請輸入案件關鍵字"
+                [(ngModel)]="searchFilters.cases"
+                (input)="onFilterChange()"
+              >
+            </th>
+            <th>
+              <input 
+                type="text" 
+                class="search-input" 
+                placeholder="請輸入人數"
+                [(ngModel)]="searchFilters.relationCount"
+                (input)="onFilterChange()"
+              >
+            </th>
+            <th>
+              <input 
+                type="text" 
+                class="search-input" 
+                placeholder="請輸入更新人"
+                [(ngModel)]="searchFilters.updatedBy"
+                (input)="onFilterChange()"
+              >
+            </th>
+            <th>
+              <input 
+                type="text" 
+                class="search-input" 
+                placeholder="請輸入日期關鍵字"
+                [(ngModel)]="searchFilters.updatedAt"
+                (input)="onFilterChange()"
+              >
+            </th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of filteredVisualAnalysisData; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td>{{ item.name }}</td>
+            <td>
+              <div class="case-list">
+                <div *ngFor="let caseItem of item.cases; let j = index">
+                  {{ j + 1 }}. {{ caseItem }}
+                </div>
+              </div>
+            </td>
+            <td>{{ item.relationCount }}</td>
+            <td>{{ item.updatedBy }}</td>
+            <td>{{ formatDate(item.updatedAt) }}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="edit-btn" (click)="editGraph(item.id)">編輯</button>
+                <button class="rename-btn">命名</button>
+                <button class="delete-btn" (click)="deleteGraph(item.id)">刪除</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 分頁控制 -->
+    <div class="pagination-container">
+      <div class="pagination-info">
+        顯示{{ getDisplayStart() }}至{{ getDisplayEnd() }}筆，共{{ getFilteredCount() }}筆篩選結果
+        <span *ngIf="getFilteredCount() !== totalCount">（原始資料：{{ totalCount }}筆）</span>
+      </div>
+      <div class="pagination-controls">
+        <button class="page-btn" disabled>⟪</button>
+        <button class="page-btn" disabled>⟨</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">⟩</button>
+        <button class="page-btn">⟫</button>
+        <select class="page-size-select">
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 新增對話框 - 移到外層避免定位問題 -->
+<div class="dialog-overlay" *ngIf="showAddDialog" (click)="closeAddDialog()">
+  <div class="add-dialog" (click)="$event.stopPropagation()">
+    <!-- 對話框標題 -->
+    <div class="dialog-header">
+      <h3>新增視覺化關聯分析圖</h3>
+      <button class="close-btn" (click)="closeAddDialog()">×</button>
+    </div>
+
+    <!-- 對話框內容 -->
+    <div class="dialog-content">
+      <!-- 分析圖名稱 -->
+      <div class="form-group">
+        <label for="analysisName">分析圖名稱</label>
+        <input 
+          id="analysisName"
+          type="text" 
+          [(ngModel)]="newAnalysisName" 
+          class="form-input"
+          placeholder="關聯分析圖_20250723001"
+        >
+      </div>
+
+              <!-- 分析案件 -->
+        <div class="form-group">
+          <label>分析案件</label>
+          
+          <!-- 專案選擇列表 -->
+          <div class="project-selection-list">
+            <!-- 已選擇的專案行 -->
+            <div 
+              *ngFor="let projectSelection of projectSelections; let i = index" 
+              class="project-row"
+            >
+              <select 
+                class="project-select" 
+                [(ngModel)]="projectSelection.selectedProjectId"
+                (change)="onProjectChange(i)"
+              >
+                <option value="">請選擇專案</option>
+                <option 
+                  *ngFor="let project of getAvailableProjectsForIndex(i)" 
+                  [value]="project.id"
+                >
+                  {{ project.projectName }}
+                </option>
+              </select>
+              
+              <!-- 刪除按鈕 -->
+              <button 
+                class="action-btn delete-btn" 
+                (click)="removeProjectRow(i)"
+                [disabled]="projectSelections.length === 1"
+              >
+                🗑️
+              </button>
+            </div>
+            
+            <!-- 新增專案按鈕 -->
+            <div class="add-project-row">
+              <button 
+                class="action-btn add-btn" 
+                (click)="addProjectRow()"
+                [disabled]="projectSelections.length >= availableProjects.length"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+    </div>
+
+    <!-- 對話框按鈕 -->
+    <div class="dialog-actions">
+      <button class="cancel-btn" (click)="closeAddDialog()">返回</button>
+      <button class="confirm-btn" (click)="confirmAdd()">確認</button>
+    </div>
+  </div>
+</div> 

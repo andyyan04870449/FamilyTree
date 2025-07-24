@@ -1,0 +1,171 @@
+<div class="visual-analysis-editor" *ngIf="!loading">
+  <!-- 上方橫幅工具列 -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <h1>視覺化關聯分析</h1>
+      <span class="graph-title" *ngIf="editorData?.graph">{{ editorData?.graph?.name }}</span>
+    </div>
+    
+    <div class="toolbar-center">
+      <!-- 搜尋按鈕 -->
+      <button 
+        class="tool-btn search-btn" 
+        [class.active]="showSearchPanel"
+        (click)="toggleSearchPanel()"
+        title="搜尋">
+        🔍
+      </button>
+      
+      <!-- 全部顯示按鈕 -->
+      <button 
+        class="tool-btn show-all-btn" 
+        (click)="showAllNodes()"
+        title="全部顯示">
+        👁️ 全部顯示
+      </button>
+      
+      <!-- 列出項目按鈕 -->
+      <button 
+        class="tool-btn list-btn" 
+        title="列出項目">
+        📋 列出項目
+      </button>
+      
+      <!-- 匯出按鈕 -->
+      <button 
+        class="tool-btn export-btn" 
+        (click)="exportGraph()"
+        title="匯出">
+        📥 匯出
+      </button>
+      
+      <!-- 恢復上一步按鈕 -->
+      <button 
+        class="tool-btn undo-btn" 
+        (click)="undo()"
+        title="恢復上一步">
+        ↶
+      </button>
+      
+      <!-- 恢復下一步按鈕 -->
+      <button 
+        class="tool-btn redo-btn" 
+        (click)="redo()"
+        title="恢復下一步">
+        ↷
+      </button>
+    </div>
+    
+    <div class="toolbar-right">
+      <!-- 可以添加其他工具按鈕 -->
+    </div>
+  </div>
+
+  <!-- 主要內容區域 -->
+  <div class="editor-content">
+    <!-- 左側搜尋面板 -->
+    <div class="search-panel" [class.show]="showSearchPanel">
+      <div class="search-header">
+        <button class="close-btn" (click)="toggleSearchPanel()">×</button>
+        <h3>查詢</h3>
+      </div>
+      
+      <div class="search-content">
+        <!-- 搜尋輸入框 -->
+        <div class="search-input-group">
+          <input 
+            type="text" 
+            placeholder="請輸入關鍵字" 
+            class="search-input"
+            [(ngModel)]="searchKeyword">
+          <button class="search-submit-btn">🔍</button>
+        </div>
+        
+        <!-- 全選選項 -->
+        <div class="select-all-option">
+          <label class="checkbox-label">
+            <input type="checkbox" checked>
+            <span>全選</span>
+          </label>
+        </div>
+        
+        <!-- 專案樹狀結構 -->
+        <div class="project-tree">
+          <div *ngFor="let project of getFilteredProjects()" class="project-group">
+            <!-- 專案標題 -->
+            <div class="project-header" [style.background-color]="getProjectColor(project.projectId)">
+              <span class="expand-icon">▼</span>
+              <label class="checkbox-label">
+                <input type="checkbox">
+                <span>{{ project.projectName }}</span>
+              </label>
+            </div>
+            
+            <!-- 人員列表 -->
+            <div class="person-list">
+              <div *ngFor="let person of project.persons" class="person-item">
+                <label class="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    [checked]="person.isVisible"
+                    (change)="onNodeVisibilityChange(project.projectId, person.personId, $event.target.checked)">
+                  <span class="person-avatar" [style.background-color]="getProjectColor(project.projectId)">
+                    👤
+                  </span>
+                  <span>{{ person.name }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右側圖譜畫布 - 直接使用關係圖譜組件 -->
+    <div class="graph-canvas-container">
+      <div class="analysis-result-header">
+        <h2>分析結果</h2>
+      </div>
+      
+      <!-- 關係圖譜組件 -->
+      <div class="canvas-wrapper">
+        <app-relationship-graph
+          *ngIf="graphData"
+          [graphData]="graphData"
+          [autoAnalyze]="false"
+          [visualAnalysisGraphId]="graphId"
+          (relationshipCreated)="onRelationshipCreated()">
+        </app-relationship-graph>
+        
+        <!-- 無資料狀態 -->
+        <div *ngIf="!graphData || (graphData.nodes.length === 0)" class="no-data-state">
+          <div class="no-data-icon">📊</div>
+          <p>請從左側選擇要顯示的節點</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部按鈕列 -->
+  <div class="bottom-toolbar">
+    <div class="bottom-left">
+      <button class="bottom-btn back-btn" (click)="goBack()">
+        返回
+      </button>
+    </div>
+    
+    <div class="bottom-right">
+      <button class="bottom-btn save-btn" (click)="saveGraph()">
+        儲存並退出
+      </button>
+      <button class="bottom-btn exit-btn" (click)="exitEditor()">
+        儲存
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 載入中顯示 -->
+<div class="loading-container" *ngIf="loading">
+  <div class="loading-spinner">載入編輯器中...</div>
+</div> 

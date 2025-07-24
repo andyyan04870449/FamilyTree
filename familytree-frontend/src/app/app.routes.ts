@@ -19,7 +19,15 @@ export const routes: Routes = [
     path: 'full-text-search',
     loadComponent: () => import('./pages/full-text-search/full-text-search.page').then(m => m.FullTextSearchPage)
   },
-  // 視覺化分析模組
+          // 視覺化分析模組
+        {
+          path: 'visual-analysis',
+          loadComponent: () => import('./pages/visual-analysis/visual-analysis.page').then(m => m.VisualAnalysisComponent)
+        },
+        {
+          path: 'visual-analysis/:id/editor',
+          loadComponent: () => import('./pages/visual-analysis-editor/visual-analysis-editor.page').then(m => m.VisualAnalysisEditorComponent)
+        },
   {
     path: 'relationship-graph',
     loadComponent: () => import('./pages/relationship-graph/relationship-graph.page').then(m => m.RelationshipGraphPage)
