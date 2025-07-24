@@ -1195,9 +1195,12 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
                 this.relationshipType.includes('妹')
     };
 
+    const wasEmpty = this.graphData.links.length === 0;
+    
     this.logService.info('RelationshipGraphComponent', '添加新連線到圖譜', {
       newLink,
-      currentLinksCount: this.graphData.links.length
+      currentLinksCount: this.graphData.links.length,
+      wasEmpty
     });
 
     // 添加新連線到圖譜數據
@@ -1208,7 +1211,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
 
     // 只更新圖譜顯示，不重置節點位置
     if (this.svg && this.simulation) {
-      this.updateGraphWithNewLink(newLink);
+      this.updateGraphWithNewLink(newLink, wasEmpty);
     }
 
     this.logService.info('RelationshipGraphComponent', '新連線添加完成');
@@ -1217,7 +1220,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
   /**
    * 更新圖譜顯示，添加新連線但保持節點位置
    */
-  private updateGraphWithNewLink(newLink: GraphLink): void {
+  private updateGraphWithNewLink(newLink: GraphLink, wasEmpty: boolean = false): void {
     if (!this.svg || !this.graphData) {
       return;
     }
@@ -1342,13 +1345,20 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
         return (sourceY + targetY) / 2;
       });
 
-    // 更新力導向模擬的連線數據，但不重啟以保持節點位置
+    // 更新力導向模擬的連線數據
     if (this.simulation) {
       try {
         if (visibleLinks.length > 0) {
           // 有連線時：設置連線力
           this.simulation.force('link').links(visibleLinks);
-          this.logService.info('RelationshipGraphComponent', '已更新力導向連線數據，保持節點位置不變');
+          
+          // 如果這是第一條連線，需要輕微重啟模擬以啟動連線力
+          if (wasEmpty) {
+            this.logService.info('RelationshipGraphComponent', '第一條連線：輕微重啟模擬以啟動連線力');
+            this.simulation.alpha(0.01).restart(); // 使用非常小的alpha值
+          } else {
+            this.logService.info('RelationshipGraphComponent', '已更新力導向連線數據，保持節點位置不變');
+          }
         } else {
           // 沒有連線時：移除連線力，但保持其他力（節點排斥、碰撞、中心力）運行
           this.simulation.force('link').links([]);
