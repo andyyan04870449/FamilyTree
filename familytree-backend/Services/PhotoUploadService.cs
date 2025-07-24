@@ -551,7 +551,15 @@ namespace familytree_backend.Services
                 using (var connection = new NpgsqlConnection(_connectionString))
                 {
                     var sql = @"
-                        SELECT id, original_filename, saved_filename, file_path, file_size, md5_hash, project_id, upload_time
+                        SELECT 
+                            id as Id,
+                            original_filename as OriginalFileName, 
+                            saved_filename as SavedFileName, 
+                            file_path as FilePath, 
+                            file_size as FileSize, 
+                            md5_hash as Md5Hash, 
+                            project_id as ProjectId, 
+                            upload_time as UploadTime
                         FROM photos 
                         WHERE project_id = @ProjectId 
                         ORDER BY upload_time DESC";
@@ -648,28 +656,21 @@ namespace familytree_backend.Services
                 using (var connection = new NpgsqlConnection(_connectionString))
                 {
                     var sql = @"
-                        SELECT id, original_filename, saved_filename, file_path, file_size, md5_hash, project_id, upload_time
+                        SELECT 
+                            id as Id,
+                            original_filename as OriginalFileName, 
+                            saved_filename as SavedFileName, 
+                            file_path as FilePath, 
+                            file_size as FileSize, 
+                            md5_hash as Md5Hash, 
+                            project_id as ProjectId, 
+                            upload_time as UploadTime
                         FROM photos 
                         WHERE id = @PhotoId";
 
-                    var result = await connection.QueryFirstOrDefaultAsync<dynamic>(sql, new { PhotoId = photoId });
-                    
-                    if (result != null)
-                    {
-                        return new PhotoFileInfo
-                        {
-                            Id = result.id,
-                            OriginalFileName = result.original_filename,
-                            SavedFileName = result.saved_filename,
-                            FilePath = result.file_path,
-                            FileSize = result.file_size,
-                            Md5Hash = result.md5_hash,
-                            ProjectId = result.project_id,
-                            UploadTime = result.upload_time
-                        };
-                    }
+                    var result = await connection.QueryFirstOrDefaultAsync<PhotoFileInfo>(sql, new { PhotoId = photoId });
 
-                    return null;
+                    return result;
                 }
             }
             catch (Exception ex)

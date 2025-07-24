@@ -3,6 +3,7 @@ import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PersonDataService, PersonDataModel, PersonDataRequest } from '../../services/person-data.service';
+import { PhotoUploadService } from '../../services/photo-upload.service';
 
 interface RelationshipItem {
   index: number;
@@ -65,6 +66,9 @@ export class PersonDetailDialogComponent implements OnChanges {
   isEditMode = false;
   activeTab = 'relationships'; // 預設顯示親屬關係
 
+  // 照片URL（只在有照片時設定）
+  photoUrl: string | null = null;
+
   // 解析後的資料
   relationshipItems: RelationshipItem[] = [];
   friendsItems: FriendItem[] = [];
@@ -77,7 +81,10 @@ export class PersonDetailDialogComponent implements OnChanges {
   travelRecordItems: TravelRecordItem[] = [];
   noteItems: string[] = [];
 
-  constructor(private personDataService: PersonDataService) {
+  constructor(
+    private personDataService: PersonDataService,
+    private photoUploadService: PhotoUploadService
+  ) {
     console.log('[PersonDetailDialog] 組件已建立');
   }
 
@@ -113,13 +120,13 @@ export class PersonDetailDialogComponent implements OnChanges {
         console.log('[PersonDetailDialog] API 回應:', response);
         this.loading = false;
         
-        if (response.success && response.personData) {
-          console.log('[PersonDetailDialog] 資料載入成功:', response.personData);
-          this.personData = response.personData;
+        if (response.success && response.data) {
+          console.log('[PersonDetailDialog] 資料載入成功:', response.data);
+          this.personData = response.data;
           this.setEditDataFromPersonData();
           this.parseData();
         } else {
-          console.error('[PersonDetailDialog] API 回應失敗');
+          console.error('[PersonDetailDialog] API 回應失敗 - success:', response.success, 'data:', response.data);
           this.error = response.message || '載入人員資料失敗';
         }
       },
@@ -165,8 +172,24 @@ export class PersonDetailDialogComponent implements OnChanges {
       notes: this.personData.notes || ''
     };
     
-    // 保存原始資料用於取消編輯
+    // 儲存原始資料
     this.originalData = { ...this.editData };
+    
+    // 載入照片
+    this.loadPhoto();
+  }
+
+  loadPhoto(): void {
+    if (!this.personData?.photo) {
+      this.photoUrl = null;
+      return;
+    }
+
+    try {
+      this.photoUrl = this.photoUploadService.getPhotoFileUrlByIndex(this.personData.photo);
+    } catch (error) {
+      this.photoUrl = null;
+    }
   }
 
   private parseData(): void {

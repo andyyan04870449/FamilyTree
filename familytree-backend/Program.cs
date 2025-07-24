@@ -53,6 +53,9 @@ builder.Services.AddScoped<familytree_backend.Services.ExcelProcessingService>()
 // Add File Upload Service
 builder.Services.AddScoped<familytree_backend.Services.FileUploadService>();
 
+// Add Photo Upload Service
+builder.Services.AddScoped<familytree_backend.Services.PhotoUploadService>();
+
 // Add CORS
 builder.Services.AddCors(options =>
 {

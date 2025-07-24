@@ -16,8 +16,6 @@ export interface PersonDataModel {
   idNumber?: string;
   passportNumber?: string;
   familyRelationships?: string;
-  friends?: string;
-  profileData?: string;
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
@@ -42,6 +40,7 @@ export interface PersonDataModel {
   notes?: string;
   fileMd5?: string;
   importantFriends?: string;
+  projectId?: string;
 }
 
 export interface PersonDataResponse {
@@ -136,25 +135,29 @@ export class PersonDataService {
   // 取得單一人員資料
   getPersonData(id: number): Observable<any> {
     console.log('[PersonDataService] 獲取人員資料 - ID:', id);
-    return this.http.get(`${this.apiUrl}/${id}`);
+    const params = this.getProjectParams();
+    return this.http.get(`${this.apiUrl}/${id}`, { params });
   }
 
   // 新增人員資料
   createPersonData(personData: PersonDataRequest): Observable<any> {
     console.log('[PersonDataService] 創建人員資料:', personData);
-    return this.http.post(this.apiUrl, personData);
+    const params = this.getProjectParams();
+    return this.http.post(this.apiUrl, personData, { params });
   }
 
   // 更新人員資料
   updatePersonData(id: number, personData: PersonDataRequest): Observable<any> {
     console.log('[PersonDataService] 更新人員資料 - ID:', id, '資料:', personData);
-    return this.http.put(`${this.apiUrl}/${id}`, personData);
+    const params = this.getProjectParams();
+    return this.http.put(`${this.apiUrl}/${id}`, personData, { params });
   }
 
   // 刪除人員資料
   deletePersonData(id: number): Observable<any> {
     console.log('[PersonDataService] 刪除人員資料 - ID:', id);
-    return this.http.delete(`${this.apiUrl}/${id}`);
+    const params = this.getProjectParams();
+    return this.http.delete(`${this.apiUrl}/${id}`, { params });
   }
 
   // 搜尋人員資料

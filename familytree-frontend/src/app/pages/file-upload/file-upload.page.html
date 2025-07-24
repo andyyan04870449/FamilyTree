@@ -3,6 +3,22 @@
     <h1>📁 檔案上傳</h1>
     <p>上傳和管理家族樹相關檔案</p>
   </div>
+
+  <!-- 上傳類型選擇器 -->
+  <div class="upload-type-selector">
+    <button class="type-btn" 
+            [class.active]="uploadType === 'excel'"
+            (click)="onUploadTypeChange('excel')">
+      <span class="type-icon">📊</span>
+      <span class="type-text">Excel 資料</span>
+    </button>
+    <button class="type-btn" 
+            [class.active]="uploadType === 'photo'"
+            (click)="onUploadTypeChange('photo')">
+      <span class="type-icon">📸</span>
+      <span class="type-text">照片檔案</span>
+    </button>
+  </div>
   
   <div class="upload-section">
     <div class="upload-area" 
@@ -12,12 +28,12 @@
          (drop)="onDrop($event)">
       
       <div class="upload-placeholder" *ngIf="!selectedFile">
-        <span class="upload-icon">📤</span>
-        <h3>拖拽檔案到此處或點擊上傳</h3>
-        <p>支援的檔案格式：XLS, XLSX</p>
+        <span class="upload-icon">{{ getUploadIcon() }}</span>
+        <h3>拖拽{{ getUploadTypeName() }}到此處或點擊上傳</h3>
+        <p>支援的檔案格式：{{ getSupportedFormats() }}</p>
         <input type="file" 
                #fileInput 
-               accept=".xls,.xlsx" 
+               [accept]="getAcceptAttribute()" 
                (change)="onFileSelected($event)" 
                style="display: none;">
         <button class="upload-btn" (click)="fileInput.click()">選擇檔案</button>
@@ -25,10 +41,10 @@
       
       <div class="file-selected" *ngIf="selectedFile">
         <div class="selected-file-info">
-          <span class="file-icon">📊</span>
+          <span class="file-icon">{{ getUploadIcon() }}</span>
           <div class="file-details">
             <h4>{{ selectedFile.name }}</h4>
-            <p>{{ formatFileSize(selectedFile.size) }}</p>
+            <p>{{ formatFileSize(selectedFile.size) }} • {{ getUploadTypeName() }}</p>
           </div>
         </div>
         <div class="file-actions">
@@ -63,6 +79,28 @@
   </div>
   
   <div class="file-list-section">
-    <app-file-list></app-file-list>
+    <!-- Excel 檔案列表 -->
+    <app-file-list *ngIf="uploadType === 'excel'"></app-file-list>
+    
+    <!-- 照片列表 -->
+    <div class="photo-list" *ngIf="uploadType === 'photo'">
+      <h3>📸 已上傳照片 ({{ photoList.length }})</h3>
+      <div class="photo-grid" *ngIf="photoList.length > 0">
+        <div class="photo-item" *ngFor="let photo of photoList">
+          <div class="photo-info">
+            <span class="photo-icon">🖼️</span>
+            <div class="photo-details">
+              <h4>{{ photo.originalFileName }}</h4>
+              <p>{{ formatFileSize(photo.fileSize) }} • {{ formatUploadTime(photo.uploadTime) }}</p>
+              <p class="saved-name">儲存為: {{ photo.savedFileName }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="empty-state" *ngIf="photoList.length === 0">
+        <span class="empty-icon">📷</span>
+        <p>尚未上傳任何照片</p>
+      </div>
+    </div>
   </div>
 </div> 

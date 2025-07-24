@@ -62,6 +62,7 @@
       <thead>
         <tr>
           <th>序號</th>
+          <th>照片</th>
           <th>姓名</th>
           <th>性別</th>
           <th>來源</th>
@@ -72,6 +73,18 @@
       <tbody>
         <tr *ngFor="let person of personDataList; let i = index">
           <td>{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+          <td class="photo-cell">
+            <div class="person-avatar">
+              <img *ngIf="getPersonPhotoUrl(person)" 
+                   [src]="getPersonPhotoUrl(person)" 
+                   [alt]="person.name + '的照片'"
+                   class="avatar-img"
+                   (error)="onPhotoError($event)">
+              <div *ngIf="!getPersonPhotoUrl(person)" class="avatar-placeholder">
+                {{ person.name.charAt(0) || '?' }}
+              </div>
+            </div>
+          </td>
           <td>{{ person.name }}</td>
           <td>{{ getGenderText(person.gender) }}</td>
           <td>{{ getSourceText(person) }}</td>

@@ -24,8 +24,15 @@
         <!-- 左側：頭像 -->
         <div class="photo-section">
           <div class="photo-container">
+            <!-- 原始預設頭像，如果有照片時會被替換 -->
             <div class="placeholder-photo">
-              <span class="placeholder-text">{{ personData.name.charAt(0) || '?' }}</span>
+              <img *ngIf="photoUrl" 
+                   [src]="photoUrl" 
+                   [alt]="personData.name + '的照片'" 
+                   class="person-photo"
+                   (error)="photoUrl = null"
+                   style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+              <span *ngIf="!photoUrl" class="placeholder-text">{{ personData.name.charAt(0) || '?' }}</span>
             </div>
           </div>
           <div class="photo-info">
@@ -36,6 +43,7 @@
                 type="text" 
                 [(ngModel)]="editData.photo" 
                 class="edit-input"
+                (blur)="loadPhoto()"
               >
               <span *ngIf="!isEditMode">{{ personData.photo || '--' }}</span>
             </div>

@@ -47,8 +47,8 @@ namespace familytree_backend.Services
                 // 計算 MD5
                 var md5Hash = await CalculateMd5Async(file);
                 
-                // 檢查是否為重複檔案
-                var existingFile = await GetFileByMd5Async(md5Hash);
+                // 檢查是否為重複檔案（只在同專案內檢查）
+                var existingFile = await GetFileByMd5Async(md5Hash, projectId);
                 if (existingFile != null)
                 {
                     return new FileUploadResponse
@@ -426,14 +426,17 @@ namespace familytree_backend.Services
             return Convert.ToHexString(hash).ToLowerInvariant();
         }
 
-        private async Task<FileUploadModel?> GetFileByMd5Async(string md5Hash)
+        private async Task<FileUploadModel?> GetFileByMd5Async(string md5Hash, string? projectId = null)
         {
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            return await connection.QueryFirstOrDefaultAsync<FileUploadModel>(
-                "SELECT * FROM user_update_file WHERE md5_hash = @md5Hash",
-                new { md5Hash });
+            // 如果有專案ID，只在該專案內檢查重複；否則全局檢查
+            var sql = projectId != null 
+                ? "SELECT * FROM user_update_file WHERE md5_hash = @md5Hash AND project_id = @projectId"
+                : "SELECT * FROM user_update_file WHERE md5_hash = @md5Hash";
+
+            return await connection.QueryFirstOrDefaultAsync<FileUploadModel>(sql, new { md5Hash, projectId });
         }
 
         private string GenerateUniqueFileName(string originalFileName)

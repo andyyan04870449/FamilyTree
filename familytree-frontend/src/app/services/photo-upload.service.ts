@@ -3,9 +3,11 @@
 
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpRequest, HttpEvent, HttpEventType, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AppConstants } from '../constants/app.constants';
+import { ProjectService } from './project.service';
+import { catchError, of } from 'rxjs';
 
 // 照片上傳回應介面
 export interface PhotoUploadResponse {
@@ -46,12 +48,56 @@ export interface PhotoFileInfo {
 export class PhotoUploadService {
   private readonly apiUrl = `${AppConstants.API_BASE_URL}/PhotoUpload`;
   
+  // 照片列表狀態管理
+  private photosSubject = new BehaviorSubject<PhotoFileInfo[]>([]);
+  public photos$ = this.photosSubject.asObservable();
+  
   // 支援的圖片格式
   private readonly supportedImageTypes = ['image/jpeg', 'image/png'];
   private readonly supportedArchiveTypes = ['application/zip', 'application/x-7z-compressed'];
   private readonly supportedExtensions = ['.jpg', '.jpeg', '.png', '.zip', '.7z'];
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private projectService: ProjectService
+  ) {}
+
+  /**
+   * 獲取照片列表
+   */
+  getPhotoList(): Observable<any> {
+    const currentProject = this.projectService.getCurrentProject();
+    if (!currentProject) {
+      throw new Error('請先選擇專案');
+    }
+
+    const params = new HttpParams().set('project_id', currentProject.id);
+    return this.http.get<any>(`${this.apiUrl}/list`, { params }).pipe(
+      map(response => {
+        if (response.success) {
+          const photos = response.data || [];
+          this.photosSubject.next(photos);
+        }
+        return response;
+      })
+    );
+  }
+
+  /**
+   * 刷新照片列表
+   */
+  refreshPhotoList(): void {
+    const currentProject = this.projectService.getCurrentProject();
+    if (currentProject) {
+      console.log('🔄 [PhotoUpload] 刷新照片列表:', currentProject.id);
+      this.getPhotoList().subscribe({
+        next: () => console.log('✅ [PhotoUpload] 照片列表刷新完成'),
+        error: (error) => console.error('❌ [PhotoUpload] 照片列表刷新失敗:', error)
+      });
+    } else {
+      console.warn('⚠️ [PhotoUpload] 沒有當前專案，無法刷新照片列表');
+    }
+  }
 
   /**
    * 上傳照片檔案（支援進度追蹤）
@@ -142,18 +188,7 @@ export class PhotoUploadService {
     );
   }
 
-  /**
-   * 取得照片列表
-   */
-  getPhotoList(projectId?: string): Observable<PhotoFileInfo[]> {
-    let params = new HttpParams();
-    if (projectId) {
-      params = params.set('project_id', projectId);
-    }
-    
-    return this.http.get<{data: PhotoFileInfo[]}>(`${this.apiUrl}/list`, { params })
-      .pipe(map(response => response.data || []));
-  }
+
 
   /**
    * 刪除照片
@@ -167,6 +202,31 @@ export class PhotoUploadService {
    */
   getPhotoFileUrl(photoId: number): string {
     return `${this.apiUrl}/${photoId}/file`;
+  }
+
+  /**
+   * 根據照片編號獲取照片檔案 URL
+   */
+  getPhotoFileUrlByIndex(photoIndex: string, projectId?: string): string {
+    const currentProject = projectId || this.projectService.getCurrentProject()?.id;
+    if (!currentProject) {
+      throw new Error('請先選擇專案');
+    }
+    
+    // 將照片編號轉換為6位數字格式並加上副檔名
+    const formattedIndex = photoIndex.padStart(6, '0');
+    const fileName = `${formattedIndex}.PNG`;
+    
+    return `${this.apiUrl}/file/${fileName}?project_id=${currentProject}`;
+  }
+
+  /**
+   * 檢查照片是否存在
+   */
+  checkPhotoExists(photoIndex: string, projectId?: string): Observable<boolean> {
+    // 簡化邏輯：直接返回true，讓瀏覽器的img標籤處理錯誤
+    // 如果照片不存在，img的onerror事件會被觸發
+    return of(true);
   }
 
   /**

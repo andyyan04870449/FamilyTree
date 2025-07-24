@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { PersonDataService, PersonDataModel } from '../../services/person-data.service';
 import { PersonDetailDialogComponent } from '../../components/person-detail-dialog/person-detail-dialog.component';
+import { PhotoUploadService } from '../../services/photo-upload.service';
 
 @Component({
   selector: 'app-person-list',
@@ -34,6 +35,7 @@ export class PersonListComponent implements OnInit, OnDestroy {
 
   constructor(
     private personDataService: PersonDataService,
+    private photoUploadService: PhotoUploadService,
     private router: Router
   ) {
     console.log('[PersonListPage] 組件已建立');
@@ -250,5 +252,29 @@ export class PersonListComponent implements OnInit, OnDestroy {
       return '手動建立';
     }
     return '檔案上傳';
+  }
+
+  // 獲取人員照片URL
+  getPersonPhotoUrl(person: PersonDataModel): string | null {
+    if (!person.photo) {
+      return null;
+    }
+
+    try {
+      return this.photoUploadService.getPhotoFileUrlByIndex(person.photo);
+    } catch (error) {
+      console.warn('無法生成照片URL for person:', person.name, error);
+      return null;
+    }
+  }
+
+  // 處理照片載入錯誤
+  onPhotoError(event: any): void {
+    // 將圖片隱藏，顯示預設頭像
+    event.target.style.display = 'none';
+    const placeholder = event.target.nextElementSibling;
+    if (placeholder) {
+      placeholder.style.display = 'flex';
+    }
   }
 } 

@@ -84,6 +84,26 @@
   100% { transform: rotate(360deg); }
 }
 
+// 照片載入效果
+.person-photo {
+  transition: opacity 0.3s ease-in-out;
+  
+  &.loading {
+    opacity: 0.5;
+  }
+}
+
+// 照片錯誤狀態
+.photo-error-text {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
 .error-message {
   display: flex;
   flex-direction: column;
@@ -121,76 +141,89 @@
 }
 
 .photo-section {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.photo-container {
-  width: 200px;
-  height: 250px;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #333;
-  border: 2px solid #444;
-}
-
-.person-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.placeholder-photo {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #4a90e2, #5ba0f2);
-  color: white;
-  font-size: 72px;
-  font-weight: bold;
-}
-
-.photo-info {
-  .info-item {
+  .photo-container {
+    width: 150px;
+    height: 150px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid var(--border-color);
     display: flex;
-    flex-direction: column;
-    gap: 5px;
+    align-items: center;
+    justify-content: center;
+    background: var(--card-background);
+    position: relative;
 
-    label {
-      font-size: 14px;
-      color: #999;
-      font-weight: 500;
-      margin-bottom: 3px;
+    .person-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
     }
 
-    span {
-      font-size: 14px;
-      color: #e0e0e0;
-      padding: 6px 8px;
-      background: #333;
-      border-radius: 4px;
-      border: 1px solid #444;
-      min-height: 16px;
-      word-break: break-word;
+    .photo-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+
+      .loading-spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--border-color);
+        border-top: 2px solid var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
     }
 
-    .edit-input {
-      padding: 6px 8px;
-      background: #2a2a2a;
-      border: 1px solid #444;
-      border-radius: 4px;
-      color: #e0e0e0;
-      font-size: 14px;
-      transition: all 0.2s ease;
+    .placeholder-photo {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      color: var(--text-secondary);
 
-      &:focus {
-        outline: none;
-        border-color: #4a90e2;
-        box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+      .placeholder-text {
+        font-size: 3rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+      }
+
+      .photo-status {
+        font-size: 1.2rem;
+      }
+    }
+  }
+
+  .photo-info {
+    margin-top: 1rem;
+
+    .info-item {
+      margin-bottom: 0.5rem;
+
+      label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 0.25rem;
+      }
+
+      .photo-status-text {
+        color: var(--success-color, #28a745);
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+
+      .photo-error-text {
+        color: var(--error-color, #dc3545);
+        font-size: 0.85rem;
+        font-weight: 500;
       }
     }
   }

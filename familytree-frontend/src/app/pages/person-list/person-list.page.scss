@@ -193,101 +193,130 @@
 .person-table {
   width: 100%;
   border-collapse: collapse;
-  background: $bg-secondary;
-  border: 1px solid $border-color;
-  border-radius: $border-radius;
+  background: var(--card-background);
+  border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
-  th, td {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid $border-color;
-    text-align: center;
-    vertical-align: middle;
-  }
-
-  th {
-    background: $bg-tertiary;
-    font-weight: 600;
-    color: $text-primary;
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  tbody tr {
-    transition: background-color 0.2s;
+  thead {
+    background: var(--primary-color);
     
-    &:hover {
-      background-color: rgba($primary, 0.05);
-    }
-    
-    &:last-child td {
-      border-bottom: none;
-    }
-  }
-
-  td {
-    font-size: 0.9rem;
-    
-    &:first-child {
-      font-weight: 500;
-      color: $text-secondary;
-    }
-    
-    &:nth-child(2) {
+    th {
+      color: white;
       font-weight: 600;
-      color: $text-primary;
+      padding: 1rem;
+      text-align: left;
+      font-size: 0.9rem;
+      
+      &:first-child {
+        border-radius: 8px 0 0 0;
+      }
+      
+      &:last-child {
+        border-radius: 0 8px 0 0;
+      }
     }
   }
 
-  .actions {
+  tbody {
+    tr {
+      border-bottom: 1px solid var(--border-color);
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background: var(--hover-background, #f8f9fa);
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      vertical-align: middle;
+      font-size: 0.9rem;
+      color: var(--text-color);
+
+      &.photo-cell {
+        padding: 0.5rem;
+        width: 60px;
+      }
+
+      &.actions {
+        white-space: nowrap;
+        
+        button {
+          margin: 0 0.25rem;
+          padding: 0.4rem 0.6rem;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.8rem;
+          transition: all 0.2s ease;
+
+          &.view-btn {
+            background: var(--info-color, #17a2b8);
+            color: white;
+            
+            &:hover {
+              background: var(--info-hover, #138496);
+            }
+          }
+
+          &.delete-btn {
+            background: var(--error-color, #dc3545);
+            color: white;
+            
+            &:hover {
+              background: var(--error-hover, #c82333);
+            }
+          }
+
+          &.favorite-btn {
+            background: var(--warning-color, #ffc107);
+            color: var(--dark-color, #212529);
+            
+            &:hover {
+              background: var(--warning-hover, #e0a800);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 人員頭像樣式
+.person-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--border-color);
+  background: var(--card-background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+
+  .avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .avatar-placeholder {
+    width: 100%;
+    height: 100%;
     display: flex;
-    gap: 0.25rem;
-    justify-content: center;
     align-items: center;
-
-    button {
-      width: 32px;
-      height: 32px;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      border-radius: $border-radius;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
-
-      &:hover {
-        transform: scale(1.1);
-      }
-    }
-
-    .view-btn {
-      color: $primary;
-      
-      &:hover {
-        background: rgba($primary, 0.1);
-      }
-    }
-
-    .delete-btn {
-      color: $error;
-      
-      &:hover {
-        background: rgba($error, 0.1);
-      }
-    }
-
-    .favorite-btn {
-      color: $secondary;
-      
-      &:hover {
-        background: rgba($secondary, 0.1);
-      }
-    }
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
   }
 }
 
