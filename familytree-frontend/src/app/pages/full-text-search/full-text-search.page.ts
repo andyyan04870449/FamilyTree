@@ -15,6 +15,8 @@ interface SearchResult {
   source: string;
   createdAt: string;
   isFavorited: boolean;
+  selected?: boolean;
+  matchCount?: number;
 }
 
 // 搜索歷史接口
@@ -48,8 +50,8 @@ interface Favorite {
 })
 export class FullTextSearchPage implements OnInit {
   // 搜索相關
-  searchKeyword: string = '';
-  searchType: 'fuzzy' | 'exact' = 'fuzzy';
+  searchKeyword: string = '北大';
+  searchType: 'fuzzy' | 'exact' = 'exact';
   loading: boolean = false;
   error: string = '';
   hasSearched: boolean = false;
@@ -82,6 +84,61 @@ export class FullTextSearchPage implements OnInit {
 
   ngOnInit(): void {
     this.loadInitialData();
+  }
+
+  // 全選/取消全選
+  toggleSelectAll(event: any): void {
+    const checked = event.target.checked;
+    this.searchResults.forEach(result => result.selected = checked);
+  }
+
+  // 切換單個項目選中狀態
+  toggleItemSelection(result: SearchResult): void {
+    result.selected = !result.selected;
+  }
+
+  // 頁面大小變更
+  onPageSizeChange(): void {
+    this.currentPage = 1;
+    this.totalPages = Math.ceil(this.totalResults / this.pageSize);
+    // 這裡可以重新載入數據
+  }
+
+  // 檢視收藏詳情 (依名稱)
+  viewFavoriteDetailsByName(name: string): void {
+    console.log('檢視收藏詳情:', name);
+    // 從收藏列表中找到對應的人員ID
+    const favorite = this.favorites.find(f => f.name === name);
+    if (favorite) {
+      this.selectedPersonId = favorite.id;
+      this.showDetailDialog = true;
+    } else {
+      console.warn('未找到收藏項目:', name);
+    }
+  }
+
+  // 移除收藏 (依名稱)
+  async removeFavoriteByName(name: string): Promise<void> {
+    console.log('移除收藏:', name);
+    try {
+      // 從收藏列表中找到對應項目
+      const favorite = this.favorites.find(f => f.name === name);
+      if (favorite) {
+        await this.favoritesService.removeFavorite(favorite.id);
+        this.favorites = this.favorites.filter(f => f.id !== favorite.id);
+        
+        // 同步更新搜索結果的收藏狀態
+        const searchResult = this.searchResults.find(r => r.id === favorite.id);
+        if (searchResult) {
+          searchResult.isFavorited = false;
+        }
+        console.log('✅ 收藏移除成功:', name);
+      } else {
+        console.warn('未找到收藏項目:', name);
+      }
+    } catch (error) {
+      console.error('❌ 移除收藏失敗:', error);
+    }
   }
 
   // 載入初始數據
@@ -192,12 +249,14 @@ export class FullTextSearchPage implements OnInit {
           console.error('搜索失敗:', error);
           this.error = '搜索失敗，請稍後再試';
           this.loading = false;
+          this.hasSearched = true;
         }
       });
     } catch (error) {
       console.error('搜索失敗:', error);
       this.error = '搜索失敗，請稍後再試';
       this.loading = false;
+      this.hasSearched = true;
     }
   }
 

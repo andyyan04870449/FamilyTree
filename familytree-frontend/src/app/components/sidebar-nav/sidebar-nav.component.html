@@ -13,63 +13,60 @@
      (click)="closeSidebar()">
 </div>
 
-<!-- 側邊欄 -->
+<!-- 側邊欄 - 根據 Figma 設計重構 -->
 <div class="sidebar-nav" [class.mobile-open]="isSidebarOpen">
+  <!-- 側邊欄頂部 - 收起按鈕 -->
   <div class="nav-header">
+    <div class="collapse-btn" (click)="toggleSidebar()">
+      <img src="/assets/icons/circle-left.png" alt="收起" class="collapse-icon">
+    </div>
     <!-- 手機版關閉按鈕 -->
     <button class="close-btn" (click)="closeSidebar()">×</button>
   </div>
 
-  
+  <!-- 導航選單 -->
   <nav class="nav-menu">
-
-    <!-- 1. 案件管理 -->
-    <div class="nav-section">
-      <ul class="nav-list">
-        <li class="nav-item" [class.active]="activeRoute === 'case-management'">
-          <a routerLink="/case-management" (click)="closeSidebar()">
-            <span class="nav-icon">📋</span>
-            <span class="nav-text">案件管理</span>
-          </a>
-        </li>
-      </ul>
-    </div>
-
-    
-    <!-- 2. 關鍵字檢索 -->
-    <div class="nav-section">
-      <ul class="nav-list">
-        <li class="nav-item" [class.active]="activeRoute === 'full-text-search'">
-          <a routerLink="/full-text-search" (click)="closeSidebar()">
-            <span class="nav-icon">🔍</span>
-            <span class="nav-text">關鍵字檢索</span>
-          </a>
-        </li>
-      </ul>
+    <!-- 關鍵字檢索 -->
+    <div class="nav-item" [class.active]="activeRoute === 'full-text-search'">
+      <a routerLink="/full-text-search" (click)="closeSidebar()">
+        <div class="nav-icon">
+          <img src="/assets/icons/magnifying-glass-chart.png" alt="關鍵字檢索">
+        </div>
+        <span class="nav-text">關鍵字檢索</span>
+      </a>
     </div>
     
-    <!-- 3. 視覺化分析 -->
-    <div class="nav-section">
-      <ul class="nav-list">
-        <li class="nav-item" [class.active]="activeRoute === 'visual-analysis'">
-          <a routerLink="/visual-analysis" (click)="closeSidebar()">
-            <span class="nav-icon">📊</span>
-            <span class="nav-text">視覺化分析</span>
-          </a>
-        </li>
-      </ul>
+    <!-- 視覺化分析 -->
+    <div class="nav-item" [class.active]="activeRoute === 'visual-analysis'">
+      <a routerLink="/visual-analysis" (click)="closeSidebar()">
+        <div class="nav-icon">
+          <img src="/assets/icons/chart-pie.png" alt="視覺化分析">
+        </div>
+        <span class="nav-text">視覺化分析</span>
+      </a>
     </div>
     
-    <!-- 4. 系統設定 -->
-    <div class="nav-section">
-      <ul class="nav-list">
-        <li class="nav-item" [class.active]="activeRoute === 'system-settings'">
-          <a routerLink="/system-settings" (click)="closeSidebar()">
-            <span class="nav-icon">⚙️</span>
-            <span class="nav-text">系統設定</span>
-          </a>
-        </li>
-      </ul>
+    <!-- 案件管理 -->
+    <div class="nav-item" [class.active]="activeRoute === 'case-management'">
+      <a routerLink="/case-management" (click)="closeSidebar()">
+        <div class="nav-icon">
+          <img src="/assets/icons/folder-open.png" alt="案件管理">
+        </div>
+        <span class="nav-text">案件管理</span>
+      </a>
+    </div>
+    
+    <!-- 系統管理 -->
+    <div class="nav-item" [class.active]="activeRoute === 'system-settings'">
+      <a routerLink="/system-settings" (click)="closeSidebar()">
+        <div class="nav-icon">
+          <img src="/assets/icons/gear.png" alt="系統管理">
+        </div>
+        <span class="nav-text">系統管理</span>
+      </a>
     </div>
   </nav>
+
+  <!-- 背景裝飾 -->
+  <div class="sidebar-background"></div>
 </div> 

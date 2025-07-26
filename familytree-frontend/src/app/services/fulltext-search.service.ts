@@ -199,20 +199,19 @@ export class FullTextSearchService {
   // ============ 搜索功能 ============
 
   /**
-   * 執行全文檢索搜索
+   * 執行全文檢索搜索 - 全專案搜尋
    */
   search(request: SearchRequest): Observable<SearchResult> {
-    console.log('🔍 執行全文檢索搜索:', request);
+    console.log('🔍 執行全文檢索搜索 (全專案):', request);
     
-    const params = this.getProjectParams();
     const searchRequest = {
-      keyword: request.keyword,
-      searchType: request.type,
-      page: request.page || 1,
-      pageSize: request.pageSize || 10
+      Keyword: request.keyword,
+      SearchType: request.type,
+      Page: request.page || 1,
+      PageSize: request.pageSize || 10
     };
 
-    return this.http.post<SearchResult>(`${this.searchUrl}/search`, searchRequest, { params });
+    return this.http.post<SearchResult>(`${this.searchUrl}/search`, searchRequest);
   }
 
   /**

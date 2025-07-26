@@ -96,6 +96,7 @@ namespace familytree_backend.Models
         public int Id { get; set; }
         public int PersonId { get; set; }
         public string PersonName { get; set; } = string.Empty;
+        public string ProjectId { get; set; } = string.Empty;
         public DateTime? LastViewedTime { get; set; }
         public DateTime FavoritedAt { get; set; }
         public DateTime CreatedAt { get; set; }

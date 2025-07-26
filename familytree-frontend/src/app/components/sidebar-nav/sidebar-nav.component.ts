@@ -3,7 +3,6 @@ import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { ProjectService } from '../../services/project.service';
 
 @Component({
   selector: 'app-sidebar-nav',
@@ -18,8 +17,7 @@ export class SidebarNavComponent implements OnInit {
   isSidebarOpen: boolean = false;
 
   constructor(
-    private router: Router,
-    private projectService: ProjectService
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -50,43 +48,18 @@ export class SidebarNavComponent implements OnInit {
   }
 
   private updateActiveRoute(url: string) {
-    if (url === '/' || url === '/home') {
-      this.activeRoute = 'home';
-    } else if (url.includes('/file-upload')) {
-      this.activeRoute = 'file-upload';
-
-
-    } else if (url.includes('/person-list')) {
-      this.activeRoute = 'person-list';
-    } else if (url.includes('/full-text-search')) {
+    if (url.includes('/full-text-search')) {
       this.activeRoute = 'full-text-search';
-    } else if (url.includes('/relationship-graph')) {
-      this.activeRoute = 'relationship-graph';
-    } else if (url.includes('/organization-chart')) {
-      this.activeRoute = 'organization-chart';
+    } else if (url.includes('/visual-analysis')) {
+      this.activeRoute = 'visual-analysis';
     } else if (url.includes('/case-management')) {
       this.activeRoute = 'case-management';
     } else if (url.includes('/system-settings')) {
       this.activeRoute = 'system-settings';
-
+    } else if (url === '/' || url === '/home') {
+      this.activeRoute = 'home';
     }
   }
 
-  /**
-   * 獲取當前專案
-   */
-  getCurrentProject() {
-    return this.projectService.getCurrentProject();
-  }
 
-  /**
-   * 切換專案
-   */
-  switchProject(): void {
-    console.log('🔄 切換專案');
-    this.closeSidebar();
-    this.router.navigate(['/']).then(() => {
-      console.log('✅ 導航回專案管理頁面');
-    });
-  }
 } 

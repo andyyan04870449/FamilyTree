@@ -97,7 +97,8 @@ export class FavoritesService {
   addFavorite(favorite: FavoriteRequest): Promise<void> {
     console.log('➕ 添加收藏:', favorite);
     return new Promise((resolve, reject) => {
-      this.http.post<ApiResponse<any>>(this.favoritesUrl, favorite).subscribe({
+      const params = this.getProjectParams();
+      this.http.post<ApiResponse<any>>(this.favoritesUrl, favorite, { params }).subscribe({
         next: (response) => {
           if (response.success) {
             console.log('✅ 收藏添加成功');
@@ -121,7 +122,8 @@ export class FavoritesService {
   removeFavorite(id: number): Promise<void> {
     console.log('➖ 移除收藏:', id);
     return new Promise((resolve, reject) => {
-      this.http.delete<ApiResponse<any>>(`${this.favoritesUrl}/${id}`).subscribe({
+      const params = this.getProjectParams();
+      this.http.delete<ApiResponse<any>>(`${this.favoritesUrl}/${id}`, { params }).subscribe({
         next: (response) => {
           if (response.success) {
             console.log('✅ 收藏移除成功');
@@ -145,7 +147,8 @@ export class FavoritesService {
   clearAllFavorites(): Promise<void> {
     console.log('🗑️ 清空所有收藏');
     return new Promise((resolve, reject) => {
-      this.http.delete<ApiResponse<any>>(`${this.favoritesUrl}/clear`).subscribe({
+      const params = this.getProjectParams();
+      this.http.delete<ApiResponse<any>>(`${this.favoritesUrl}/clear`, { params }).subscribe({
         next: (response) => {
           if (response.success) {
             console.log('✅ 收藏清空成功');
@@ -169,7 +172,8 @@ export class FavoritesService {
   checkFavoriteStatus(id: number): Promise<boolean> {
     console.log('🔍 檢查收藏狀態:', id);
     return new Promise((resolve, reject) => {
-      this.http.get<ApiResponse<{ isFavorited: boolean }>>(`${this.favoritesUrl}/status/${id}`).subscribe({
+      const params = this.getProjectParams();
+      this.http.get<ApiResponse<{ isFavorited: boolean }>>(`${this.favoritesUrl}/status/${id}`, { params }).subscribe({
         next: (response) => {
           if (response.success && response.data) {
             console.log('✅ 收藏狀態檢查成功:', response.data.isFavorited);

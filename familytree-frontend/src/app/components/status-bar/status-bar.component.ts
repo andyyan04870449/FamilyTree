@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { AppConstants } from '../../constants/app.constants';
 
 @Component({
@@ -11,9 +13,17 @@ export class StatusBarComponent {
   userName = AppConstants.DEFAULT_USER_NAME;
   countdown = AppConstants.SESSION_TIMEOUT_SECONDS;
   timer: any;
+  currentPageName = '';
 
-  constructor() {
+  constructor(private router: Router) {
     this.startCountdown();
+    this.updateCurrentPageName(this.router.url);
+    
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: NavigationEnd) => {
+      this.updateCurrentPageName(event.url);
+    });
   }
 
   startCountdown() {
@@ -39,5 +49,14 @@ export class StatusBarComponent {
     const min = Math.floor(this.countdown / 60).toString().padStart(2, '0');
     const sec = (this.countdown % 60).toString().padStart(2, '0');
     return `${min}:${sec}`;
+  }
+
+  getCurrentPageName() {
+    return this.currentPageName;
+  }
+
+  private updateCurrentPageName(url: string) {
+    // 不顯示頁面名稱，保持空字串
+    this.currentPageName = '';
   }
 }

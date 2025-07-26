@@ -16,10 +16,12 @@ export class App {
   constructor(private router: Router, private eventService: EventService) {}
 
   /**
-   * 檢查當前是否為專案管理頁面
+   * 檢查當前是否為專案管理頁面或登入頁面
    */
   isProjectManagementPage(): boolean {
-    return this.router.url === '/' || this.router.url.startsWith('/project-management');
+    return this.router.url === '/' || 
+           this.router.url.startsWith('/project-management') ||
+           this.router.url.startsWith('/login');
   }
 
   onFullTextSearchClick() {

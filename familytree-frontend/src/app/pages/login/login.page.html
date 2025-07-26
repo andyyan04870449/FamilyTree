@@ -1,0 +1,25 @@
+<div class="login-bg">
+  <div class="login-mask-group">
+    <!-- 背景圖與遮罩可用 CSS 處理 -->
+  </div>
+  <div class="login-form-container">
+    <form class="login-form" (submit)="onLoginSubmit($event)">
+      <div class="form-group">
+        <label for="account">帳號</label>
+        <input id="account" type="text" placeholder="請輸入帳號" />
+      </div>
+      <div class="form-group">
+        <label for="password">密碼</label>
+        <input id="password" type="password" placeholder="請輸入密碼" />
+        <span class="icon-eye"></span>
+      </div>
+      <div class="form-group captcha-group">
+        <label for="captcha">驗證碼</label>
+        <input id="captcha" type="text" placeholder="請輸入驗證碼" />
+        <img class="captcha-img" src="/assets/captcha-demo.png" alt="驗證碼" />
+        <button type="button" class="refresh-captcha">換一張圖</button>
+      </div>
+      <button type="submit" class="login-btn">登入</button>
+    </form>
+  </div>
+</div> 

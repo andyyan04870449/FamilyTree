@@ -5,33 +5,41 @@ using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using Dapper;
 using familytree_backend.Models;
+using familytree_backend.Services;
 
 namespace familytree_backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class FavoritesController : ControllerBase
+    public class FavoritesController : BaseController
     {
         private readonly string _connectionString;
-        private readonly ILogger<FavoritesController> _logger;
 
-        public FavoritesController(IConfiguration configuration, ILogger<FavoritesController> logger)
+        public FavoritesController(IConfiguration configuration, ILogger<FavoritesController> logger, IConfigurationService configurationService)
+            : base(logger, configurationService)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("找不到資料庫連接字符串");
-            _logger = logger;
         }
 
         /// <summary>
         /// 獲取用戶收藏列表
         /// </summary>
+        /// <param name="project_id">專案ID</param>
         /// <returns>收藏列表</returns>
         [HttpGet]
-        public async Task<IActionResult> GetFavorites()
+        public async Task<IActionResult> GetFavorites([FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 獲取用戶收藏列表請求");
+            Logger.LogInformation("📋 獲取用戶收藏列表請求，專案ID: {projectId}", project_id);
 
             try
             {
+                // 驗證專案 ID
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
@@ -42,12 +50,14 @@ namespace familytree_backend.Controllers
                            f.last_viewed_time as LastViewedTime, 
                            f.favorited_at as FavoritedAt,
                            f.created_at as CreatedAt, 
-                           f.updated_at as UpdatedAt
+                           f.updated_at as UpdatedAt,
+                           f.project_id as ProjectId
                     FROM user_favorites f
+                    WHERE f.project_id = @projectId
                     ORDER BY 
                         CASE WHEN f.last_viewed_time IS NOT NULL THEN f.last_viewed_time ELSE f.favorited_at END DESC";
 
-                var favorites = await connection.QueryAsync<UserFavorite>(sql);
+                var favorites = await connection.QueryAsync<UserFavorite>(sql, new { projectId = project_id });
                 var favoriteList = favorites.ToList();
 
                 // 轉換為前端顯示格式
@@ -62,7 +72,7 @@ namespace familytree_backend.Controllers
                     CanDelete = true
                 }).ToList();
 
-                _logger.LogInformation("✅ 成功獲取收藏列表: 數量={count}", favoriteItems.Count);
+                Logger.LogInformation("✅ 成功獲取收藏列表: 數量={count}，專案ID: {projectId}", favoriteItems.Count, project_id);
 
                 return Ok(new FavoriteListResult
                 {
@@ -73,7 +83,7 @@ namespace familytree_backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 獲取收藏列表失敗: {error}", ex.Message);
+                Logger.LogError(ex, "❌ 獲取收藏列表失敗: {error}，專案ID: {projectId}", ex.Message, project_id);
                 return StatusCode(500, new FavoriteListResult
                 {
                     Success = false,
@@ -87,21 +97,29 @@ namespace familytree_backend.Controllers
         /// 添加收藏
         /// </summary>
         /// <param name="request">收藏請求</param>
+        /// <param name="project_id">專案ID</param>
         /// <returns>操作結果</returns>
         [HttpPost]
-        public async Task<IActionResult> AddFavorite([FromBody] FavoriteRequest request)
+        public async Task<IActionResult> AddFavorite([FromBody] FavoriteRequest request, [FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 添加收藏請求: PersonId={personId}, PersonName='{personName}'", 
-                request.PersonId, request.PersonName);
+            Logger.LogInformation("📋 添加收藏請求: PersonId={personId}, PersonName='{personName}', 專案ID: {projectId}", 
+                request.PersonId, request.PersonName, project_id);
 
             try
             {
+                // 驗證專案 ID
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
                 // 參數驗證
                 if (!ModelState.IsValid)
                 {
                     var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
                     var errorMessage = string.Join("; ", errors);
-                    _logger.LogWarning("⚠️  請求參數驗證失敗: {errors}", errorMessage);
+                    Logger.LogWarning("⚠️  請求參數驗證失敗: {errors}", errorMessage);
                     return BadRequest(new FavoriteResult
                     {
                         Success = false,
@@ -112,14 +130,14 @@ namespace familytree_backend.Controllers
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                // 檢查是否已經收藏
+                // 檢查是否已經收藏（同專案內）
                 var existingFavorite = await connection.QueryFirstOrDefaultAsync<int?>(
-                    "SELECT id FROM user_favorites WHERE person_id = @personId",
-                    new { personId = request.PersonId });
+                    "SELECT id FROM user_favorites WHERE person_id = @personId AND project_id = @projectId",
+                    new { personId = request.PersonId, projectId = project_id });
 
                 if (existingFavorite.HasValue)
                 {
-                    _logger.LogInformation("⚠️  人員已經收藏: PersonId={personId}", request.PersonId);
+                    Logger.LogInformation("⚠️  人員已經收藏: PersonId={personId}, 專案ID: {projectId}", request.PersonId, project_id);
                     return Conflict(new FavoriteResult
                     {
                         Success = false,
@@ -127,37 +145,38 @@ namespace familytree_backend.Controllers
                     });
                 }
 
-                // 驗證人員是否存在
+                // 驗證人員是否存在於該專案
                 var personExists = await connection.QueryFirstOrDefaultAsync<bool>(
-                    "SELECT COUNT(*) > 0 FROM person_profile WHERE id = @personId",
-                    new { personId = request.PersonId });
+                    "SELECT COUNT(*) > 0 FROM person_profile WHERE id = @personId AND project_id = @projectId",
+                    new { personId = request.PersonId, projectId = project_id });
 
                 if (!personExists)
                 {
-                    _logger.LogWarning("⚠️  人員不存在: PersonId={personId}", request.PersonId);
+                    Logger.LogWarning("⚠️  人員不存在於該專案: PersonId={personId}, 專案ID: {projectId}", request.PersonId, project_id);
                     return NotFound(new FavoriteResult
                     {
                         Success = false,
-                        Message = $"找不到 ID 為 {request.PersonId} 的人員"
+                        Message = $"在該專案中找不到 ID 為 {request.PersonId} 的人員"
                     });
                 }
 
                 // 添加收藏
                 var now = DateTime.UtcNow;
                 var sql = @"
-                    INSERT INTO user_favorites (person_id, person_name, favorited_at, created_at, updated_at)
-                    VALUES (@personId, @personName, @now, @now, @now)
+                    INSERT INTO user_favorites (person_id, person_name, project_id, favorited_at, created_at, updated_at)
+                    VALUES (@personId, @personName, @projectId, @now, @now, @now)
                     RETURNING id";
 
                 var favoriteId = await connection.QuerySingleAsync<int>(sql, new
                 {
                     personId = request.PersonId,
                     personName = request.PersonName,
+                    projectId = project_id,
                     now
                 });
 
-                _logger.LogInformation("✅ 收藏添加成功: FavoriteId={favoriteId}, PersonId={personId}, PersonName='{personName}'", 
-                    favoriteId, request.PersonId, request.PersonName);
+                Logger.LogInformation("✅ 收藏添加成功: FavoriteId={favoriteId}, PersonId={personId}, PersonName='{personName}', 專案ID: {projectId}", 
+                    favoriteId, request.PersonId, request.PersonName, project_id);
 
                 return Ok(new FavoriteResult
                 {
@@ -174,8 +193,8 @@ namespace familytree_backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 添加收藏失敗: PersonId={personId}, PersonName='{personName}', 錯誤={error}", 
-                    request.PersonId, request.PersonName, ex.Message);
+                Logger.LogError(ex, "❌ 添加收藏失敗: PersonId={personId}, PersonName='{personName}', 專案ID: {projectId}, 錯誤={error}", 
+                    request.PersonId, request.PersonName, project_id, ex.Message);
                 return StatusCode(500, new FavoriteResult
                 {
                     Success = false,
@@ -188,41 +207,49 @@ namespace familytree_backend.Controllers
         /// 刪除收藏
         /// </summary>
         /// <param name="id">收藏ID</param>
+        /// <param name="project_id">專案ID</param>
         /// <returns>操作結果</returns>
         [HttpDelete("{id}")]
-        public async Task<IActionResult> RemoveFavorite(int id)
+        public async Task<IActionResult> RemoveFavorite(int id, [FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 刪除收藏請求: FavoriteId={favoriteId}", id);
+            Logger.LogInformation("📋 刪除收藏請求: FavoriteId={favoriteId}, 專案ID: {projectId}", id, project_id);
 
             try
             {
+                // 驗證專案 ID
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                // 獲取收藏資訊
+                // 獲取收藏資訊（確保是同專案的收藏）
                 var favorite = await connection.QueryFirstOrDefaultAsync<UserFavorite>(
-                    "SELECT id, person_id, person_name, favorited_at FROM user_favorites WHERE id = @id",
-                    new { id });
+                    "SELECT id, person_id, person_name, favorited_at, project_id FROM user_favorites WHERE id = @id AND project_id = @projectId",
+                    new { id, projectId = project_id });
 
                 if (favorite == null)
                 {
-                    _logger.LogWarning("⚠️  收藏不存在: FavoriteId={favoriteId}", id);
+                    Logger.LogWarning("⚠️  收藏不存在或不屬於該專案: FavoriteId={favoriteId}, 專案ID: {projectId}", id, project_id);
                     return NotFound(new FavoriteResult
                     {
                         Success = false,
-                        Message = $"找不到 ID 為 {id} 的收藏"
+                        Message = $"找不到 ID 為 {id} 的收藏或該收藏不屬於當前專案"
                     });
                 }
 
                 // 刪除收藏
                 var deletedRows = await connection.ExecuteAsync(
-                    "DELETE FROM user_favorites WHERE id = @id",
-                    new { id });
+                    "DELETE FROM user_favorites WHERE id = @id AND project_id = @projectId",
+                    new { id, projectId = project_id });
 
                 if (deletedRows > 0)
                 {
-                    _logger.LogInformation("✅ 收藏刪除成功: FavoriteId={favoriteId}, PersonName='{personName}'", 
-                        id, favorite.PersonName);
+                    Logger.LogInformation("✅ 收藏刪除成功: FavoriteId={favoriteId}, PersonName='{personName}', 專案ID: {projectId}", 
+                        id, favorite.PersonName, project_id);
 
                     return Ok(new FavoriteResult
                     {
@@ -232,7 +259,7 @@ namespace familytree_backend.Controllers
                 }
                 else
                 {
-                    _logger.LogWarning("⚠️  收藏刪除失敗，沒有刪除任何記錄: FavoriteId={favoriteId}", id);
+                    Logger.LogWarning("⚠️  收藏刪除失敗，沒有刪除任何記錄: FavoriteId={favoriteId}, 專案ID: {projectId}", id, project_id);
                     return BadRequest(new FavoriteResult
                     {
                         Success = false,
@@ -242,7 +269,7 @@ namespace familytree_backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 刪除收藏失敗: FavoriteId={favoriteId}, 錯誤={error}", id, ex.Message);
+                Logger.LogError(ex, "❌ 刪除收藏失敗: FavoriteId={favoriteId}, 專案ID: {projectId}, 錯誤={error}", id, project_id, ex.Message);
                 return StatusCode(500, new FavoriteResult
                 {
                     Success = false,
@@ -255,41 +282,49 @@ namespace familytree_backend.Controllers
         /// 通過人員ID刪除收藏
         /// </summary>
         /// <param name="personId">人員ID</param>
+        /// <param name="project_id">專案ID</param>
         /// <returns>操作結果</returns>
         [HttpDelete("person/{personId}")]
-        public async Task<IActionResult> RemoveFavoriteByPersonId(int personId)
+        public async Task<IActionResult> RemoveFavoriteByPersonId(int personId, [FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 通過人員ID刪除收藏請求: PersonId={personId}", personId);
+            Logger.LogInformation("📋 通過人員ID刪除收藏請求: PersonId={personId}, 專案ID: {projectId}", personId, project_id);
 
             try
             {
+                // 驗證專案 ID
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                // 獲取收藏資訊
+                // 獲取收藏資訊（確保是同專案的收藏）
                 var favorite = await connection.QueryFirstOrDefaultAsync<UserFavorite>(
-                    "SELECT id, person_id, person_name, favorited_at FROM user_favorites WHERE person_id = @personId",
-                    new { personId });
+                    "SELECT id, person_id, person_name, favorited_at, project_id FROM user_favorites WHERE person_id = @personId AND project_id = @projectId",
+                    new { personId, projectId = project_id });
 
                 if (favorite == null)
                 {
-                    _logger.LogWarning("⚠️  該人員未被收藏: PersonId={personId}", personId);
+                    Logger.LogWarning("⚠️  該人員未被收藏或不屬於該專案: PersonId={personId}, 專案ID: {projectId}", personId, project_id);
                     return NotFound(new FavoriteResult
                     {
                         Success = false,
-                        Message = $"該人員未被收藏"
+                        Message = $"該人員未被收藏或不屬於當前專案"
                     });
                 }
 
                 // 刪除收藏
                 var deletedRows = await connection.ExecuteAsync(
-                    "DELETE FROM user_favorites WHERE person_id = @personId",
-                    new { personId });
+                    "DELETE FROM user_favorites WHERE person_id = @personId AND project_id = @projectId",
+                    new { personId, projectId = project_id });
 
                 if (deletedRows > 0)
                 {
-                    _logger.LogInformation("✅ 通過人員ID刪除收藏成功: PersonId={personId}, PersonName='{personName}'", 
-                        personId, favorite.PersonName);
+                    Logger.LogInformation("✅ 通過人員ID刪除收藏成功: PersonId={personId}, PersonName='{personName}', 專案ID: {projectId}", 
+                        personId, favorite.PersonName, project_id);
 
                     return Ok(new FavoriteResult
                     {
@@ -299,7 +334,7 @@ namespace familytree_backend.Controllers
                 }
                 else
                 {
-                    _logger.LogWarning("⚠️  通過人員ID刪除收藏失敗: PersonId={personId}", personId);
+                    Logger.LogWarning("⚠️  通過人員ID刪除收藏失敗: PersonId={personId}, 專案ID: {projectId}", personId, project_id);
                     return BadRequest(new FavoriteResult
                     {
                         Success = false,
@@ -309,7 +344,7 @@ namespace familytree_backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 通過人員ID刪除收藏失敗: PersonId={personId}, 錯誤={error}", personId, ex.Message);
+                Logger.LogError(ex, "❌ 通過人員ID刪除收藏失敗: PersonId={personId}, 專案ID: {projectId}, 錯誤={error}", personId, project_id, ex.Message);
                 return StatusCode(500, new FavoriteResult
                 {
                     Success = false,
@@ -322,25 +357,33 @@ namespace familytree_backend.Controllers
         /// 檢查是否已收藏
         /// </summary>
         /// <param name="personId">人員ID</param>
+        /// <param name="project_id">專案ID</param>
         /// <returns>是否已收藏</returns>
         [HttpGet("check/{personId}")]
-        public async Task<IActionResult> CheckFavoriteStatus(int personId)
+        public async Task<IActionResult> CheckFavoriteStatus(int personId, [FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 檢查收藏狀態請求: PersonId={personId}", personId);
+            Logger.LogInformation("📋 檢查收藏狀態請求: PersonId={personId}, 專案ID: {projectId}", personId, project_id);
 
             try
             {
+                // 驗證專案 ID
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
                 var favoriteId = await connection.QueryFirstOrDefaultAsync<int?>(
-                    "SELECT id FROM user_favorites WHERE person_id = @personId",
-                    new { personId });
+                    "SELECT id FROM user_favorites WHERE person_id = @personId AND project_id = @projectId",
+                    new { personId, projectId = project_id });
 
                 var isFavorited = favoriteId.HasValue;
 
-                _logger.LogInformation("✅ 收藏狀態檢查完成: PersonId={personId}, IsFavorited={isFavorited}", 
-                    personId, isFavorited);
+                Logger.LogInformation("✅ 收藏狀態檢查完成: PersonId={personId}, 專案ID: {projectId}, IsFavorited={isFavorited}", 
+                    personId, project_id, isFavorited);
 
                 return Ok(ApiResponse<object>.SuccessResult(new
                 {
@@ -351,7 +394,7 @@ namespace familytree_backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 檢查收藏狀態失敗: PersonId={personId}, 錯誤={error}", personId, ex.Message);
+                Logger.LogError(ex, "❌ 檢查收藏狀態失敗: PersonId={personId}, 專案ID: {projectId}, 錯誤={error}", personId, project_id, ex.Message);
                 return StatusCode(500, ApiResponse<object>.ErrorResult("檢查收藏狀態時發生錯誤"));
             }
         }
@@ -360,14 +403,22 @@ namespace familytree_backend.Controllers
         /// 更新收藏的查看時間
         /// </summary>
         /// <param name="personId">人員ID</param>
+        /// <param name="project_id">專案ID</param>
         /// <returns>操作結果</returns>
         [HttpPut("view/{personId}")]
-        public async Task<IActionResult> UpdateViewTime(int personId)
+        public async Task<IActionResult> UpdateViewTime(int personId, [FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 更新收藏查看時間請求: PersonId={personId}", personId);
+            Logger.LogInformation("📋 更新收藏查看時間請求: PersonId={personId}, 專案ID: {projectId}", personId, project_id);
 
             try
             {
+                // 驗證專案 ID
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
@@ -375,12 +426,12 @@ namespace familytree_backend.Controllers
                 var updatedRows = await connection.ExecuteAsync(@"
                     UPDATE user_favorites 
                     SET last_viewed_time = @now, updated_at = @now
-                    WHERE person_id = @personId",
-                    new { personId, now });
+                    WHERE person_id = @personId AND project_id = @projectId",
+                    new { personId, projectId = project_id, now });
 
                 if (updatedRows > 0)
                 {
-                    _logger.LogInformation("✅ 收藏查看時間更新成功: PersonId={personId}", personId);
+                    Logger.LogInformation("✅ 收藏查看時間更新成功: PersonId={personId}, 專案ID: {projectId}", personId, project_id);
 
                     return Ok(ApiResponse<object>.SuccessResult(new
                     {
@@ -390,13 +441,13 @@ namespace familytree_backend.Controllers
                 }
                 else
                 {
-                    _logger.LogWarning("⚠️  該人員未被收藏，無法更新查看時間: PersonId={personId}", personId);
-                    return NotFound(ApiResponse<object>.ErrorResult("該人員未被收藏"));
+                    Logger.LogWarning("⚠️  該人員未被收藏或不屬於該專案，無法更新查看時間: PersonId={personId}, 專案ID: {projectId}", personId, project_id);
+                    return NotFound(ApiResponse<object>.ErrorResult("該人員未被收藏或不屬於當前專案"));
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 更新收藏查看時間失敗: PersonId={personId}, 錯誤={error}", personId, ex.Message);
+                Logger.LogError(ex, "❌ 更新收藏查看時間失敗: PersonId={personId}, 專案ID: {projectId}, 錯誤={error}", personId, project_id, ex.Message);
                 return StatusCode(500, ApiResponse<object>.ErrorResult("更新查看時間時發生錯誤"));
             }
         }
@@ -404,30 +455,40 @@ namespace familytree_backend.Controllers
         /// <summary>
         /// 清空所有收藏
         /// </summary>
+        /// <param name="project_id">專案ID</param>
         /// <returns>操作結果</returns>
         [HttpDelete("clear")]
-        public async Task<IActionResult> ClearAllFavorites()
+        public async Task<IActionResult> ClearAllFavorites([FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 清空所有收藏請求");
+            Logger.LogInformation("📋 清空所有收藏請求，專案ID: {projectId}", project_id);
 
             try
             {
+                // 驗證專案 ID
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                var deletedRows = await connection.ExecuteAsync("DELETE FROM user_favorites");
+                var deletedRows = await connection.ExecuteAsync(
+                    "DELETE FROM user_favorites WHERE project_id = @projectId",
+                    new { projectId = project_id });
 
-                _logger.LogInformation("✅ 清空所有收藏成功: 刪除數量={deletedRows}", deletedRows);
+                Logger.LogInformation("✅ 清空所有收藏成功: 刪除數量={deletedRows}, 專案ID: {projectId}", deletedRows, project_id);
 
                 return Ok(new FavoriteResult
                 {
                     Success = true,
-                    Message = $"成功清空所有收藏，共刪除 {deletedRows} 筆記錄"
+                    Message = $"成功清空該專案所有收藏，共刪除 {deletedRows} 筆記錄"
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 清空所有收藏失敗: {error}", ex.Message);
+                Logger.LogError(ex, "❌ 清空所有收藏失敗: {error}, 專案ID: {projectId}", ex.Message, project_id);
                 return StatusCode(500, new FavoriteResult
                 {
                     Success = false,
@@ -439,28 +500,45 @@ namespace familytree_backend.Controllers
         /// <summary>
         /// 獲取收藏統計
         /// </summary>
+        /// <param name="project_id">專案ID</param>
         /// <returns>收藏統計資料</returns>
         [HttpGet("statistics")]
-        public async Task<IActionResult> GetFavoriteStatistics()
+        public async Task<IActionResult> GetFavoriteStatistics([FromQuery] string? project_id = null)
         {
-            _logger.LogInformation("📋 獲取收藏統計請求");
+            Logger.LogInformation("📋 獲取收藏統計請求，專案ID: {projectId}", project_id);
 
             try
             {
+                // 驗證專案 ID
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                var totalFavorites = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM user_favorites");
-                var favoritesWithViews = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM user_favorites WHERE last_viewed_time IS NOT NULL");
+                var totalFavorites = await connection.QuerySingleAsync<int>(
+                    "SELECT COUNT(*) FROM user_favorites WHERE project_id = @projectId",
+                    new { projectId = project_id });
+
+                var favoritesWithViews = await connection.QuerySingleAsync<int>(
+                    "SELECT COUNT(*) FROM user_favorites WHERE project_id = @projectId AND last_viewed_time IS NOT NULL",
+                    new { projectId = project_id });
+
                 var todayFavorites = await connection.QuerySingleAsync<int>(@"
                     SELECT COUNT(*) FROM user_favorites 
-                    WHERE DATE(favorited_at) = CURRENT_DATE");
+                    WHERE project_id = @projectId AND DATE(favorited_at) = CURRENT_DATE",
+                    new { projectId = project_id });
 
                 var recentFavorites = await connection.QueryAsync<dynamic>(@"
                     SELECT person_name, favorited_at 
                     FROM user_favorites 
+                    WHERE project_id = @projectId
                     ORDER BY favorited_at DESC 
-                    LIMIT 5");
+                    LIMIT 5",
+                    new { projectId = project_id });
 
                 var stats = new
                 {
@@ -471,14 +549,14 @@ namespace familytree_backend.Controllers
                     recentFavorites = recentFavorites.ToList()
                 };
 
-                _logger.LogInformation("✅ 收藏統計獲取成功: 總收藏={totalFavorites}, 今日收藏={todayFavorites}", 
-                    totalFavorites, todayFavorites);
+                Logger.LogInformation("✅ 收藏統計獲取成功: 總收藏={totalFavorites}, 今日收藏={todayFavorites}, 專案ID: {projectId}", 
+                    totalFavorites, todayFavorites, project_id);
 
                 return Ok(ApiResponse<object>.SuccessResult(stats, "獲取收藏統計成功"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 獲取收藏統計失敗: {error}", ex.Message);
+                Logger.LogError(ex, "❌ 獲取收藏統計失敗: {error}, 專案ID: {projectId}", ex.Message, project_id);
                 return StatusCode(500, ApiResponse<object>.ErrorResult("獲取收藏統計時發生錯誤"));
             }
         }

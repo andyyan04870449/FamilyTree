@@ -56,5 +56,9 @@ export const routes: Routes = [
   {
     path: 'project-management',
     loadComponent: () => import('./pages/project-management/project-management.page').then(m => m.ProjectManagementComponent)
+  },
+  {
+    path: 'login',
+    loadComponent: () => import('./pages/login/login.page').then(m => m.LoginPage)
   }
 ];

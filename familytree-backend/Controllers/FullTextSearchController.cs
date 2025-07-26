@@ -33,14 +33,12 @@ namespace familytree_backend.Controllers
         }
 
         /// <summary>
-        /// 全文檢索搜索
-        /// 重大更新：實現專案隔離，確保只搜索當前專案的資料
+        /// 全文檢索搜索 - 全專案搜尋
         /// </summary>
         /// <param name="request">搜索請求</param>
-        /// <param name="project_id">專案 ID</param>
         /// <returns>搜索結果</returns>
         [HttpPost("search")]
-        public async Task<IActionResult> Search([FromBody] SearchRequest request, [FromQuery] string? project_id = null)
+        public async Task<IActionResult> Search([FromBody] SearchRequest request)
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
@@ -48,18 +46,10 @@ namespace familytree_backend.Controllers
                     Keyword = request.Keyword, 
                     SearchType = request.SearchType, 
                     Page = request.Page, 
-                    PageSize = request.PageSize, 
-                    ProjectId = project_id 
+                    PageSize = request.PageSize
                 });
 
-                // 步驟 1：驗證專案 ID（專案隔離的關鍵）
-                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
-                if (projectValidationResult != null)
-                {
-                    return projectValidationResult;
-                }
-
-                // 步驟 2：參數驗證
+                // 步驟 1：參數驗證
                 if (!ModelState.IsValid)
                 {
                     var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
@@ -72,17 +62,18 @@ namespace familytree_backend.Controllers
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                Logger.LogInformation("資料庫連接成功，開始執行搜索");
+                Logger.LogInformation("資料庫連接成功，開始執行全專案搜索");
 
-                // 步驟 3：記錄搜索關鍵字（按專案記錄）
-                await RecordSearchKeyword(connection, request.Keyword, request.SearchType, project_id);
+                // 步驟 2：記錄搜索關鍵字（全局記錄）
+                await RecordSearchKeywordGlobal(connection, request.Keyword, request.SearchType);
 
-                // 步驟 4：執行專案隔離的搜索
-                var countSql = BuildCountSql(request.SearchType, project_id);
-                var parameters = BuildSearchParameters(request.Keyword, request.SearchType, project_id);
-                var totalCount = await connection.QuerySingleAsync<int>(countSql, parameters);
+                // 步驟 3：執行全專案搜索
+                var countSql = BuildCountSqlGlobal(request.SearchType);
+                var countParameters = BuildSearchParametersGlobal(request.Keyword, request.SearchType);
+                var totalCount = await connection.QuerySingleAsync<int>(countSql, countParameters);
 
-                var sql = BuildSearchSql(request.SearchType, project_id);
+                var sql = BuildSearchSqlGlobal(request.SearchType);
+                var parameters = BuildSearchParametersGlobal(request.Keyword, request.SearchType, request.Page, request.PageSize);
                 var results = await connection.QueryAsync<dynamic>(sql, parameters);
                 var searchResults = results.Select(r => new PersonSearchResult
                 {
@@ -105,15 +96,12 @@ namespace familytree_backend.Controllers
                     MatchedFields = GetMatchedFields(r, request.Keyword, request.SearchType)
                 }).ToList();
 
-                // 步驟 5：檢查收藏狀態（按專案過濾）
-                await CheckFavoriteStatus(connection, searchResults, project_id);
+                // 步驟 4：獲取全專案的熱門關鍵字和搜索歷史
+                var popularKeywords = await GetPopularKeywordsGlobal(connection, _searchConfig.MaxPopularKeywords);
+                var searchHistory = await GetSearchHistoryGlobal(connection, _searchConfig.MaxSearchHistoryItems);
 
-                // 步驟 6：獲取專案相關的熱門關鍵字和搜索歷史
-                var popularKeywords = await GetPopularKeywords(connection, project_id, _searchConfig.MaxPopularKeywords);
-                var searchHistory = await GetSearchHistory(connection, project_id, _searchConfig.MaxSearchHistoryItems);
-
-                // 步驟 7：記錄搜索活動
-                await LogSearchActivity(connection, request, totalCount, GetClientIpAddress(), Request.Headers["User-Agent"].ToString(), project_id);
+                // 步驟 5：記錄搜索活動（全專案）
+                await LogSearchActivityGlobal(connection, request, totalCount, GetClientIpAddress(), Request.Headers["User-Agent"].ToString());
 
                 var endTime = DateTime.UtcNow;
                 var duration = (endTime - startTime).TotalMilliseconds;
@@ -137,8 +125,8 @@ namespace familytree_backend.Controllers
                     }
                 };
 
-                Logger.LogInformation("搜索完成: 關鍵字='{keyword}', 專案={projectId}, 找到{count}筆資料, 耗時{duration}ms", 
-                    request.Keyword, project_id, searchResults.Count, duration);
+                Logger.LogInformation("搜索完成: 關鍵字='{keyword}', 找到{count}筆資料, 耗時{duration}ms (全專案搜索)", 
+                    request.Keyword, searchResults.Count, duration);
 
                 LogRequestComplete("全文檢索搜索");
                 return CreateSuccessResponse(result.Data, result.Message);
@@ -324,7 +312,7 @@ namespace familytree_backend.Controllers
                      ancestral_origin = @keyword OR
                      political_party = @keyword OR
                      online_accounts = @keyword OR
-                     frequent_locations = @keyword OR
+                     frequent_locations ILIKE @keyword OR
                      travel_history = @keyword OR
                      discovery_source = @keyword OR
                      important_friends = @keyword OR
@@ -717,6 +705,307 @@ namespace familytree_backend.Controllers
             if (!string.IsNullOrEmpty(r.discovery_source)) sb.AppendLine($"發現過程: {r.discovery_source}");
             if (!string.IsNullOrEmpty(r.remarks)) sb.AppendLine($"備註: {r.remarks}");
             return sb.ToString().TrimEnd();
+        }
+
+        #endregion
+
+        #region 全專案搜索方法
+
+        /// <summary>
+        /// 記錄搜索關鍵字（全局記錄）
+        /// </summary>
+        private async Task RecordSearchKeywordGlobal(NpgsqlConnection connection, string keyword, string searchType)
+        {
+            Logger.LogInformation("記錄搜索關鍵字: '{keyword}', 類型={searchType} (全專案)", keyword, searchType);
+
+            try
+            {
+                var sql = @"
+                    INSERT INTO search_keywords (keyword, search_count, search_type, last_search_time, created_at, updated_at)
+                    VALUES (@keyword, 1, @searchType, @now, @now, @now)
+                    ON CONFLICT (keyword) WHERE project_id IS NULL
+                    DO UPDATE SET 
+                        search_count = search_keywords.search_count + 1,
+                        search_type = @searchType,
+                        last_search_time = @now,
+                        updated_at = @now";
+
+                var now = DateTime.UtcNow;
+                await connection.ExecuteAsync(sql, new { keyword, searchType, now });
+
+                Logger.LogInformation("全專案搜索關鍵字記錄成功");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "記錄全專案搜索關鍵字失敗: {error}", ex.Message);
+                // 不拋出異常，避免影響主要搜索功能
+            }
+        }
+
+        /// <summary>
+        /// 建立計數 SQL 語句（全專案搜索）
+        /// </summary>
+        private string BuildCountSqlGlobal(string searchType)
+        {
+            var baseSql = @"
+                SELECT COUNT(*)
+                FROM person_profile 
+                WHERE ";
+
+            if (searchType == "exact")
+            {
+                return baseSql + @"
+                    (photo_index = @keyword OR
+                     name = @keyword OR 
+                     discovery_source = @keyword OR
+                     gender = @keyword OR
+                     birthday = @keyword OR
+                     birthplace = @keyword OR
+                     nationality = @keyword OR
+                     ethnicity = @keyword OR
+                     ancestral_origin = @keyword OR
+                     political_party = @keyword OR
+                     id_number = @keyword OR 
+                     passport_number = @keyword OR
+                     phone = @keyword OR
+                     mobile = @keyword OR 
+                     email = @keyword OR
+                     current_employer = @keyword OR
+                     address = @keyword OR
+                     mailing_address = @keyword OR
+                     family_relationships = @keyword OR
+                     experience = @keyword OR
+                     education = @keyword OR
+                     online_accounts = @keyword OR
+                     publications = @keyword OR
+                     activities = @keyword OR
+                     friends = @keyword OR
+                     frequent_locations = @keyword OR
+                     travel_history = @keyword OR
+                     discovery_process = @keyword OR
+                     important_friends = @keyword OR
+                     remarks = @keyword)";
+            }
+            else // fuzzy search
+            {
+                return baseSql + @"
+                    (photo_index ILIKE @keyword OR
+                     name ILIKE @keyword OR 
+                     discovery_source ILIKE @keyword OR
+                     gender ILIKE @keyword OR
+                     birthday ILIKE @keyword OR
+                     birthplace ILIKE @keyword OR
+                     nationality ILIKE @keyword OR
+                     ethnicity ILIKE @keyword OR
+                     ancestral_origin ILIKE @keyword OR
+                     political_party ILIKE @keyword OR
+                     id_number ILIKE @keyword OR 
+                     passport_number ILIKE @keyword OR
+                     phone ILIKE @keyword OR
+                     mobile ILIKE @keyword OR 
+                     email ILIKE @keyword OR
+                     current_employer ILIKE @keyword OR
+                     address ILIKE @keyword OR
+                     mailing_address ILIKE @keyword OR
+                     family_relationships ILIKE @keyword OR
+                     experience ILIKE @keyword OR
+                     education ILIKE @keyword OR
+                     online_accounts ILIKE @keyword OR
+                     publications ILIKE @keyword OR
+                     activities ILIKE @keyword OR
+                     friends ILIKE @keyword OR
+                     frequent_locations ILIKE @keyword OR
+                     travel_history ILIKE @keyword OR
+                     discovery_process ILIKE @keyword OR
+                     important_friends ILIKE @keyword OR
+                     remarks ILIKE @keyword)";
+            }
+        }
+
+        /// <summary>
+        /// 建立搜索參數（全專案搜索）
+        /// </summary>
+        private object BuildSearchParametersGlobal(string keyword, string searchType, int page = 1, int pageSize = 10)
+        {
+            return new
+            {
+                keyword = searchType == "exact" ? keyword : $"%{keyword}%",
+                offset = (page - 1) * pageSize,
+                limit = pageSize
+            };
+        }
+
+        /// <summary>
+        /// 建立搜索 SQL 語句（全專案搜索）
+        /// </summary>
+        private string BuildSearchSqlGlobal(string searchType)
+        {
+            var baseSql = @"
+                SELECT id, photo_index, name, discovery_source, gender, birthday, 
+                       birthplace, nationality, ethnicity, ancestral_origin, political_party,
+                       id_number, passport_number, phone, mobile, email, current_employer,
+                       address, mailing_address, family_relationships, experience, education,
+                       online_accounts, publications, activities, friends, frequent_locations,
+                       travel_history, discovery_process, important_friends, remarks,
+                       file_md5, created_at, updated_at, project_id
+                FROM person_profile 
+                WHERE ";
+
+            if (searchType == "exact")
+            {
+                return baseSql + @"
+                    (photo_index = @keyword OR
+                     name = @keyword OR 
+                     discovery_source = @keyword OR
+                     gender = @keyword OR
+                     birthday = @keyword OR
+                     birthplace = @keyword OR
+                     nationality = @keyword OR
+                     ethnicity = @keyword OR
+                     ancestral_origin = @keyword OR
+                     political_party = @keyword OR
+                     id_number = @keyword OR 
+                     passport_number = @keyword OR
+                     phone = @keyword OR
+                     mobile = @keyword OR 
+                     email = @keyword OR
+                     current_employer = @keyword OR
+                     address = @keyword OR
+                     mailing_address = @keyword OR
+                     family_relationships = @keyword OR
+                     experience = @keyword OR
+                     education = @keyword OR
+                     online_accounts = @keyword OR
+                     publications = @keyword OR
+                     activities = @keyword OR
+                     friends = @keyword OR
+                     frequent_locations = @keyword OR
+                     travel_history = @keyword OR
+                     discovery_process = @keyword OR
+                     important_friends = @keyword OR
+                     remarks = @keyword)
+                ORDER BY created_at DESC
+                LIMIT @limit OFFSET @offset";
+            }
+            else // fuzzy search
+            {
+                return baseSql + @"
+                    (photo_index ILIKE @keyword OR
+                     name ILIKE @keyword OR 
+                     discovery_source ILIKE @keyword OR
+                     gender ILIKE @keyword OR
+                     birthday ILIKE @keyword OR
+                     birthplace ILIKE @keyword OR
+                     nationality ILIKE @keyword OR
+                     ethnicity ILIKE @keyword OR
+                     ancestral_origin ILIKE @keyword OR
+                     political_party ILIKE @keyword OR
+                     id_number ILIKE @keyword OR 
+                     passport_number ILIKE @keyword OR
+                     phone ILIKE @keyword OR
+                     mobile ILIKE @keyword OR 
+                     email ILIKE @keyword OR
+                     current_employer ILIKE @keyword OR
+                     address ILIKE @keyword OR
+                     mailing_address ILIKE @keyword OR
+                     family_relationships ILIKE @keyword OR
+                     experience ILIKE @keyword OR
+                     education ILIKE @keyword OR
+                     online_accounts ILIKE @keyword OR
+                     publications ILIKE @keyword OR
+                     activities ILIKE @keyword OR
+                     friends ILIKE @keyword OR
+                     frequent_locations ILIKE @keyword OR
+                     travel_history ILIKE @keyword OR
+                     discovery_process ILIKE @keyword OR
+                     important_friends ILIKE @keyword OR
+                     remarks ILIKE @keyword)
+                ORDER BY created_at DESC
+                LIMIT @limit OFFSET @offset";
+            }
+        }
+
+        /// <summary>
+        /// 獲取熱門關鍵字（全專案）
+        /// </summary>
+        private async Task<List<string>> GetPopularKeywordsGlobal(NpgsqlConnection connection, int limit = 10)
+        {
+            try
+            {
+                var sql = @"
+                    SELECT keyword 
+                    FROM search_keywords 
+                    WHERE project_id IS NULL
+                    ORDER BY search_count DESC, last_search_time DESC 
+                    LIMIT @limit";
+
+                var keywords = await connection.QueryAsync<string>(sql, new { limit });
+                return keywords.ToList();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "獲取全專案熱門關鍵字失敗: {error}", ex.Message);
+                return new List<string>();
+            }
+        }
+
+        /// <summary>
+        /// 獲取搜索歷史（全專案）
+        /// </summary>
+        private async Task<List<string>> GetSearchHistoryGlobal(NpgsqlConnection connection, int limit = 20)
+        {
+            try
+            {
+                var sql = @"
+                    SELECT keyword 
+                    FROM search_keywords 
+                    WHERE project_id IS NULL
+                    ORDER BY last_search_time DESC 
+                    LIMIT @limit";
+
+                var keywords = await connection.QueryAsync<string>(sql, new { limit });
+                return keywords.ToList();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "獲取全專案搜索歷史失敗: {error}", ex.Message);
+                return new List<string>();
+            }
+        }
+
+        /// <summary>
+        /// 記錄搜索活動（全專案）
+        /// </summary>
+        private async Task LogSearchActivityGlobal(NpgsqlConnection connection, SearchRequest request, 
+            int totalCount, string clientIp, string userAgent)
+        {
+            try
+            {
+                var sql = @"
+                    INSERT INTO search_activities 
+                        (keyword, search_type, total_results, search_duration_ms, client_ip, user_agent, created_at)
+                    VALUES 
+                        (@keyword, @searchType, @totalResults, @duration, @clientIp, @userAgent, @now)";
+
+                var now = DateTime.UtcNow;
+                await connection.ExecuteAsync(sql, new
+                {
+                    keyword = request.Keyword,
+                    searchType = request.SearchType,
+                    totalResults = totalCount,
+                    duration = 0, // 這裡可以計算實際搜索時間
+                    clientIp,
+                    userAgent,
+                    now
+                });
+
+                Logger.LogInformation("搜索活動記錄成功 (全專案)");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "記錄全專案搜索活動失敗: {error}", ex.Message);
+                // 不拋出異常，避免影響主要搜索功能
+            }
         }
 
         #endregion

@@ -1,11 +1,29 @@
-<div class="status-bar">
-  <div class="user-info">
-    <span class="user-icon">👤</span>
-    <span class="user-name">{{ userName }}</span>
+<div class="header-1440">
+  <div class="header-bg"></div>
+  <div class="header-content">
+    <!-- 左側：系統標題 -->
+    <div class="header-left">
+      <div class="system-title">
+        <span class="title-icon">💻</span>
+        <span class="title-text">雨聲國小人事資料分析系統</span>
+      </div>
+    </div>
+    
+    <!-- 中間：空白區域 -->
+    <div class="header-center">
+    </div>
+    
+    <!-- 右側：用戶資訊與操作 -->
+    <div class="header-right">
+      <div class="user-info">
+        <span class="user-avatar">👤</span>
+        <span class="user-name">{{ userName }}</span>
+      </div>
+      <div class="countdown">
+        <span class="countdown-text">倒數：{{ countdownDisplay }}</span>
+        <button class="reset-btn" (click)="resetCountdown()" title="重設倒數">⟳</button>
+      </div>
+      <button class="logout-btn" (click)="logout()">登出</button>
+    </div>
   </div>
-  <div class="countdown">
-    <span>倒數：{{ countdownDisplay }}</span>
-    <button class="reset-btn" (click)="resetCountdown()" title="重設倒數">⟳</button>
-  </div>
-  <button class="logout-btn" (click)="logout()">登出</button>
 </div>
