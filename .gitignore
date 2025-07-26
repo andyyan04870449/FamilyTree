@@ -121,7 +121,6 @@ ai_blueprint_ai_step_plan.md
 
 # Local development directories (not tracked in git)
 docs/
-scripts/
 config/
 tests/
 
