@@ -61,7 +61,15 @@ psql -U user -d familytree -h localhost -f FULL_SCHEMA.sql
 ```
 系統可能會提示您輸入 `user` 的密碼 (`password123`)。
 
-### 4. 驗證
+### 4. 初始化 field_mapping 表（重要！）
+
+`field_mapping` 表包含系統運作必須的欄位對應資料。如果沒有這些資料，Excel 匯入功能將無法正常運作。
+
+```bash
+psql -U user -d familytree -h localhost -f FIELD_MAPPING_INIT.sql
+```
+
+### 5. 驗證
 
 匯入完成後，您可以連線到資料庫並檢查資料表是否都已成功建立。
 
@@ -72,4 +80,8 @@ psql -U user -d familytree -h localhost
 ```
 \dt
 ```
-如果您能看到如 `person_profile`, `relationships`, `projects` 等資料表，代表設定已成功完成！ 
+檢查 field_mapping 表是否有資料：
+```
+SELECT COUNT(*) FROM field_mapping;
+```
+如果您能看到如 `person_profile`, `relationships`, `projects` 等資料表，且 field_mapping 表有約 80 筆資料，代表設定已成功完成！ 
