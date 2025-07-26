@@ -283,13 +283,13 @@ namespace familytree_backend.Services
         private async Task<PhotoFileInfo?> ExtractAndSaveImageFromZip(ZipArchiveEntry entry, string projectId, string projectPhotoDir)
         {
             using (var entryStream = entry.Open())
-            using (var memoryStream = new MemoryStream())
             {
+                var memoryStream = new MemoryStream();
                 await entryStream.CopyToAsync(memoryStream);
                 memoryStream.Position = 0;
 
-                // 建立臨時 IFormFile 物件
-                var formFile = new FormFileFromStream(memoryStream, entry.Name, entry.Name, "image/jpeg", memoryStream.Length);
+                // 建立臨時 IFormFile 物件，FormFileFromStream將負責管理memoryStream的生命週期
+                using var formFile = new FormFileFromStream(memoryStream, entry.Name, entry.Name, "image/jpeg", memoryStream.Length);
                 
                 return await SaveImageFile(formFile, projectId, projectPhotoDir, entry.Name);
             }
@@ -301,13 +301,13 @@ namespace familytree_backend.Services
         private async Task<PhotoFileInfo?> ExtractAndSaveImageFromArchive(IArchiveEntry entry, string projectId, string projectPhotoDir)
         {
             using (var entryStream = entry.OpenEntryStream())
-            using (var memoryStream = new MemoryStream())
             {
+                var memoryStream = new MemoryStream();
                 await entryStream.CopyToAsync(memoryStream);
                 memoryStream.Position = 0;
 
-                // 建立臨時 IFormFile 物件
-                var formFile = new FormFileFromStream(memoryStream, entry.Key, entry.Key, "image/jpeg", memoryStream.Length);
+                // 建立臨時 IFormFile 物件，FormFileFromStream將負責管理memoryStream的生命週期
+                using var formFile = new FormFileFromStream(memoryStream, entry.Key, entry.Key, "image/jpeg", memoryStream.Length);
                 
                 return await SaveImageFile(formFile, projectId, projectPhotoDir, entry.Key);
             }
@@ -647,35 +647,68 @@ namespace familytree_backend.Services
         }
 
         /// <summary>
-        /// 取得照片資訊
+        /// 取得照片詳細資訊
         /// </summary>
-        public async Task<PhotoFileInfo?> GetPhotoInfoAsync(int photoId)
+        public async Task<PhotoFileInfo?> GetPhotoInfoAsync(int id)
         {
             try
             {
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    var sql = @"
-                        SELECT 
-                            id as Id,
-                            original_filename as OriginalFileName, 
-                            saved_filename as SavedFileName, 
-                            file_path as FilePath, 
-                            file_size as FileSize, 
-                            md5_hash as Md5Hash, 
-                            project_id as ProjectId, 
-                            upload_time as UploadTime
-                        FROM photos 
-                        WHERE id = @PhotoId";
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
 
-                    var result = await connection.QueryFirstOrDefaultAsync<PhotoFileInfo>(sql, new { PhotoId = photoId });
+                var sql = @"
+                    SELECT id, original_filename, saved_filename, file_path, file_size, 
+                           md5_hash, project_id, upload_time
+                    FROM photos 
+                    WHERE id = @id";
 
-                    return result;
-                }
+                var photo = await connection.QueryFirstOrDefaultAsync<PhotoFileInfo>(sql, new { id });
+                return photo;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ 取得照片資訊失敗 - ID: {PhotoId}", photoId);
+                _logger.LogError(ex, "取得照片詳細資訊失敗: {PhotoId}", id);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 根據照片索引號查找照片
+        /// </summary>
+        public async Task<PhotoFileInfo?> GetPhotoByIndexAsync(string photoIndex, string projectId)
+        {
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                // 查找匹配索引號的照片檔案
+                var sql = @"
+                    SELECT id, original_filename, saved_filename, file_path, file_size, 
+                           md5_hash, project_id, upload_time
+                    FROM photos 
+                    WHERE project_id = @projectId 
+                    AND saved_filename LIKE @pattern
+                    ORDER BY saved_filename
+                    LIMIT 1";
+
+                // 構建搜尋模式，支援不同格式
+                var pattern = $"{photoIndex.PadLeft(6, '0')}%"; // 將索引補零至6位並加上萬用字元
+
+                var photo = await connection.QueryFirstOrDefaultAsync<PhotoFileInfo>(sql, new { 
+                    projectId, 
+                    pattern 
+                });
+
+                _logger.LogInformation("根據索引查找照片: {PhotoIndex} -> {FileName}", 
+                    photoIndex, photo?.SavedFileName ?? "未找到");
+
+                return photo;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "根據索引查找照片失敗: {PhotoIndex}, ProjectId: {ProjectId}", 
+                    photoIndex, projectId);
                 return null;
             }
         }
@@ -832,11 +865,12 @@ namespace familytree_backend.Services
     /// <summary>
     /// 從 Stream 建立 IFormFile 的輔助類別
     /// </summary>
-    public class FormFileFromStream : IFormFile
+    public class FormFileFromStream : IFormFile, IDisposable
     {
         private readonly Stream _stream;
         private readonly string _name;
         private readonly string _fileName;
+        private bool _disposed = false;
 
         public FormFileFromStream(Stream stream, string name, string fileName, string contentType, long length)
         {
@@ -860,5 +894,20 @@ namespace familytree_backend.Services
 
         public Task CopyToAsync(Stream target, CancellationToken cancellationToken = default)
             => _stream.CopyToAsync(target, cancellationToken);
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                _stream?.Dispose();
+                _disposed = true;
+            }
+        }
     }
 } 

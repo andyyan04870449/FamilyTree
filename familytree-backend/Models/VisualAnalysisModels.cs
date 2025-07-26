@@ -1,25 +1,28 @@
-// 視覺化分析相關模型 - 定義視覺化分析圖的資料結構
+// 視覺化分析系統資料模型：定義圖表、節點、關係等核心資料結構
+// 主要功能：支援多專案分析、節點關係管理、圖表編輯
+
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace familytree_backend.Models
 {
     /// <summary>
-    /// 視覺化分析圖資料模型
+    /// 視覺化分析圖表模型
     /// </summary>
     public class VisualAnalysisGraphModel
     {
-        public int Id { get; set; }                                      // 分析圖ID
-        public string Name { get; set; } = string.Empty;                // 分析圖名稱
-        public string ProjectIds { get; set; } = string.Empty;          // 專案ID列表（逗號分隔）
-        public string UpdatedBy { get; set; } = "user";                 // 最後更新人
-        public DateTime UpdatedAt { get; set; }                         // 最後更新時間
-        
-        // 計算屬性
-        public List<string> ProjectIdsList => 
-            string.IsNullOrEmpty(ProjectIds) ? new List<string>() : ProjectIds.Split(',').ToList();
-        
-        public int RelationCount { get; set; }                          // 關聯人數（計算得出）
-        public List<string> Cases { get; set; } = new List<string>();   // 案件名稱列表（計算得出）
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public List<string> ProjectIds { get; set; } = new List<string>();
+        public string UpdatedBy { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+
+        // 衍生屬性
+        public List<string> ProjectIdsList => ProjectIds ?? new List<string>();
+        public List<string> Cases { get; set; } = new List<string>();
+        public int RelationCount { get; set; } = 0;
     }
 
     /// <summary>
@@ -77,7 +80,7 @@ namespace familytree_backend.Models
     }
 
     /// <summary>
-    /// 視覺化分析圖表節點模型
+    /// 視覺化分析節點模型
     /// </summary>
     public class VisualAnalysisNodeModel
     {
@@ -94,6 +97,10 @@ namespace familytree_backend.Models
         // 關聯的人員資料
         public string PersonName { get; set; } = string.Empty;
         public string PersonGender { get; set; } = "男";
+        
+        [JsonPropertyName("personPhoto")]
+        public string PersonPhoto { get; set; } = string.Empty;
+        
         public string ProjectName { get; set; } = string.Empty;
     }
 

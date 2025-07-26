@@ -1,4 +1,5 @@
 // 檔案上傳頁面 - 用於上傳和管理家族樹相關檔案
+// 主要功能：智能檔案類型檢測、自動選擇處理邏輯、統一檔案列表顯示
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +8,20 @@ import { FileUploadService, FileUploadModel, UploadProgress } from '../../servic
 import { PhotoUploadService, PhotoUploadProgress, PhotoUploadResponse } from '../../services/photo-upload.service';
 import { ProjectService } from '../../services/project.service';
 import { FileListComponent } from '../../components/file-list/file-list.component';
+
+// 檔案記錄統一介面
+interface UnifiedFileRecord {
+  id: string;
+  originalName: string;
+  savedName?: string;
+  fileSize: number;
+  uploadTime: string;
+  fileType: 'excel' | 'photo';
+  filePath?: string;
+  md5Hash?: string;
+  status?: string;
+  isMerged?: boolean;
+}
 
 @Component({
   selector: 'app-file-upload',
@@ -21,8 +36,14 @@ export class FileUploadComponent implements OnInit, OnDestroy {
   uploadProgress = 0;
   uploadMessage = '';
   dragOver = false;
-  uploadType: 'excel' | 'photo' = 'excel';
-  photoList: any[] = []; // 預設為Excel上傳
+  detectedFileType: 'excel' | 'photo' | 'unknown' = 'unknown';
+  
+  // 統一的檔案記錄列表
+  allFileRecords: UnifiedFileRecord[] = [];
+  
+  // 刪除狀態
+  isDeleting = false;
+  
   private subscription = new Subscription();
 
   constructor(
@@ -30,11 +51,19 @@ export class FileUploadComponent implements OnInit, OnDestroy {
     private photoUploadService: PhotoUploadService,
     private projectService: ProjectService
   ) {
+    // 訂閱Excel檔案列表
+    this.subscription.add(
+      this.fileUploadService.files$.subscribe(excelFiles => {
+        console.log('📊 [FileUpload] 收到Excel檔案列表更新:', excelFiles);
+        this.updateUnifiedFileList();
+      })
+    );
+
     // 訂閱照片列表
     this.subscription.add(
       this.photoUploadService.photos$.subscribe(photos => {
-        this.photoList = photos;
         console.log('📸 [FileUpload] 收到照片列表更新:', photos);
+        this.updateUnifiedFileList();
       })
     );
 
@@ -47,7 +76,7 @@ export class FileUploadComponent implements OnInit, OnDestroy {
           this.photoUploadService.refreshPhotoList();
         } else {
           console.log('⚠️ [FileUpload] 專案已清除，清空檔案列表');
-          // 清空檔案列表
+          this.allFileRecords = [];
         }
       })
     );
@@ -77,6 +106,35 @@ export class FileUploadComponent implements OnInit, OnDestroy {
    */
   getCurrentProject() {
     return this.projectService.getCurrentProject();
+  }
+
+  /**
+   * 智能檔案類型檢測
+   */
+  private detectFileType(file: File): 'excel' | 'photo' | 'unknown' {
+    const fileName = file.name.toLowerCase();
+    const fileExtension = fileName.split('.').pop() || '';
+    
+    // Excel 檔案類型
+    const excelExtensions = ['xls', 'xlsx'];
+    if (excelExtensions.includes(fileExtension)) {
+      return 'excel';
+    }
+    
+    // 照片檔案類型
+    const photoExtensions = ['jpg', 'jpeg', 'png', 'zip', '7z'];
+    if (photoExtensions.includes(fileExtension)) {
+      return 'photo';
+    }
+    
+    return 'unknown';
+  }
+
+  /**
+   * 驗證檔案類型是否支援
+   */
+  private isValidFileType(file: File): boolean {
+    return this.detectFileType(file) !== 'unknown';
   }
 
   onFileSelected(event: any): void {
@@ -110,21 +168,17 @@ export class FileUploadComponent implements OnInit, OnDestroy {
   }
 
   private handleFileSelection(file: File): void {
-    // 根據上傳類型驗證檔案
-    const isValidFile = this.uploadType === 'excel' 
-      ? this.fileUploadService.isValidFileType(file)
-      : this.photoUploadService.isValidPhotoType(file);
-
-    if (!isValidFile) {
-      const supportedFormats = this.uploadType === 'excel' 
-        ? '.xls 和 .xlsx' 
-        : '.jpg, .jpeg, .png, .zip, .7z';
-      this.uploadMessage = `❌ 只支援 ${supportedFormats} 檔案格式`;
+    // 智能檢測檔案類型
+    this.detectedFileType = this.detectFileType(file);
+    
+    if (this.detectedFileType === 'unknown') {
+      this.uploadMessage = '❌ 不支援的檔案格式，請上傳 Excel (.xls/.xlsx) 或圖片檔案 (.jpg/.png/.zip/.7z)';
       return;
     }
 
     this.selectedFile = file;
-    this.uploadMessage = `📁 已選擇檔案: ${file.name}`;
+    const fileTypeText = this.detectedFileType === 'excel' ? 'Excel 資料檔' : '照片檔案';
+    this.uploadMessage = `📁 已選擇${fileTypeText}: ${file.name}`;
   }
 
   uploadFile(): void {
@@ -133,11 +187,16 @@ export class FileUploadComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.detectedFileType === 'unknown') {
+      this.uploadMessage = '❌ 檔案格式不支援';
+      return;
+    }
+
     this.isUploading = true;
     this.uploadProgress = 0;
-    this.uploadMessage = '📤 正在上傳檔案...';
+    this.uploadMessage = `📤 正在上傳${this.getFileTypeText()}...`;
 
-    if (this.uploadType === 'excel') {
+    if (this.detectedFileType === 'excel') {
       this.uploadExcelFile();
     } else {
       this.uploadPhotoFile();
@@ -170,10 +229,25 @@ export class FileUploadComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.photoUploadService.uploadPhotoWithProgress(this.selectedFile!, currentProject.id).subscribe({
         next: (result) => {
-          if ('progress' in result) {
+          console.log('📊 [FileUpload] 收到上傳結果:', result);
+          
+          // 檢查是否為進度更新（PhotoUploadProgress類型）
+          if ('status' in result && result.status === 'uploading') {
+            console.log('📈 [FileUpload] 更新進度:', result.progress + '%');
             this.uploadProgress = result.progress;
-          } else {
+          }
+          // 檢查是否為完成狀態（PhotoUploadResponse類型或包含success的結果）
+          else if ('success' in result || !('status' in result)) {
+            console.log('✅ [FileUpload] 檢測到完成狀態，調用完成處理');
             this.handlePhotoUploadComplete(result);
+          }
+          // 備用邏輯：如果有progress但不是uploading狀態，可能是完成了
+          else if ('progress' in result && result.progress === 100) {
+            console.log('✅ [FileUpload] 進度100%，可能已完成，調用完成處理');
+            this.handlePhotoUploadComplete(result);
+          }
+          else {
+            console.warn('⚠️ [FileUpload] 未知的結果格式:', result);
           }
         },
         error: (err) => this.handleUploadError(err)
@@ -186,8 +260,9 @@ export class FileUploadComponent implements OnInit, OnDestroy {
     this.uploadProgress = 100;
     
     if (result.success) {
-      this.uploadMessage = '✅ 檔案上傳成功！';
+      this.uploadMessage = '✅ Excel 檔案上傳成功！';
       this.selectedFile = null;
+      this.detectedFileType = 'unknown';
       this.fileUploadService.refreshFileList();
     } else {
       if (result.isDuplicate) {
@@ -204,12 +279,23 @@ export class FileUploadComponent implements OnInit, OnDestroy {
   }
 
   private handlePhotoUploadComplete(result: any): void {
+    console.log('🎯 [FileUpload] 處理照片上傳完成:', result);
+    
     this.isUploading = false;
     this.uploadProgress = 100;
     
     if (result.success) {
-      const uploadedCount = result.uploadedFiles?.length || result.totalUploaded || 1;
-      const failedCount = result.failedFiles?.length || result.totalFailed || 0;
+      // 從新的資料格式中提取統計資訊
+      const data = result.data || {};
+      const uploadedCount = data.totalUploaded || data.uploadedFiles?.length || 1;
+      const failedCount = data.totalFailed || data.failedFiles?.length || 0;
+      
+      console.log('📊 [FileUpload] 上傳統計:', {
+        uploadedCount,
+        failedCount,
+        uploadedFiles: data.uploadedFiles,
+        failedFiles: data.failedFiles
+      });
       
       if (failedCount > 0) {
         this.uploadMessage = `✅ 照片上傳完成！成功: ${uploadedCount}，失敗: ${failedCount}`;
@@ -217,11 +303,16 @@ export class FileUploadComponent implements OnInit, OnDestroy {
         this.uploadMessage = `✅ 照片上傳成功！共 ${uploadedCount} 張照片`;
       }
       this.selectedFile = null;
+      this.detectedFileType = 'unknown';
       
       // 刷新照片列表
       this.photoUploadService.refreshPhotoList();
+      
+      console.log('✅ [FileUpload] 照片上傳完成處理完畢');
     } else {
-      this.uploadMessage = `❌ 照片上傳失敗: ${result.message}`;
+      const errorMessage = result.message || '未知錯誤';
+      this.uploadMessage = `❌ 照片上傳失敗: ${errorMessage}`;
+      console.error('❌ [FileUpload] 照片上傳失敗:', result);
     }
     
     setTimeout(() => {
@@ -245,50 +336,81 @@ export class FileUploadComponent implements OnInit, OnDestroy {
     this.selectedFile = null;
     this.uploadMessage = '';
     this.uploadProgress = 0;
+    this.detectedFileType = 'unknown';
   }
 
   formatFileSize(bytes: number): string {
     return this.fileUploadService.formatFileSize(bytes);
   }
 
-  // 切換上傳類型
-  onUploadTypeChange(type: 'excel' | 'photo'): void {
-    this.uploadType = type;
-    this.clearSelection();
+  /**
+   * 更新統一檔案列表
+   */
+  private updateUnifiedFileList(): void {
+    const excelFiles = this.fileUploadService.getCurrentFiles();
+    const photoFiles = this.photoUploadService.getCurrentPhotos();
     
-    // 根據類型刷新對應的列表
-    const currentProject = this.projectService.getCurrentProject();
-    if (currentProject) {
-      if (type === 'excel') {
-        this.fileUploadService.refreshFileList();
-      } else {
-        this.photoUploadService.refreshPhotoList();
-      }
-    }
+    // 轉換Excel檔案格式
+    const excelRecords: UnifiedFileRecord[] = excelFiles.map(file => ({
+      id: `excel_${file.id}`,
+      originalName: file.originalFilename,
+      savedName: file.filename,
+      fileSize: file.fileSize,
+      uploadTime: file.uploadTime,
+      fileType: 'excel',
+      filePath: file.filePath,
+      md5Hash: file.md5Hash,
+      status: file.status,
+      isMerged: file.isMerged
+    }));
+    
+    // 轉換照片檔案格式（適應PhotoFileInfo介面）
+    const photoRecords: UnifiedFileRecord[] = photoFiles.map(photo => ({
+      id: `photo_${photo.id}`,
+      originalName: photo.originalFileName,
+      savedName: photo.savedFileName,
+      fileSize: photo.fileSize,
+      uploadTime: photo.uploadTime,
+      fileType: 'photo',
+      filePath: undefined, // PhotoFileInfo沒有此屬性
+      md5Hash: undefined   // PhotoFileInfo沒有此屬性
+    }));
+    
+    // 合併並按上傳時間排序（最新的在前）
+    this.allFileRecords = [...excelRecords, ...photoRecords]
+      .sort((a, b) => new Date(b.uploadTime).getTime() - new Date(a.uploadTime).getTime());
+    
+    console.log('📋 [FileUpload] 統一檔案列表已更新:', this.allFileRecords.length, '個檔案');
   }
 
   // 取得支援的檔案格式說明
   getSupportedFormats(): string {
-    return this.uploadType === 'excel' 
-      ? 'XLS, XLSX' 
-      : 'JPG, PNG, ZIP, 7Z';
+    return 'Excel (.xls/.xlsx) 或 圖片檔案 (.jpg/.png/.zip/.7z)';
   }
 
   // 取得檔案接受屬性
   getAcceptAttribute(): string {
-    return this.uploadType === 'excel' 
-      ? '.xls,.xlsx' 
-      : '.jpg,.jpeg,.png,.zip,.7z';
+    return '.xls,.xlsx,.jpg,.jpeg,.png,.zip,.7z';
   }
 
-  // 取得上傳類型圖示
-  getUploadIcon(): string {
-    return this.uploadType === 'excel' ? '📊' : '📸';
+  // 取得檔案類型圖示
+  getFileTypeIcon(fileType?: 'excel' | 'photo' | 'unknown'): string {
+    const type = fileType || this.detectedFileType;
+    switch (type) {
+      case 'excel': return '📊';
+      case 'photo': return '📸';
+      default: return '📁';
+    }
   }
 
-  // 取得上傳類型名稱
-  getUploadTypeName(): string {
-    return this.uploadType === 'excel' ? 'Excel 資料' : '照片檔案';
+  // 取得檔案類型名稱
+  getFileTypeText(fileType?: 'excel' | 'photo' | 'unknown'): string {
+    const type = fileType || this.detectedFileType;
+    switch (type) {
+      case 'excel': return 'Excel 資料';
+      case 'photo': return '照片檔案';
+      default: return '檔案';
+    }
   }
 
   // 格式化上傳時間
@@ -305,5 +427,125 @@ export class FileUploadComponent implements OnInit, OnDestroy {
     } catch {
       return uploadTime;
     }
+  }
+
+  // 取得檔案狀態文字
+  getFileStatusText(record: UnifiedFileRecord): string {
+    if (record.fileType === 'excel') {
+      if (record.isMerged) {
+        return '已匯入';
+      }
+      return record.status === 'uploaded' ? '已上傳' : '處理中';
+    }
+    return '已上傳';
+  }
+
+  // 取得檔案狀態樣式
+  getFileStatusClass(record: UnifiedFileRecord): string {
+    if (record.fileType === 'excel') {
+      if (record.isMerged) {
+        return 'status-merged';
+      }
+      return record.status === 'uploaded' ? 'status-uploaded' : 'status-processing';
+    }
+    return 'status-uploaded';
+  }
+
+  /**
+   * 刪除檔案
+   */
+  deleteFile(record: UnifiedFileRecord): void {
+    const fileName = record.originalName;
+    const fileType = record.fileType === 'excel' ? 'Excel檔案' : '照片檔案';
+    
+    if (!confirm(`確定要刪除${fileType}「${fileName}」嗎？\n\n注意：此操作無法復原。`)) {
+      return;
+    }
+
+    this.isDeleting = true;
+    console.log(`🗑️ [FileUpload] 開始刪除${fileType}:`, record.id);
+
+    // 從 ID 中提取實際的檔案 ID
+    const fileId = parseInt(record.id.split('_')[1]);
+    
+    if (record.fileType === 'excel') {
+      this.deleteExcelFile(fileId, fileName);
+    } else {
+      this.deletePhotoFile(fileId, fileName);
+    }
+  }
+
+  /**
+   * 刪除 Excel 檔案
+   */
+  private deleteExcelFile(fileId: number, fileName: string): void {
+    this.subscription.add(
+      this.fileUploadService.deleteFile(fileId).subscribe({
+        next: (response) => {
+          this.isDeleting = false;
+          if (response.success) {
+            this.uploadMessage = `✅ Excel檔案「${fileName}」刪除成功`;
+            console.log('✅ [FileUpload] Excel檔案刪除成功:', fileName);
+            
+            // 重新載入檔案列表
+            this.fileUploadService.refreshFileList();
+          } else {
+            this.uploadMessage = `❌ 刪除失敗: ${response.message}`;
+            console.error('❌ [FileUpload] Excel檔案刪除失敗:', response.message);
+          }
+          
+          // 清除訊息
+          setTimeout(() => {
+            this.uploadMessage = '';
+          }, 3000);
+        },
+        error: (error) => {
+          this.isDeleting = false;
+          this.uploadMessage = `❌ 刪除Excel檔案時發生錯誤`;
+          console.error('❌ [FileUpload] 刪除Excel檔案時發生錯誤:', error);
+          
+          setTimeout(() => {
+            this.uploadMessage = '';
+          }, 3000);
+        }
+      })
+    );
+  }
+
+  /**
+   * 刪除照片檔案
+   */
+  private deletePhotoFile(photoId: number, fileName: string): void {
+    this.subscription.add(
+      this.photoUploadService.deletePhoto(photoId).subscribe({
+        next: (response) => {
+          this.isDeleting = false;
+          if (response.success !== false) { // PhotoUploadService 的回應格式可能不同
+            this.uploadMessage = `✅ 照片檔案「${fileName}」刪除成功`;
+            console.log('✅ [FileUpload] 照片檔案刪除成功:', fileName);
+            
+            // 重新載入照片列表
+            this.photoUploadService.refreshPhotoList();
+          } else {
+            this.uploadMessage = `❌ 刪除失敗: ${response.message || '未知錯誤'}`;
+            console.error('❌ [FileUpload] 照片檔案刪除失敗:', response);
+          }
+          
+          // 清除訊息
+          setTimeout(() => {
+            this.uploadMessage = '';
+          }, 3000);
+        },
+        error: (error) => {
+          this.isDeleting = false;
+          this.uploadMessage = `❌ 刪除照片檔案時發生錯誤`;
+          console.error('❌ [FileUpload] 刪除照片檔案時發生錯誤:', error);
+          
+          setTimeout(() => {
+            this.uploadMessage = '';
+          }, 3000);
+        }
+      })
+    );
   }
 } 

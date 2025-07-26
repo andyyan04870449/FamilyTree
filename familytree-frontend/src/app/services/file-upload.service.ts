@@ -232,4 +232,9 @@ export class FileUploadService {
   refreshFileList(): void {
     this.getFileList().subscribe();
   }
+
+  // 獲取當前檔案列表
+  getCurrentFiles(): FileUploadModel[] {
+    return this.filesSubject.value;
+  }
 } 

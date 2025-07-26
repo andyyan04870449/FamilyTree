@@ -198,6 +198,56 @@ namespace familytree_backend.Controllers
         }
 
         /// <summary>
+        /// 根據照片索引號獲取照片檔案 API
+        /// </summary>
+        /// <param name="photoIndex">照片索引號（如：0001, 0012）</param>
+        /// <param name="project_id">專案 ID</param>
+        /// <returns>照片檔案</returns>
+        [HttpGet("photo-by-index/{photoIndex}")]
+        public async Task<IActionResult> GetPhotoByIndex(string photoIndex, [FromQuery] string project_id)
+        {
+            return await ExecuteWithExceptionHandling(async () =>
+            {
+                LogRequestStart("根據索引查詢照片", new { PhotoIndex = photoIndex, ProjectId = project_id });
+
+                // 驗證參數
+                if (string.IsNullOrWhiteSpace(photoIndex))
+                {
+                    return CreateErrorResponse("照片索引號不能為空");
+                }
+
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
+                if (projectValidationResult != null)
+                {
+                    return projectValidationResult;
+                }
+
+                // 根據索引號查找照片
+                var photoInfo = await _photoUploadService.GetPhotoByIndexAsync(photoIndex, project_id!);
+                
+                if (photoInfo == null)
+                {
+                    return CreateErrorResponse("找不到對應的照片");
+                }
+
+                // 檢查檔案是否存在
+                if (!System.IO.File.Exists(photoInfo.FilePath))
+                {
+                    Logger.LogWarning("照片檔案不存在: {FilePath}", photoInfo.FilePath);
+                    return CreateErrorResponse("照片檔案不存在");
+                }
+
+                // 返回檔案
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(photoInfo.FilePath);
+                var contentType = GetContentType(photoInfo.SavedFileName);
+                
+                LogRequestComplete("根據索引查詢照片");
+                return File(fileBytes, contentType, photoInfo.SavedFileName);
+
+            }, "根據索引查詢照片");
+        }
+
+        /// <summary>
         /// 通過檔名獲取照片檔案 API
         /// </summary>
         /// <param name="filename">照片檔名</param>

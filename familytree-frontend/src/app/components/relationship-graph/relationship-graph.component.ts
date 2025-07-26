@@ -651,17 +651,157 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
         this.handleNodeClick(event, d);
       });
 
-    // 節點頭像
-    node.selectAll('.node-icon')
+    // 節點照片或頭像（新增功能）
+    const self = this;
+    node.selectAll('.node-image')
       .data((d: any) => [d])
-      .join('text')
-      .attr('class', 'node-icon')
-      .attr('dy', '0.35em')
-      .style('text-anchor', 'middle')
-      .style('font-size', '16px')
-      .style('fill', '#fff')
-      .style('pointer-events', 'none')
-      .text('👤');
+      .join((enter: any) => {
+        const imageGroup = enter.append('g').attr('class', 'node-image');
+        
+        // 首先添加預設圖標
+        imageGroup.append('text')
+          .attr('class', 'node-icon-default')
+          .attr('dy', '0.35em')
+          .style('text-anchor', 'middle')
+          .style('font-size', '16px')
+          .style('fill', '#fff')
+          .style('pointer-events', 'none')
+          .text('👤');
+        
+        return imageGroup;
+      })
+      .each((d: any, i: number, nodes: any[]) => {
+        const imageElement = d3.select(nodes[i]);
+        
+        // 檢查是否有照片資料
+        if (d.data && d.data.photo && d.data.photo !== '' && d.data.photo !== '0') {
+          // 構建照片API URL - 使用照片檔案API
+          const photoUrl = `/api/PhotoUpload/photo-by-index/${d.data.photo}?project_id=${d.data.projectId}`;
+          
+          // 預載照片檢查是否存在
+          const testImage = new Image();
+          testImage.onload = () => {
+            // 照片載入成功，替換預設圖標
+            imageElement.select('.node-icon-default').remove();
+            imageElement.select('.node-image-photo').remove();
+            
+            // 添加圓形遮罩
+            const defs = self.svg?.select('defs').empty() ? 
+              self.svg?.append('defs') : self.svg?.select('defs');
+            
+            const clipId = `clip-circle-${d.id}`;
+            defs?.selectAll(`#${clipId}`).remove();
+            defs?.append('clipPath')
+              .attr('id', clipId)
+              .append('circle')
+              .attr('r', 22) // 比節點圓圈稍小
+              .attr('cx', 0)
+              .attr('cy', 0);
+            
+            // 添加照片
+            imageElement.append('image')
+              .attr('class', 'node-image-photo')
+              .attr('href', photoUrl)
+              .attr('x', -22)
+              .attr('y', -22)
+              .attr('width', 44)
+              .attr('height', 44)
+              .attr('clip-path', `url(#${clipId})`)
+              .style('pointer-events', 'none');
+              
+            self.logService?.debug('RelationshipGraphComponent', '成功載入節點照片', {
+              nodeName: d.name,
+              photoIndex: d.data.photo,
+              photoUrl: photoUrl
+            });
+          };
+          
+          testImage.onerror = () => {
+            // 照片載入失敗，保持預設圖標
+            self.logService?.debug('RelationshipGraphComponent', '節點照片載入失敗，使用預設圖標', {
+              nodeName: d.name,
+              photoIndex: d.data.photo,
+              photoUrl: photoUrl
+            });
+          };
+          
+          testImage.src = photoUrl;
+        } else {
+          // 嘗試從PersonData API獲取照片索引
+          if (d.data && d.data.id && d.data.projectId) {
+            fetch(`/api/PersonData?project_id=${d.data.projectId}`)
+              .then(response => response.json())
+              .then(data => {
+                const person = data.data?.find((p: any) => p.id === d.data.id);
+                if (person && person.photo && person.photo !== '' && person.photo !== '0') {
+                  // 查詢PhotoUpload列表找到對應的照片
+                  fetch(`/api/PhotoUpload/list?project_id=${d.data.projectId}`)
+                    .then(response => response.json())
+                    .then(photoData => {
+                      const photoIndex = person.photo.padStart(6, '0'); // 補零至6位
+                      const photo = photoData.data?.find((p: any) => 
+                        p.savedFileName.startsWith(photoIndex)
+                      );
+                      
+                      if (photo) {
+                        // 使用照片ID直接獲取照片檔案
+                        const photoUrl = `/api/PhotoUpload/${photo.id}/file`;
+                        
+                        const testImage = new Image();
+                        testImage.onload = () => {
+                          imageElement.select('.node-icon-default').remove();
+                          imageElement.select('.node-image-photo').remove();
+                          
+                          const defs = self.svg?.select('defs').empty() ? 
+                            self.svg?.append('defs') : self.svg?.select('defs');
+                          
+                          const clipId = `clip-circle-${d.id}`;
+                          defs?.selectAll(`#${clipId}`).remove();
+                          defs?.append('clipPath')
+                            .attr('id', clipId)
+                            .append('circle')
+                            .attr('r', 22)
+                            .attr('cx', 0)
+                            .attr('cy', 0);
+                          
+                          imageElement.append('image')
+                            .attr('class', 'node-image-photo')
+                            .attr('href', photoUrl)
+                            .attr('x', -22)
+                            .attr('y', -22)
+                            .attr('width', 44)
+                            .attr('height', 44)
+                            .attr('clip-path', `url(#${clipId})`)
+                            .style('pointer-events', 'none');
+                            
+                          self.logService?.debug('RelationshipGraphComponent', '成功載入節點照片', {
+                            nodeName: d.name,
+                            photoIndex: person.photo,
+                            photoId: photo.id,
+                            photoUrl: photoUrl
+                          });
+                        };
+                        
+                        testImage.src = photoUrl;
+                      }
+                    })
+                    .catch(error => {
+                      self.logService?.debug('RelationshipGraphComponent', '查詢照片列表失敗', {
+                        nodeName: d.name,
+                        error: error.message
+                      });
+                    });
+                }
+              })
+              .catch(error => {
+                self.logService?.debug('RelationshipGraphComponent', '從PersonData獲取照片失敗', {
+                  nodeName: d.name,
+                  error: error.message
+                });
+              });
+          }
+        }
+      });
 
     // 節點名稱
     node.selectAll('.node-label')

@@ -31,21 +31,14 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 // 優化重點：註冊新的配置管理服務，移除硬編碼依賴
 // 註冊配置管理服務 - 提供統一的配置存取介面
 builder.Services.AddScoped<familytree_backend.Services.IConfigurationService, familytree_backend.Services.ConfigurationService>();
 
-// Add AI Service (used internally by AnalysisBackgroundService)
+// Add AI Service (still used by other services)
 builder.Services.AddSingleton<familytree_backend.Services.AIService>();
-
-// Add Analysis Background Service
-builder.Services.AddSingleton<familytree_backend.Services.AnalysisBackgroundService>();
-builder.Services.AddHostedService(sp => sp.GetRequiredService<familytree_backend.Services.AnalysisBackgroundService>());
 
 // Add Excel Processing Service
 builder.Services.AddScoped<familytree_backend.Services.ExcelProcessingService>();
@@ -70,11 +63,6 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
 app.UseHttpsRedirection();
 

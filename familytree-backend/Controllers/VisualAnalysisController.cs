@@ -47,12 +47,29 @@ namespace familytree_backend.Controllers
 
                 // 獲取分頁資料
                 var sql = @"
-                    SELECT id, name, project_ids as ProjectIds, updated_by as UpdatedBy, updated_at as UpdatedAt 
+                    SELECT id, name, project_ids, updated_by as UpdatedBy, updated_at as UpdatedAt 
                     FROM visual_analysis_graphs 
                     ORDER BY updated_at DESC 
                     LIMIT @pageSize OFFSET @offset";
 
-                var graphs = await connection.QueryAsync<VisualAnalysisGraphModel>(sql, new { pageSize, offset });
+                var dbResults = await connection.QueryAsync(sql, new { pageSize, offset });
+                
+                // 手動映射並處理 project_ids 轉換
+                var graphs = new List<VisualAnalysisGraphModel>();
+                foreach (var row in dbResults)
+                {
+                    var graph = new VisualAnalysisGraphModel
+                    {
+                        Id = (int)row.id,
+                        Name = row.name?.ToString() ?? string.Empty,
+                        ProjectIds = !string.IsNullOrEmpty(row.project_ids?.ToString()) 
+                            ? ParseProjectIds(row.project_ids.ToString())
+                            : new List<string>(),
+                        UpdatedBy = row.updated_by?.ToString() ?? string.Empty,
+                        UpdatedAt = row.updated_at != null ? (DateTime)row.updated_at : DateTime.Now
+                    };
+                    graphs.Add(graph);
+                }
 
                 // 為每個分析圖計算關聯資訊
                 foreach (var graph in graphs)
@@ -277,15 +294,28 @@ namespace familytree_backend.Controllers
         }
 
         /// <summary>
+        /// 解析 project_ids 字串為列表
+        /// </summary>
+        private List<string> ParseProjectIds(string projectIdsString)
+        {
+            if (string.IsNullOrEmpty(projectIdsString))
+                return new List<string>();
+                
+            return projectIdsString.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .ToList();
+        }
+
+        /// <summary>
         /// 豐富分析圖資料（計算關聯人數和案件名稱）
         /// </summary>
         private async Task EnrichGraphData(NpgsqlConnection connection, VisualAnalysisGraphModel graph)
         {
             try
             {
-                Logger.LogInformation($"開始豐富分析圖資料 ID: {graph.Id}, ProjectIds: {graph.ProjectIds}");
+                Logger.LogInformation($"開始豐富分析圖資料 ID: {graph.Id}, ProjectIds: {string.Join(",", graph.ProjectIds)}");
                 
-                if (string.IsNullOrEmpty(graph.ProjectIds))
+                if (!graph.ProjectIds.Any())
                 {
                     Logger.LogInformation($"分析圖 {graph.Id} 沒有關聯專案");
                     graph.RelationCount = 0;
@@ -351,34 +381,52 @@ namespace familytree_backend.Controllers
                 await connection.OpenAsync();
 
                 // 獲取圖表基本資料
-                var graphSql = "SELECT id, name, project_ids as ProjectIds, updated_by as UpdatedBy, updated_at as UpdatedAt FROM visual_analysis_graphs WHERE id = @id";
-                var graph = await connection.QuerySingleOrDefaultAsync<VisualAnalysisGraphModel>(graphSql, new { id });
-
-                if (graph == null)
+                var graphSql = "SELECT id, name, project_ids, updated_by, updated_at FROM visual_analysis_graphs WHERE id = @id";
+                var graphRow = await connection.QuerySingleOrDefaultAsync(graphSql, new { id });
+                
+                if (graphRow == null)
                 {
-                    return NotFound(new VisualAnalysisEditorResponse 
-                    { 
-                        Success = false, 
-                        Message = "找不到指定的視覺化分析圖" 
+                    return NotFound(new VisualAnalysisEditorResponse
+                    {
+                        Success = false,
+                        Message = "找不到指定的視覺化分析圖"
                     });
                 }
+                
+                                var graph = new VisualAnalysisGraphModel
+                {
+                    Id = (int)graphRow.id,
+                    Name = graphRow.name?.ToString() ?? string.Empty,
+                    ProjectIds = !string.IsNullOrEmpty(graphRow.project_ids?.ToString()) 
+                        ? ParseProjectIds(graphRow.project_ids.ToString())
+                        : new List<string>(),
+                    UpdatedBy = graphRow.updated_by?.ToString() ?? string.Empty,
+                    UpdatedAt = graphRow.updated_at != null ? (DateTime)graphRow.updated_at : DateTime.Now
+                };
 
-                // 檢查是否已有節點資料
-                var nodesSql = @"
-                    SELECT 
-                        van.id, van.graph_id as GraphId, van.project_id as ProjectId, 
-                        van.person_id as PersonId, van.is_visible as IsVisible,
-                        van.node_x as NodeX, van.node_y as NodeY,
-                        van.created_at as CreatedAt, van.updated_at as UpdatedAt,
-                        COALESCE(p.name, 'Unknown') as PersonName, 
-                        COALESCE(p.gender, '男') as PersonGender,
-                        COALESCE(proj.project_name, 'Unknown') as ProjectName
-                    FROM visual_analysis_nodes van
-                    LEFT JOIN person_profile p ON van.person_id = p.id
-                    LEFT JOIN projects proj ON van.project_id = proj.id
-                    WHERE van.graph_id = @id";
+                            // 檢查是否已有節點資料
+            var nodesSql = @"
+                SELECT 
+                    van.id, van.graph_id as GraphId, van.project_id as ProjectId, 
+                    van.person_id as PersonId, van.is_visible as IsVisible,
+                    van.node_x as NodeX, van.node_y as NodeY,
+                    van.created_at as CreatedAt, van.updated_at as UpdatedAt,
+                    COALESCE(p.name, 'Unknown') as PersonName, 
+                    COALESCE(p.gender, '男') as PersonGender,
+                    COALESCE(p.photo_index, '') as PersonPhoto,
+                    COALESCE(proj.project_name, 'Unknown') as ProjectName
+                FROM visual_analysis_nodes van
+                LEFT JOIN person_profile p ON van.person_id = p.id
+                LEFT JOIN projects proj ON van.project_id = proj.id
+                WHERE van.graph_id = @id";
 
                 var existingNodes = await connection.QueryAsync<VisualAnalysisNodeModel>(nodesSql, new { id });
+
+                // 調試：檢查PersonPhoto是否有正確載入
+                foreach (var node in existingNodes)
+                {
+                    Logger.LogInformation($"節點 {node.PersonName} (ID: {node.PersonId}): PersonPhoto = '{node.PersonPhoto}'");
+                }
 
                 // 如果沒有節點資料，就建立
                 if (!existingNodes.Any())
@@ -475,6 +523,67 @@ namespace familytree_backend.Controllers
                 { 
                     Success = false, 
                     Message = "更新節點可見性時發生錯誤" 
+                });
+            }
+        }
+
+        /// <summary>
+        /// 重置图谱节点数据 - 清除旧节点并重新生成
+        /// </summary>
+        [HttpPost("{id}/reset-nodes")]
+        public async Task<IActionResult> ResetGraphNodes(int id)
+        {
+            try
+            {
+                Logger.LogInformation($"开始重置图谱节点数据 ID: {id}");
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                // 获取图表信息
+                var graphSql = "SELECT id, name, project_ids FROM visual_analysis_graphs WHERE id = @id";
+                var graphRow = await connection.QuerySingleOrDefaultAsync(graphSql, new { id });
+                
+                if (graphRow == null)
+                {
+                    return NotFound(new VisualAnalysisApiResponse
+                    {
+                        Success = false,
+                        Message = "找不到指定的视觉化分析图"
+                    });
+                }
+
+                var graph = new VisualAnalysisGraphModel
+                {
+                    Id = (int)graphRow.id,
+                    Name = graphRow.name?.ToString() ?? string.Empty,
+                    ProjectIds = !string.IsNullOrEmpty(graphRow.project_ids?.ToString()) 
+                        ? ParseProjectIds(graphRow.project_ids.ToString())
+                        : new List<string>()
+                };
+
+                // 删除所有旧节点
+                var deleteSql = "DELETE FROM visual_analysis_nodes WHERE graph_id = @id";
+                await connection.ExecuteAsync(deleteSql, new { id });
+                Logger.LogInformation($"已清除图谱 {id} 的所有旧节点");
+
+                // 重新创建节点
+                await CreateNodesForGraph(connection, graph);
+                Logger.LogInformation($"已为图谱 {id} 重新创建节点");
+
+                return Ok(new VisualAnalysisApiResponse
+                {
+                    Success = true,
+                    Message = "重置图谱节点数据成功"
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, $"重置图谱节点数据时发生错误 ID: {id}");
+                return StatusCode(500, new VisualAnalysisApiResponse
+                {
+                    Success = false,
+                    Message = "重置图谱节点数据失败"
                 });
             }
         }

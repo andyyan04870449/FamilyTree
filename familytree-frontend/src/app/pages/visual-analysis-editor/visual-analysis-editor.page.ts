@@ -122,6 +122,7 @@ export class VisualAnalysisEditorComponent implements OnInit, OnDestroy {
         id: node.personId,
         name: node.personName,
         gender: node.personGender,
+        photo: node.personPhoto || null, // 添加照片資訊
         projectId: node.projectId,
         projectName: node.projectName,
         visualAnalysisNodeId: node.id

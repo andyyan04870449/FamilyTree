@@ -3,7 +3,6 @@ export class AppConstants {
   // API 相關 - 根據環境自動選擇正確的API URL
   static readonly API_BASE_URL = AppConstants.getApiBaseUrl();
   static readonly PERSON_API_URL = `${AppConstants.API_BASE_URL}/PersonData`;
-  static readonly ANALYSIS_API_URL = `${AppConstants.API_BASE_URL}/analysis`;
 
   // 動態取得API基礎URL
   private static getApiBaseUrl(): string {
@@ -27,7 +26,7 @@ export class AppConstants {
     // 如果代理失敗，嘗試直接連接（備用方案）
     if (localStorage.getItem('use-direct-api') === 'true') {
       console.log('🔧 使用直接 API 連接');
-      return 'http://localhost:5087/api';
+      return 'http://localhost:5088/api';
     }
     
     // 其他環境

@@ -1,7 +1,7 @@
 <div class="file-upload-page">
   <div class="page-header">
     <h1>📁 檔案上傳</h1>
-    <p>上傳和管理家族樹相關檔案</p>
+    <p>智能檔案上傳 - 自動識別檔案類型並選擇最佳處理方式</p>
     
     <!-- 當前專案資訊 -->
     <div class="current-project-info" *ngIf="getCurrentProject()">
@@ -15,22 +15,6 @@
       <span class="warning-text">請先從案件管理頁面選擇一個案件</span>
     </div>
   </div>
-
-  <!-- 上傳類型選擇器 -->
-  <div class="upload-type-selector">
-    <button class="type-btn" 
-            [class.active]="uploadType === 'excel'"
-            (click)="onUploadTypeChange('excel')">
-      <span class="type-icon">📊</span>
-      <span class="type-text">Excel 資料</span>
-    </button>
-    <button class="type-btn" 
-            [class.active]="uploadType === 'photo'"
-            (click)="onUploadTypeChange('photo')">
-      <span class="type-icon">📸</span>
-      <span class="type-text">照片檔案</span>
-    </button>
-  </div>
   
   <div class="upload-section" *ngIf="getCurrentProject()">
     <div class="upload-area" 
@@ -40,9 +24,19 @@
          (drop)="onDrop($event)">
       
       <div class="upload-placeholder" *ngIf="!selectedFile">
-        <span class="upload-icon">{{ getUploadIcon() }}</span>
-        <h3>拖拽{{ getUploadTypeName() }}到此處或點擊上傳</h3>
+        <span class="upload-icon">📎</span>
+        <h3>拖拽檔案到此處或點擊上傳</h3>
         <p>支援的檔案格式：{{ getSupportedFormats() }}</p>
+        <div class="format-examples">
+          <div class="format-group">
+            <span class="format-icon">📊</span>
+            <span class="format-text">Excel 資料：.xls, .xlsx</span>
+          </div>
+          <div class="format-group">
+            <span class="format-icon">📸</span>
+            <span class="format-text">照片檔案：.jpg, .png, .zip, .7z</span>
+          </div>
+        </div>
         <input type="file" 
                #fileInput 
                [accept]="getAcceptAttribute()" 
@@ -53,16 +47,20 @@
       
       <div class="file-selected" *ngIf="selectedFile">
         <div class="selected-file-info">
-          <span class="file-icon">{{ getUploadIcon() }}</span>
+          <span class="file-icon">{{ getFileTypeIcon() }}</span>
           <div class="file-details">
             <h4>{{ selectedFile.name }}</h4>
-            <p>{{ formatFileSize(selectedFile.size) }} • {{ getUploadTypeName() }}</p>
+            <p>{{ formatFileSize(selectedFile.size) }} • {{ getFileTypeText() }}</p>
+            <p class="file-type-hint" *ngIf="detectedFileType !== 'unknown'">
+              <span class="detection-icon">🔍</span>
+              已自動識別為{{ getFileTypeText() }}
+            </p>
           </div>
         </div>
         <div class="file-actions">
           <button class="upload-btn primary" 
                   (click)="uploadFile()" 
-                  [disabled]="isUploading">
+                  [disabled]="isUploading || detectedFileType === 'unknown'">
             {{ isUploading ? '上傳中...' : '開始上傳' }}
           </button>
           <button class="upload-btn secondary" 
@@ -90,28 +88,53 @@
     </div>
   </div>
   
-  <div class="file-list-section">
-    <!-- Excel 檔案列表 -->
-    <app-file-list *ngIf="uploadType === 'excel'"></app-file-list>
-    
-    <!-- 照片列表 -->
-    <div class="photo-list" *ngIf="uploadType === 'photo'">
-      <h3>📸 已上傳照片 ({{ photoList.length }})</h3>
-      <div class="photo-grid" *ngIf="photoList.length > 0">
-        <div class="photo-item" *ngFor="let photo of photoList">
-          <div class="photo-info">
-            <span class="photo-icon">🖼️</span>
-            <div class="photo-details">
-              <h4>{{ photo.originalFileName }}</h4>
-              <p>{{ formatFileSize(photo.fileSize) }} • {{ formatUploadTime(photo.uploadTime) }}</p>
-              <p class="saved-name">儲存為: {{ photo.savedFileName }}</p>
+  <!-- 統一檔案列表 -->
+  <div class="file-list-section" *ngIf="getCurrentProject()">
+    <div class="unified-file-list">
+      <h3>📋 檔案記錄 ({{ allFileRecords.length }})</h3>
+      
+      <div class="file-grid" *ngIf="allFileRecords.length > 0">
+        <div class="file-item" 
+             *ngFor="let record of allFileRecords" 
+             [class]="'file-type-' + record.fileType">
+          <div class="file-info">
+            <span class="file-type-icon">{{ getFileTypeIcon(record.fileType) }}</span>
+            <div class="file-details">
+              <h4>{{ record.originalName }}</h4>
+              <p class="file-meta">
+                {{ formatFileSize(record.fileSize) }} • 
+                {{ formatUploadTime(record.uploadTime) }}
+              </p>
+              <p class="saved-name" *ngIf="record.savedName && record.savedName !== record.originalName">
+                儲存為: {{ record.savedName }}
+              </p>
+              <div class="file-badges">
+                <span class="file-type-badge" [class]="'badge-' + record.fileType">
+                  {{ getFileTypeText(record.fileType) }}
+                </span>
+                <span class="file-status-badge" [class]="getFileStatusClass(record)">
+                  {{ getFileStatusText(record) }}
+                </span>
+              </div>
+            </div>
+            <div class="file-actions">
+              <button 
+                class="file-action-btn delete-btn"
+                (click)="deleteFile(record)"
+                [disabled]="isDeleting"
+                title="刪除檔案">
+                <span class="btn-icon">🗑️</span>
+                <span class="btn-text">{{ isDeleting ? '刪除中...' : '刪除' }}</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
-      <div class="empty-state" *ngIf="photoList.length === 0">
-        <span class="empty-icon">📷</span>
-        <p>尚未上傳任何照片</p>
+      
+      <div class="empty-state" *ngIf="allFileRecords.length === 0">
+        <span class="empty-icon">📂</span>
+        <h4>尚未上傳任何檔案</h4>
+        <p>上傳第一個檔案開始管理您的專案資料</p>
       </div>
     </div>
   </div>

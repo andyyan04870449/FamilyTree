@@ -121,18 +121,20 @@ export class VisualAnalysisService {
 }
 
 // 編輯器相關介面
+/**
+ * 視覺化分析節點模型
+ */
 export interface VisualAnalysisNode {
   id: number;
   graphId: number;
   projectId: string;
   personId: number;
+  personName: string;
+  personGender: string;
+  personPhoto?: string;  // 添加照片索引號
   isVisible: boolean;
   nodeX: number;
   nodeY: number;
-  createdAt: string;
-  updatedAt: string;
-  personName: string;
-  personGender: string;
   projectName: string;
 }
 

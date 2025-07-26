@@ -1,3 +1,14 @@
+# [FamilyTree 專案 - Docker Compose 組態檔]
+#
+# 此檔案定義了 FamilyTree 專案的多容器應用程式設定。
+# 它同時用於本地開發環境和在 AWS EC2 上的部署。
+#
+# 若要啟動所有服務，請執行：
+#   docker-compose up -d --build
+#
+# 若要停止所有服務，請執行：
+#   docker-compose down
+#
 services:
   postgres:
     image: postgres:15

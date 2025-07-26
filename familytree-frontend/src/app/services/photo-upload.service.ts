@@ -4,10 +4,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpRequest, HttpEvent, HttpEventType, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, catchError, of } from 'rxjs';
 import { AppConstants } from '../constants/app.constants';
 import { ProjectService } from './project.service';
-import { catchError, of } from 'rxjs';
 
 // 照片上傳回應介面
 export interface PhotoUploadResponse {
@@ -143,30 +142,33 @@ export class PhotoUploadService {
               console.log('📊 [PhotoUpload] 回應資料詳情:', event.body.data);
               
               // 後端回應格式：{success: true, data: {uploadedFiles, failedFiles}, message}
-              // 需要將data內容提取到頂層以符合前端期望
+              // 返回完成狀態，不包含progress屬性以避免混淆
               const responseData = event.body.data as any || {};
-              const result = { 
-                progress: 100, 
-                status: 'completed' as const,
+              const result: PhotoUploadResponse = { 
                 success: true,
                 message: event.body.message,
-                uploadedFiles: responseData.uploadedFiles,
-                failedFiles: responseData.failedFiles,
-                totalUploaded: responseData.totalUploaded,
-                totalFailed: responseData.totalFailed
+                data: {
+                  uploadedFiles: responseData.uploadedFiles,
+                  failedFiles: responseData.failedFiles,
+                  totalUploaded: responseData.totalUploaded || (responseData.uploadedFiles?.length || 0),
+                  totalFailed: responseData.totalFailed || (responseData.failedFiles?.length || 0)
+                }
               };
               
-              console.log('🔄 [PhotoUpload] 準備返回結果:', result);
+              console.log('🔄 [PhotoUpload] 準備返回完成結果:', result);
               return result;
             } else {
-              console.log('❌ [PhotoUpload] 上傳失敗或回應格式不正確');
-              console.log('❌ [PhotoUpload] 回應詳情:', JSON.stringify(event.body, null, 2));
-              return { 
-                progress: 0, 
-                status: 'error' as const,
+              console.error('❌ [PhotoUpload] 上傳失敗');
+              return {
                 success: false,
-                message: event.body?.message || '上傳失敗'
-              };
+                message: event.body?.message || '上傳失敗',
+                data: {
+                  uploadedFiles: [],
+                  failedFiles: [],
+                  totalUploaded: 0,
+                  totalFailed: 1
+                }
+              } as PhotoUploadResponse;
             }
             
           case HttpEventType.Sent:
@@ -181,9 +183,22 @@ export class PhotoUploadService {
             return { progress: 0, status: 'uploading' as const };
             
           default:
-            console.log('❓ [PhotoUpload] 未知的HTTP事件類型:', event.type);
+            console.log('📋 [PhotoUpload] 其他HTTP事件:', this.getEventTypeName(event.type));
             return { progress: 0, status: 'uploading' as const };
         }
+      }),
+      catchError(error => {
+        console.error('❌ [PhotoUpload] 上傳過程發生錯誤:', error);
+        return of({
+          success: false,
+          message: error.message || '上傳過程發生錯誤',
+          data: {
+            uploadedFiles: [],
+            failedFiles: [],
+            totalUploaded: 0,
+            totalFailed: 1
+          }
+        } as PhotoUploadResponse);
       })
     );
   }
@@ -194,7 +209,17 @@ export class PhotoUploadService {
    * 刪除照片
    */
   deletePhoto(photoId: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${photoId}`);
+    return this.http.delete(`${this.apiUrl}/${photoId}`).pipe(
+      map(response => {
+        // 無論後端回應如何，都嘗試從本地列表中移除
+        const currentPhotos = this.photosSubject.value;
+        const updatedPhotos = currentPhotos.filter(photo => photo.id !== photoId);
+        this.photosSubject.next(updatedPhotos);
+        
+        console.log('🗑️ [PhotoUpload] 照片刪除後更新本地列表:', updatedPhotos.length);
+        return response;
+      })
+    );
   }
 
   /**
@@ -316,5 +341,12 @@ export class PhotoUploadService {
       case HttpEventType.User: return 'User';
       default: return `Unknown(${eventType})`;
     }
+  }
+
+  /**
+   * 獲取當前照片列表
+   */
+  getCurrentPhotos(): PhotoFileInfo[] {
+    return this.photosSubject.value;
   }
 } 

@@ -111,6 +111,55 @@ namespace familytree_backend.Controllers
         }
 
         /// <summary>
+        /// 測試端點
+        /// </summary>
+        [HttpGet("test")]
+        public IActionResult Test()
+        {
+            return Ok(new { message = "PersonData API is working", timestamp = DateTime.Now });
+        }
+
+        /// <summary>
+        /// 修復專案人員資料的project_id欄位
+        /// </summary>
+        [HttpGet("repair/{project_id}")]
+        public async Task<IActionResult> RepairProjectIds(string project_id)
+        {
+            try
+            {
+                Logger.LogInformation($"開始修復專案 {project_id} 的人員資料project_id欄位");
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                // 更新所有project_id為null的記錄
+                var updateSql = @"
+                    UPDATE person_profile 
+                    SET project_id = @project_id, updated_at = CURRENT_TIMESTAMP 
+                    WHERE project_id IS NULL";
+
+                var affectedRows = await connection.ExecuteAsync(updateSql, new { project_id });
+
+                Logger.LogInformation($"成功修復 {affectedRows} 筆人員資料的project_id欄位");
+
+                return Ok(new { 
+                    success = true,
+                    affectedRows = affectedRows,
+                    projectId = project_id,
+                    message = $"成功修復 {affectedRows} 筆記錄"
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, $"修復專案ID時發生錯誤: {project_id}");
+                return StatusCode(500, new { 
+                    success = false, 
+                    message = $"修復失敗: {ex.Message}" 
+                });
+            }
+        }
+
+        /// <summary>
         /// 人員資料搜尋 API
         /// 設計改善：支援多欄位搜尋，使用配置管理搜尋參數
         /// </summary>
@@ -440,13 +489,14 @@ namespace familytree_backend.Controllers
         /// </summary>
         /// <param name="id">人員 ID</param>
         /// <param name="person">人員資料</param>
+        /// <param name="project_id">專案 ID</param>
         /// <returns>更新結果</returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdatePerson(int id, [FromBody] PersonDataModel person)
+        public async Task<IActionResult> UpdatePerson(int id, [FromBody] PersonDataModel person, [FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
-                LogRequestStart("更新人員資料", new { Id = id, Name = person.Name, ProjectId = person.ProjectId });
+                LogRequestStart("更新人員資料", new { Id = id, Name = person.Name, ProjectId = project_id });
 
                 // 步驟 1：驗證參數
                 if (id <= 0)
@@ -460,7 +510,7 @@ namespace familytree_backend.Controllers
                     return validationResult;
                 }
 
-                var projectValidationResult = ValidateProjectId(person.ProjectId, allowNull: false);
+                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
                 if (projectValidationResult != null)
                 {
                     return projectValidationResult;
@@ -472,7 +522,7 @@ namespace familytree_backend.Controllers
 
                 var existsCheck = await connection.QueryFirstOrDefaultAsync<int?>(
                     "SELECT id FROM person_profile WHERE id = @id AND project_id = @project_id",
-                    new { id, project_id = person.ProjectId });
+                    new { id, project_id = project_id });
 
                 if (!existsCheck.HasValue)
                 {
@@ -481,6 +531,7 @@ namespace familytree_backend.Controllers
 
                 // 步驟 3：執行更新
                 person.Id = id;
+                person.ProjectId = project_id; // 確保使用正確的專案 ID
                 person.UpdatedAt = DateTime.UtcNow.ToString(ApplicationConstants.Logging.LogTimeFormat);
 
                 var sql = BuildPersonUpdateQuery();
@@ -492,7 +543,7 @@ namespace familytree_backend.Controllers
                 }
 
                 Logger.LogInformation("成功更新人員資料：ID {PersonId}，姓名 {PersonName}，專案 {ProjectId}", 
-                    id, person.Name, person.ProjectId);
+                    id, person.Name, project_id);
 
                 LogRequestComplete("更新人員資料");
                 return CreateSuccessResponse(person, ApplicationConstants.ApiResponse.SuccessMessages.DataUpdatedSuccessfully);

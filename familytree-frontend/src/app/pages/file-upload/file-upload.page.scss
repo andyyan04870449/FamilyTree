@@ -2,6 +2,9 @@
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
+  background: #1a1a2e;
+  min-height: 100vh;
+  color: #ffffff;
 }
 
 .page-header {
@@ -10,23 +13,24 @@
   
   h1 {
     font-size: 2.5rem;
-    color: #333;
+    color: #ffffff;
     margin-bottom: 10px;
   }
   
   p {
     font-size: 1.1rem;
-    color: #666;
+    color: #8a8a9a;
+    margin-bottom: 20px;
   }
 
   // 當前專案資訊
   .current-project-info {
     margin-top: 20px;
     padding: 12px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
     border-radius: 8px;
     display: inline-block;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 
     .project-indicator {
       color: white;
@@ -49,10 +53,10 @@
   .no-project-warning {
     margin-top: 20px;
     padding: 12px 20px;
-    background: #fff3cd;
-    border: 1px solid #ffeaa7;
+    background: #3a2a1a;
+    border: 1px solid #e74c3c;
     border-radius: 8px;
-    color: #856404;
+    color: #ffffff;
     display: inline-block;
     font-weight: 500;
 
@@ -66,60 +70,16 @@
   }
 }
 
-.upload-type-selector {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 30px;
-  
-  .type-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 20px;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 1rem;
-    
-    &:hover {
-      border-color: #667eea;
-      background: #f8f9ff;
-    }
-    
-    &.active {
-      border-color: #667eea;
-      background: #667eea;
-      color: white;
-      
-      .type-icon {
-        transform: scale(1.1);
-      }
-    }
-    
-    .type-icon {
-      font-size: 1.2rem;
-      transition: transform 0.3s ease;
-    }
-    
-    .type-text {
-      font-weight: 500;
-    }
-  }
-}
-
 .upload-section {
   margin-bottom: 40px;
 }
 
 .upload-area {
-  border: 3px dashed #ddd;
+  border: 3px dashed #3a3a5c;
   border-radius: 12px;
   padding: 60px 20px;
   text-align: center;
-  background: #fafafa;
+  background: #2a2a3e;
   transition: all 0.3s ease;
   min-height: 200px;
   display: flex;
@@ -127,13 +87,13 @@
   justify-content: center;
   
   &:hover {
-    border-color: #667eea;
-    background: #f8f9ff;
+    border-color: #4a90e2;
+    background: #353548;
   }
   
   &.drag-over {
-    border-color: #667eea;
-    background: #f0f4ff;
+    border-color: #4a90e2;
+    background: #404055;
     transform: scale(1.02);
   }
 }
@@ -141,20 +101,49 @@
 .upload-placeholder {
   .upload-icon {
     font-size: 4rem;
-    color: #667eea;
+    color: #4a90e2;
     margin-bottom: 20px;
     display: block;
   }
   
   h3 {
     font-size: 1.5rem;
-    color: #333;
+    color: #ffffff;
     margin-bottom: 10px;
   }
   
   p {
-    color: #666;
+    color: #8a8a9a;
+    margin-bottom: 20px;
+  }
+
+  .format-examples {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
     margin-bottom: 30px;
+    flex-wrap: wrap;
+
+    .format-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: #3a3a5c;
+      border-radius: 8px;
+      border: 1px solid #4a4a6c;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+
+      .format-icon {
+        font-size: 1.2rem;
+      }
+
+      .format-text {
+        font-size: 0.9rem;
+        color: #ffffff;
+        font-weight: 500;
+      }
+    }
   }
 }
 
@@ -169,7 +158,7 @@
     
     .file-icon {
       font-size: 2rem;
-      color: #667eea;
+      color: #4a90e2;
       margin-right: 16px;
     }
     
@@ -178,14 +167,24 @@
       
       h4 {
         margin: 0 0 4px 0;
-        color: #333;
+        color: #ffffff;
         font-size: 1.1rem;
       }
       
       p {
-        margin: 0;
-        color: #666;
+        margin: 0 0 4px 0;
+        color: #8a8a9a;
         font-size: 0.9rem;
+      }
+
+      .file-type-hint {
+        color: #27ae60;
+        font-weight: 500;
+        font-size: 0.85rem;
+
+        .detection-icon {
+          margin-right: 4px;
+        }
       }
     }
   }
@@ -207,16 +206,17 @@
   font-weight: 500;
   
   &.primary {
-    background: #667eea;
+    background: #4a90e2;
     color: white;
     
     &:hover:not(:disabled) {
-      background: #5a6fd8;
+      background: #357abd;
       transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(74, 144, 226, 0.4);
     }
     
     &:disabled {
-      background: #ccc;
+      background: #555555;
       cursor: not-allowed;
       transform: none;
     }
@@ -224,18 +224,19 @@
   
   &.secondary {
     background: transparent;
-    color: #667eea;
-    border: 2px solid #667eea;
+    color: #4a90e2;
+    border: 2px solid #4a90e2;
     
     &:hover:not(:disabled) {
-      background: #667eea;
+      background: #4a90e2;
       color: white;
       transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(74, 144, 226, 0.4);
     }
     
     &:disabled {
-      border-color: #ccc;
-      color: #ccc;
+      border-color: #555555;
+      color: #555555;
       cursor: not-allowed;
       transform: none;
     }
@@ -248,14 +249,14 @@
   .progress-bar {
     width: 100%;
     height: 8px;
-    background: #e9ecef;
+    background: #3a3a5c;
     border-radius: 4px;
     overflow: hidden;
     margin-bottom: 8px;
     
     .progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, #667eea, #764ba2);
+      background: linear-gradient(90deg, #4a90e2, #357abd);
       transition: width 0.3s ease;
     }
   }
@@ -263,7 +264,7 @@
   .progress-text {
     text-align: center;
     font-size: 0.9rem;
-    color: #666;
+    color: #8a8a9a;
     margin: 0;
   }
 }
@@ -279,27 +280,224 @@
     font-weight: 500;
     
     &.success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
+      background: #2a4a2e;
+      color: #27ae60;
+      border: 1px solid #27ae60;
     }
     
     &.error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
+      background: #4a2a2e;
+      color: #e74c3c;
+      border: 1px solid #e74c3c;
     }
     
     &.info {
-      background: #d1ecf1;
-      color: #0c5460;
-      border: 1px solid #bee5eb;
+      background: #2a3a4a;
+      color: #4a90e2;
+      border: 1px solid #4a90e2;
     }
   }
 }
 
 .file-list-section {
   margin-top: 40px;
+}
+
+// 統一檔案列表樣式
+.unified-file-list {
+  h3 {
+    margin-bottom: 1.5rem;
+    color: #ffffff;
+    font-size: 1.3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .file-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .file-item {
+    border: 1px solid #3a3a5c;
+    border-radius: 8px;
+    padding: 1rem;
+    background: #2a2a3e;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: #4a90e2;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transform: translateY(-2px);
+    }
+
+    &.file-type-excel {
+      border-left: 4px solid #f39c12;
+    }
+
+    &.file-type-photo {
+      border-left: 4px solid #27ae60;
+    }
+  }
+
+  .file-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+
+    .file-type-icon {
+      font-size: 1.8rem;
+      margin-top: 0.25rem;
+    }
+
+    .file-details {
+      flex: 1;
+
+      h4 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #ffffff;
+      }
+
+      .file-meta {
+        margin: 0.25rem 0;
+        font-size: 0.85rem;
+        color: #8a8a9a;
+        line-height: 1.4;
+      }
+
+      .saved-name {
+        margin: 0.25rem 0;
+        font-size: 0.85rem;
+        color: #4a90e2;
+        font-weight: 500;
+      }
+
+      .file-badges {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        flex-wrap: wrap;
+
+        .file-type-badge, .file-status-badge {
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .badge-excel {
+          background: #3a2e1a;
+          color: #f39c12;
+        }
+
+        .badge-photo {
+          background: #1a3a2e;
+          color: #27ae60;
+        }
+
+        .status-uploaded {
+          background: #3a3a5c;
+          color: #ffffff;
+        }
+
+        .status-merged {
+          background: #1a2a3a;
+          color: #4a90e2;
+        }
+
+        .status-processing {
+          background: #3a2e1a;
+          color: #f39c12;
+        }
+      }
+    }
+
+    .file-actions {
+      display: flex;
+      align-items: flex-start;
+      margin-top: 0.25rem;
+
+      .file-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+
+        .btn-icon {
+          font-size: 1rem;
+        }
+
+        .btn-text {
+          font-size: 0.8rem;
+        }
+
+        &.delete-btn {
+          background: #4a2a2e;
+          color: #e74c3c;
+          border: 1px solid #e74c3c;
+
+          &:hover:not(:disabled) {
+            background: #e74c3c;
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.4);
+          }
+
+          &:disabled {
+            background: #3a3a5c;
+            color: #8a8a9a;
+            border-color: #555555;
+            cursor: not-allowed;
+            transform: none;
+            
+            .btn-text {
+              color: #8a8a9a;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #8a8a9a;
+    background: #2a2a3e;
+    border-radius: 8px;
+
+    .empty-icon {
+      font-size: 4rem;
+      display: block;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    h4 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.1rem;
+      color: #ffffff;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+  }
 }
 
 // 響應式設計
@@ -312,18 +510,19 @@
     font-size: 2rem;
   }
   
-  .upload-type-selector {
-    flex-direction: column;
-    gap: 12px;
-    
-    .type-btn {
-      width: 100%;
-      justify-content: center;
-    }
-  }
-  
   .upload-area {
     padding: 40px 16px;
+  }
+
+  .upload-placeholder {
+    .format-examples {
+      flex-direction: column;
+      gap: 12px;
+
+      .format-group {
+        justify-content: center;
+      }
+    }
   }
   
   .file-selected .file-actions {
@@ -333,84 +532,36 @@
   .upload-btn {
     width: 100%;
   }
-} 
 
-// 照片列表樣式
-.photo-list {
-  h3 {
-    margin-bottom: 1rem;
-    color: var(--text-color);
-    font-size: 1.1rem;
-    font-weight: 600;
-  }
+  .unified-file-list {
+    .file-info {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.75rem;
 
-  .photo-grid {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .photo-item {
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1rem;
-    background: var(--card-background);
-    transition: all 0.2s ease;
-
-    &:hover {
-      border-color: var(--primary-color);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-  }
-
-  .photo-info {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-
-    .photo-icon {
-      font-size: 1.5rem;
-      margin-top: 0.25rem;
-    }
-
-    .photo-details {
-      flex: 1;
-
-      h4 {
-        margin: 0 0 0.25rem 0;
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--text-color);
+      .file-type-icon {
+        margin-top: 0;
       }
 
-      p {
-        margin: 0.25rem 0;
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-        line-height: 1.4;
+      .file-details {
+        width: 100%;
       }
 
-      .saved-name {
-        color: var(--primary-color);
-        font-weight: 500;
+      .file-actions {
+        margin-top: 1rem;
+        justify-content: center;
+
+        .file-action-btn {
+          .btn-text {
+            display: none; // 在手機版隱藏文字，只顯示圖示
+          }
+
+          .btn-icon {
+            font-size: 1.2rem;
+          }
+        }
       }
-    }
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 2rem;
-    color: var(--text-secondary);
-
-    .empty-icon {
-      font-size: 3rem;
-      display: block;
-      margin-bottom: 1rem;
-      opacity: 0.5;
-    }
-
-    p {
-      margin: 0;
-      font-size: 0.9rem;
     }
   }
 } 
