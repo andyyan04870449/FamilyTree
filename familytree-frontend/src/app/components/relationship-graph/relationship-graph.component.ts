@@ -9,12 +9,13 @@ import { LogService } from '../../services/log.service';
 import { PhotoUtilsService } from '../../services/photo-utils.service';
 import { ProjectService } from '../../services/project.service';
 import { PersonDetailDialogComponent } from '../person-detail-dialog/person-detail-dialog.component';
+import { PersonComparisonComponent } from '../person-comparison/person-comparison.component';
 import * as d3 from 'd3';
 
 @Component({
   selector: 'app-relationship-graph',
   standalone: true,
-  imports: [CommonModule, FormsModule, PersonDetailDialogComponent],
+  imports: [CommonModule, FormsModule, PersonDetailDialogComponent, PersonComparisonComponent],
   template: `
     <div class="relationship-graph-container">
       <!-- 圖譜標題和統計 -->
@@ -288,6 +289,15 @@ import * as d3 from 'd3';
           <button class="cancel-btn" (click)="cancelRelationshipCreation()">取消</button>
         </div>
       </div>
+
+      <!-- 人員比較對話框 -->
+      <app-person-comparison
+        [personAId]="mergePersonAId"
+        [personBId]="mergePersonBId"
+        [isVisible]="showPersonComparison"
+        (closeComparison)="closePersonComparison()"
+        (confirmMerge)="handleMergeComparison($event)">
+      </app-person-comparison>
     </div>
   `,
   styleUrls: ['./relationship-graph.component.scss']
@@ -346,6 +356,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
   firstSelectedNodeForMerge: GraphNode | null = null;
   secondSelectedNodeForMerge: GraphNode | null = null;
   showMergeConfirmDialog = false; // 合併確認對話框
+  showPersonComparison = false; // 人員比較對話框
   mergePersonAId: number | null = null;
   mergePersonBId: number | null = null;
 
@@ -1179,9 +1190,42 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       personBId: this.mergePersonBId
     });
     
+    // 關閉合併確認對話框，顯示人員比較對話框
     this.showMergeConfirmDialog = false;
-    // TODO: 這裡之後會顯示詳細比較對話框
-    this.logService.info('RelationshipGraphComponent', '合併功能待完成');
+    this.showPersonComparison = true;
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * 關閉人員比較對話框
+   */
+  closePersonComparison(): void {
+    this.logService.info('RelationshipGraphComponent', '關閉人員比較對話框');
+    this.showPersonComparison = false;
+    this.resetMergeState();
+  }
+
+  /**
+   * 處理人員比較結果，執行實際合併
+   */
+  handleMergeComparison(mergeSelection: any): void {
+    this.logService.info('RelationshipGraphComponent', '處理人員比較結果', {
+      mergeSelection: mergeSelection
+    });
+    
+    // 關閉人員比較對話框
+    this.showPersonComparison = false;
+    
+    // TODO: 這裡需要調用後端API執行實際的合併操作
+    this.logService.warn('RelationshipGraphComponent', '後端合併API尚未實現', {
+      personAId: mergeSelection.personAId,
+      personBId: mergeSelection.personBId,
+      mergedData: mergeSelection.mergedData
+    });
+    
+    // 暫時顯示成功訊息
+    alert(`合併操作已準備完成，但後端API尚未實現。\n\n合併資料預覽：\n${JSON.stringify(mergeSelection.mergedData, null, 2)}`);
+    
     this.resetMergeState();
   }
 
@@ -1193,6 +1237,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     this.firstSelectedNodeForMerge = null;
     this.secondSelectedNodeForMerge = null;
     this.showMergeConfirmDialog = false;
+    this.showPersonComparison = false;
     this.mergePersonAId = null;
     this.mergePersonBId = null;
     
