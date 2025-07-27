@@ -243,10 +243,11 @@
     border-bottom: none;
   }
 
-  // 照片行特殊處理 - 增加高度以容納大照片
+  // 照片行特殊處理 - 增加高度以容納大照片，並調整padding以符合Figma設計
   &.photo-row {
     .body-cell {
-      min-height: 140px; // 照片行的特殊高度
+      min-height: 180px; // 照片行的特殊高度 - 增加高度以提供更大顯示空間
+      padding: 4px 8px; // 照片行使用更小的padding，讓照片能貼近邊緣
     }
   }
 }
@@ -326,22 +327,22 @@
         }
       }
 
-      // 照片內容樣式 - 只有照片欄位特殊處理
+      // 照片內容樣式 - 根據Figma設計，照片最大化使用欄位空間
       .photo-content {
         display: flex;
         align-items: center;
         justify-content: center;
         width: 100%;
         height: 100%;
-        padding: 10px 0; // 增加上下內邊距，讓照片有呼吸空間
+        padding: 2px; // 極小的邊距，讓照片幾乎貼著欄位邊緣
 
         .person-photo {
-          max-width: 120px;
-          max-height: 120px;
-          width: auto;
-          height: auto;
+          width: 70%; // 寬度減少30%，使用70%的容器寬度
+          height: 100%; // 高度使用100%的容器高度
+          max-height: none; // 移除最大高度限制
+          min-height: none; // 移除最小高度限制
           border-radius: 4px;
-          object-fit: cover;
+          object-fit: cover; // 保持比例並填滿容器
           border: 1px solid #4F565E;
           background: #2D2D2D;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); // 增加陰影效果
@@ -426,14 +427,17 @@
   // 中等螢幕照片行特殊處理
   .table-row.photo-row {
     .body-cell {
-      min-height: 120px; // 照片行在中等螢幕的高度
+      min-height: 150px; // 照片行在中等螢幕的高度 - 增加高度
+      padding: 4px 6px; // 中等螢幕照片行使用更小的padding
     }
   }
 
-  // 中等螢幕照片大小調整
-  .person-photo {
-    max-width: 100px !important;
-    max-height: 100px !important;
+  // 中等螢幕照片大小調整 - 寬度減少30%，高度100%
+  .photo-content .person-photo {
+    width: 70% !important; // 寬度減少30%
+    height: 100% !important; // 高度使用100%
+    max-height: none !important; // 移除高度限制
+    min-height: none !important; // 移除高度限制
   }
 }
 
@@ -463,14 +467,17 @@
   // 小螢幕照片行特殊處理
   .table-row.photo-row {
     .body-cell {
-      min-height: 100px; // 照片行在小螢幕的高度
+      min-height: 120px; // 照片行在小螢幕的高度 - 增加高度
+      padding: 2px 4px; // 小螢幕照片行使用最小的padding
     }
   }
 
-  // 小螢幕照片大小調整
-  .person-photo {
-    max-width: 80px !important;
-    max-height: 80px !important;
+  // 小螢幕照片大小調整 - 寬度減少30%，高度100%
+  .photo-content .person-photo {
+    width: 70% !important; // 寬度減少30%
+    height: 100% !important; // 高度使用100%
+    max-height: none !important; // 移除高度限制
+    min-height: none !important; // 移除高度限制
   }
 
   .comparison-footer {

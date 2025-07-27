@@ -1257,21 +1257,6 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       projectId = currentProject?.id;
     }
 
-    // ===============================================================
-    // PHOTO URL DEBUG LOG
-    // ===============================================================
-    this.logService.warn('RelationshipGraphComponent - PHOTO URL DEBUG', JSON.stringify({
-      timestamp: new Date().toISOString(),
-      personName: personName,
-      requested_photoIndex: photoIndex,
-      requested_projectId: originalProjectId,
-      final_projectId: projectId,
-      isProjectIdMissing: !projectId,
-      isPhotoIndexMissing: !photoIndex,
-      current_project_from_service: this.projectService?.getCurrentProject(),
-    }));
-    // ===============================================================
-
     this.logService.debug('RelationshipGraphComponent', '取得人員照片URL', {
       photoIndex: photoIndex,
       personName: personName,
