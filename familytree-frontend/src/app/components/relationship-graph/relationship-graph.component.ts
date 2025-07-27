@@ -6,6 +6,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RelationshipGraphService, GraphData, GraphNode, GraphLink, CreateRelationshipResponse } from '../../services/relationship-graph.service';
 import { LogService } from '../../services/log.service';
+import { PhotoUtilsService } from '../../services/photo-utils.service';
+import { ProjectService } from '../../services/project.service';
 import { PersonDetailDialogComponent } from '../person-detail-dialog/person-detail-dialog.component';
 import * as d3 from 'd3';
 
@@ -199,6 +201,85 @@ import * as d3 from 'd3';
         </div>
       </div>
 
+      <!-- 合併確認對話框 -->
+      <div class="dialog-overlay" *ngIf="showMergeConfirmDialog" (click)="cancelMergeConfirm()">
+        <div class="merge-confirm-dialog" (click)="$event.stopPropagation()">
+          <div class="dialog-header">
+            <h3>🔗 確認合併操作</h3>
+            <button class="close-btn" (click)="cancelMergeConfirm()">×</button>
+          </div>
+          
+          <div class="merge-content">
+            <div class="merge-preview">
+              <div class="person-card person-a">
+                <div class="person-photo-container">
+                                          <img *ngIf="firstSelectedNodeForMerge?.data?.photo"
+                             [src]="getPersonPhotoUrl(firstSelectedNodeForMerge?.data?.photo, firstSelectedNodeForMerge?.name, firstSelectedNodeForMerge?.data?.projectId)"
+                       class="person-photo"
+                       (error)="handlePhotoError($event, personAFallback)"
+                       alt="人員A照片">
+                                          <div #personAFallback class="person-fallback" [style.display]="!firstSelectedNodeForMerge?.data?.photo ? 'flex' : 'none'">
+                    {{ generateFallbackText(firstSelectedNodeForMerge?.name) }}
+                  </div>
+                </div>
+                <div class="person-details">
+                  <h4>{{ firstSelectedNodeForMerge?.name || '人員A' }}</h4>
+                  <p class="person-id">ID: {{ mergePersonAId }}</p>
+                  <p class="person-info">{{ firstSelectedNodeForMerge?.gender || '性別未設定' }} | {{ firstSelectedNodeForMerge?.data?.birthday || '生日未設定' }}</p>
+                </div>
+              </div>
+              
+              <div class="merge-direction">
+                <div class="merge-arrow">
+                  <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="18" stroke="#ffc107" stroke-width="2" fill="rgba(255, 193, 7, 0.1)"/>
+                    <path d="M12 20 L28 20 M20 12 L28 20 L20 28" stroke="#ffc107" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <span class="merge-label">合併為</span>
+              </div>
+              
+              <div class="person-card person-b">
+                <div class="person-photo-container">
+                                          <img *ngIf="secondSelectedNodeForMerge?.data?.photo"
+                             [src]="getPersonPhotoUrl(secondSelectedNodeForMerge?.data?.photo, secondSelectedNodeForMerge?.name, secondSelectedNodeForMerge?.data?.projectId)"
+                       class="person-photo"
+                       (error)="handlePhotoError($event, personBFallback)"
+                       alt="人員B照片">
+                                          <div #personBFallback class="person-fallback" [style.display]="!secondSelectedNodeForMerge?.data?.photo ? 'flex' : 'none'">
+                    {{ generateFallbackText(secondSelectedNodeForMerge?.name) }}
+                  </div>
+                </div>
+                <div class="person-details">
+                  <h4>{{ secondSelectedNodeForMerge?.name || '人員B' }}</h4>
+                  <p class="person-id">ID: {{ mergePersonBId }}</p>
+                  <p class="person-info">{{ secondSelectedNodeForMerge?.gender || '性別未設定' }} | {{ secondSelectedNodeForMerge?.data?.birthday || '生日未設定' }}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="merge-warning">
+              <div class="warning-icon">⚠️</div>
+              <div class="warning-content">
+                <h5>重要提醒</h5>
+                <p>合併操作將不可逆地將兩個人員資料合併為一筆記錄。原始資料將被保留在合併記錄中供查詢。</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="dialog-actions">
+            <button class="btn btn-secondary" (click)="cancelMergeConfirm()">
+              <span class="btn-icon">✕</span>
+              取消合併
+            </button>
+            <button class="btn btn-primary" (click)="confirmMergeAndProceed()">
+              <span class="btn-icon">✓</span>
+              確認合併
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- 建立關係模式提示 -->
       <div class="relationship-mode-indicator" *ngIf="isCreatingRelationship">
         <div class="indicator-content">
@@ -260,10 +341,20 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
   relationshipType = '';
   secondSelectedNode: GraphNode | null = null;
 
+  // 合併功能相關狀態
+  isMerging = false;
+  firstSelectedNodeForMerge: GraphNode | null = null;
+  secondSelectedNodeForMerge: GraphNode | null = null;
+  showMergeConfirmDialog = false; // 合併確認對話框
+  mergePersonAId: number | null = null;
+  mergePersonBId: number | null = null;
+
   constructor(
     private relationshipGraphService: RelationshipGraphService,
     private cdr: ChangeDetectorRef,
-    private logService: LogService
+    private logService: LogService,
+    private photoUtils: PhotoUtilsService,
+    private projectService: ProjectService
   ) {
     this.logService.info('RelationshipGraphComponent', '組件已初始化');
   }
@@ -272,7 +363,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     this.logService.info('RelationshipGraphComponent', 'ngOnChanges 被調用', {
       changes: Object.keys(changes),
       selectedPersonIds: this.selectedPersonIds,
-      currentGraphDataLinksCount: this.graphData?.links.length || 0
+      currentGraphDataLinksCount: this.graphData?.metadata?.totalLinks || 0
     });
 
     // 檢查 graphData 是否被外部重置，這可能導致新建立的關聯線丟失
@@ -281,8 +372,8 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       const newData = changes['graphData'].currentValue;
       
       this.logService.warn('RelationshipGraphComponent', 'graphData 被外部更改，可能導致新建立的關聯線丟失', {
-        oldLinksCount: oldData?.links?.length || 0,
-        newLinksCount: newData?.links?.length || 0,
+        oldLinksCount: oldData?.metadata?.totalLinks || 0,
+        newLinksCount: newData?.metadata?.totalLinks || 0,
         oldLinks: oldData?.links?.map((l: any) => ({ source: l.source, target: l.target, type: l.type })) || [],
         newLinks: newData?.links?.map((l: any) => ({ source: l.source, target: l.target, type: l.type })) || []
       });
@@ -378,7 +469,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
           message: response.message,
           hasData: !!response.data,
           dataNodes: response.data?.nodes?.length || 0,
-          dataLinks: response.data?.links?.length || 0
+          dataLinks: response.data?.metadata?.totalLinks || 0
         });
 
         if (response.success && response.data) {
@@ -460,7 +551,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       containerSize: { width, height },
       graphData: this.graphData,
       nodesCount: this.graphData.nodes.length,
-      linksCount: this.graphData.links.length
+      linksCount: this.graphData.metadata?.totalLinks || 0
     });
 
     // 清除現有內容
@@ -512,7 +603,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       .force('collision', d3.forceCollide().radius(22)); // 適中的碰撞半徑 22
 
     // 即使沒有連線也保持力導向模擬運行，提供節點互動和防重疊效果
-    if (this.graphData.links.length === 0) {
+    if (this.graphData.metadata?.totalLinks === 0) {
       this.logService.info('RelationshipGraphComponent', '沒有連線，但保持力導向模擬以提供節點互動');
       // 不停止模擬，讓節點排斥力、碰撞檢測和拖拽效果正常工作
     }
@@ -579,7 +670,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       visibleNodesCount: visibleNodes.length,
       visibleLinksCount: visibleLinks.length,
       totalNodes: this.graphData.nodes.length,
-      totalLinks: this.graphData.links.length
+      totalLinks: this.graphData.metadata?.totalLinks || 0
     });
 
     // 更新連線，使用唯一鍵值函數確保D3正確識別現有連線
@@ -673,134 +764,8 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       .each((d: any, i: number, nodes: any[]) => {
         const imageElement = d3.select(nodes[i]);
         
-        // 檢查是否有照片資料
-        if (d.data && d.data.photo && d.data.photo !== '' && d.data.photo !== '0') {
-          // 構建照片API URL - 使用照片檔案API
-          const photoUrl = `/api/PhotoUpload/photo-by-index/${d.data.photo}?project_id=${d.data.projectId}`;
-          
-          // 預載照片檢查是否存在
-          const testImage = new Image();
-          testImage.onload = () => {
-            // 照片載入成功，替換預設圖標
-            imageElement.select('.node-icon-default').remove();
-            imageElement.select('.node-image-photo').remove();
-            
-            // 添加圓形遮罩
-            const defs = self.svg?.select('defs').empty() ? 
-              self.svg?.append('defs') : self.svg?.select('defs');
-            
-            const clipId = `clip-circle-${d.id}`;
-            defs?.selectAll(`#${clipId}`).remove();
-            defs?.append('clipPath')
-              .attr('id', clipId)
-              .append('circle')
-              .attr('r', 22) // 比節點圓圈稍小
-              .attr('cx', 0)
-              .attr('cy', 0);
-            
-            // 添加照片
-            imageElement.append('image')
-              .attr('class', 'node-image-photo')
-              .attr('href', photoUrl)
-              .attr('x', -22)
-              .attr('y', -22)
-              .attr('width', 44)
-              .attr('height', 44)
-              .attr('clip-path', `url(#${clipId})`)
-              .style('pointer-events', 'none');
-              
-            self.logService?.debug('RelationshipGraphComponent', '成功載入節點照片', {
-              nodeName: d.name,
-              photoIndex: d.data.photo,
-              photoUrl: photoUrl
-            });
-          };
-          
-          testImage.onerror = () => {
-            // 照片載入失敗，保持預設圖標
-            self.logService?.debug('RelationshipGraphComponent', '節點照片載入失敗，使用預設圖標', {
-              nodeName: d.name,
-              photoIndex: d.data.photo,
-              photoUrl: photoUrl
-            });
-          };
-          
-          testImage.src = photoUrl;
-        } else {
-          // 嘗試從PersonData API獲取照片索引
-          if (d.data && d.data.id && d.data.projectId) {
-            fetch(`/api/PersonData?project_id=${d.data.projectId}`)
-              .then(response => response.json())
-              .then(data => {
-                const person = data.data?.find((p: any) => p.id === d.data.id);
-                if (person && person.photo && person.photo !== '' && person.photo !== '0') {
-                  // 查詢PhotoUpload列表找到對應的照片
-                  fetch(`/api/PhotoUpload/list?project_id=${d.data.projectId}`)
-                    .then(response => response.json())
-                    .then(photoData => {
-                      const photoIndex = person.photo.padStart(6, '0'); // 補零至6位
-                      const photo = photoData.data?.find((p: any) => 
-                        p.savedFileName.startsWith(photoIndex)
-                      );
-                      
-                      if (photo) {
-                        // 使用照片ID直接獲取照片檔案
-                        const photoUrl = `/api/PhotoUpload/${photo.id}/file`;
-                        
-                        const testImage = new Image();
-                        testImage.onload = () => {
-                          imageElement.select('.node-icon-default').remove();
-                          imageElement.select('.node-image-photo').remove();
-                          
-                          const defs = self.svg?.select('defs').empty() ? 
-                            self.svg?.append('defs') : self.svg?.select('defs');
-                          
-                          const clipId = `clip-circle-${d.id}`;
-                          defs?.selectAll(`#${clipId}`).remove();
-                          defs?.append('clipPath')
-                            .attr('id', clipId)
-                            .append('circle')
-                            .attr('r', 22)
-                            .attr('cx', 0)
-                            .attr('cy', 0);
-                          
-                          imageElement.append('image')
-                            .attr('class', 'node-image-photo')
-                            .attr('href', photoUrl)
-                            .attr('x', -22)
-                            .attr('y', -22)
-                            .attr('width', 44)
-                            .attr('height', 44)
-                            .attr('clip-path', `url(#${clipId})`)
-                            .style('pointer-events', 'none');
-                            
-                          self.logService?.debug('RelationshipGraphComponent', '成功載入節點照片', {
-                            nodeName: d.name,
-                            photoIndex: person.photo,
-                            photoId: photo.id,
-                            photoUrl: photoUrl
-                          });
-                        };
-                        
-                        testImage.src = photoUrl;
-                      }
-                    })
-                    .catch(error => {
-                      self.logService?.debug('RelationshipGraphComponent', '查詢照片列表失敗', {
-                        nodeName: d.name,
-                        error: error.message
-                      });
-                    });
-                }
-              })
-              .catch(error => {
-                self.logService?.debug('RelationshipGraphComponent', '從PersonData獲取照片失敗', {
-                  nodeName: d.name,
-                  error: error.message
-                });
-              });
-          }
-        }
+        // 統一使用PhotoUtilsService處理照片
+        this.loadNodePhoto(d, imageElement, self);
       });
 
     // 節點名稱
@@ -1043,11 +1008,21 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
    */
   handleNodeClick(event: MouseEvent, node: GraphNode): void {
     event.stopPropagation();
-    this.logService.info('RelationshipGraphComponent', '節點被點擊', { nodeName: node.name });
+    this.logService.info('RelationshipGraphComponent', '節點被點擊', { 
+      nodeName: node.name,
+      isCreatingRelationship: this.isCreatingRelationship,
+      isMerging: this.isMerging
+    });
     
     // 如果在建立關係模式下，處理關係建立邏輯
     if (this.isCreatingRelationship) {
       this.handleRelationshipNodeClick(node);
+      return;
+    }
+
+    // 如果在合併模式下，處理合併邏輯
+    if (this.isMerging) {
+      this.handleMergeNodeClick(node);
       return;
     }
     
@@ -1157,10 +1132,24 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
    * 處理合併功能
    */
   handleMerge(): void {
-    this.logService.info('RelationshipGraphComponent', '合併功能開發中', {
-      nodeName: this.selectedNodeForMenu?.name
+    if (!this.selectedNodeForMenu) {
+      this.logService.error('RelationshipGraphComponent', '沒有選中的節點進行合併');
+      return;
+    }
+
+    this.logService.info('RelationshipGraphComponent', '開始合併流程', {
+      nodeName: this.selectedNodeForMenu.name,
+      nodeId: this.selectedNodeForMenu.id
     });
+
+    // 進入合併模式
+    this.isMerging = true;
+    this.firstSelectedNodeForMerge = this.selectedNodeForMenu;
     this.closeNodeMenu();
+
+    // 更新節點狀態
+    this.updateNodeStates();
+    this.cdr.detectChanges();
   }
 
   /**
@@ -1170,6 +1159,97 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     this.showPersonDetailDialog = false;
     this.selectedPersonIdForDetail = null;
     this.logService.info('RelationshipGraphComponent', '關閉人員詳細資料對話框');
+  }
+
+  /**
+   * 取消合併確認對話框
+   */
+  cancelMergeConfirm(): void {
+    this.logService.info('RelationshipGraphComponent', '取消合併確認');
+    this.showMergeConfirmDialog = false;
+    this.resetMergeState();
+  }
+
+  /**
+   * 確認合併並進入比較對話框
+   */
+  confirmMergeAndProceed(): void {
+    this.logService.info('RelationshipGraphComponent', '確認合併，進入比較對話框', {
+      personAId: this.mergePersonAId,
+      personBId: this.mergePersonBId
+    });
+    
+    this.showMergeConfirmDialog = false;
+    // TODO: 這裡之後會顯示詳細比較對話框
+    this.logService.info('RelationshipGraphComponent', '合併功能待完成');
+    this.resetMergeState();
+  }
+
+  /**
+   * 重置合併狀態
+   */
+  private resetMergeState(): void {
+    this.isMerging = false;
+    this.firstSelectedNodeForMerge = null;
+    this.secondSelectedNodeForMerge = null;
+    this.showMergeConfirmDialog = false;
+    this.mergePersonAId = null;
+    this.mergePersonBId = null;
+    
+    // 更新節點狀態
+    this.updateNodeStates();
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * 取得人員照片URL
+   */
+  getPersonPhotoUrl(photoIndex: string | null | undefined, personName?: string, projectId?: string): string | null {
+    const originalProjectId = projectId;
+    // 如果沒有提供專案ID，嘗試從當前專案或節點資料中取得
+    if (!projectId) {
+      const currentProject = this.projectService?.getCurrentProject();
+      projectId = currentProject?.id;
+    }
+
+    // ===============================================================
+    // PHOTO URL DEBUG LOG
+    // ===============================================================
+    this.logService.warn('RelationshipGraphComponent - PHOTO URL DEBUG', JSON.stringify({
+      timestamp: new Date().toISOString(),
+      personName: personName,
+      requested_photoIndex: photoIndex,
+      requested_projectId: originalProjectId,
+      final_projectId: projectId,
+      isProjectIdMissing: !projectId,
+      isPhotoIndexMissing: !photoIndex,
+      current_project_from_service: this.projectService?.getCurrentProject(),
+    }));
+    // ===============================================================
+
+    this.logService.debug('RelationshipGraphComponent', '取得人員照片URL', {
+      photoIndex: photoIndex,
+      personName: personName,
+      projectId: projectId,
+      hasPhotoUtils: !!this.photoUtils,
+      hasProjectService: !!this.projectService
+    });
+    
+    return this.photoUtils.getPersonPhotoUrl(photoIndex, personName, projectId);
+  }
+
+  /**
+   * 生成預設頭像文字
+   */
+  generateFallbackText(personName?: string): string {
+    return this.photoUtils.generateFallbackText(personName);
+  }
+
+  /**
+   * 處理照片載入錯誤
+   */
+  handlePhotoError(event: Event, fallbackElement?: HTMLElement): void {
+    this.photoUtils.handlePhotoError(event, fallbackElement);
   }
 
   /**
@@ -1226,14 +1306,76 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
   }
 
   /**
-   * 更新節點狀態（建立關係模式）
+   * 處理合併模式下的節點點擊
+   */
+  private handleMergeNodeClick(node: GraphNode): void {
+    if (!this.isMerging || !this.firstSelectedNodeForMerge) return;
+    
+    // 不能選擇同一個節點
+    if (node.id === this.firstSelectedNodeForMerge.id) {
+      this.logService.warn('RelationshipGraphComponent', '不能選擇同一個節點進行合併');
+      return;
+    }
+    
+    this.logService.info('RelationshipGraphComponent', '選擇第二個節點進行合併', {
+      firstNodeName: this.firstSelectedNodeForMerge.name,
+      firstNodeId: this.firstSelectedNodeForMerge.id,
+      firstNodePhotoIndex: this.firstSelectedNodeForMerge.data?.photo_index,
+      firstNodeProjectId: this.firstSelectedNodeForMerge.data?.project_id,
+      firstNodeData: this.firstSelectedNodeForMerge.data,
+      secondNodeName: node.name,
+      secondNodeId: node.id,
+      secondNodePhotoIndex: node.data?.photo_index,
+      secondNodeProjectId: node.data?.project_id,
+      secondNodeData: node.data
+    });
+    
+    // ===============================================================
+    // MERGE DIALOG DEBUG LOG
+    // ===============================================================
+    this.logService.warn('RelationshipGraphComponent - MERGE DEBUG', JSON.stringify({
+      timestamp: new Date().toISOString(),
+      step: 'Preparing Merge Confirmation Dialog',
+      personA: {
+        name: this.firstSelectedNodeForMerge.name,
+        id: this.firstSelectedNodeForMerge.id,
+        photo_index_from_data: this.firstSelectedNodeForMerge.data?.photo_index,
+        project_id_from_data: this.firstSelectedNodeForMerge.data?.project_id,
+        person_photo_from_data: this.firstSelectedNodeForMerge.data?.PersonPhoto, // For VisualAnalysisController
+        raw_data: this.firstSelectedNodeForMerge.data,
+        raw_node: this.firstSelectedNodeForMerge
+      },
+      personB: {
+        name: node.name,
+        id: node.id,
+        photo_index_from_data: node.data?.photo_index,
+        project_id_from_data: node.data?.project_id,
+        person_photo_from_data: node.data?.PersonPhoto, // For VisualAnalysisController
+        raw_data: node.data,
+        raw_node: node
+      }
+    }));
+    // ===============================================================
+    
+    // 設置合併確認對話框的參數
+    this.secondSelectedNodeForMerge = node;
+    this.mergePersonAId = parseInt(this.firstSelectedNodeForMerge.id);
+    this.mergePersonBId = parseInt(node.id);
+    this.showMergeConfirmDialog = true; // 先顯示確認對話框
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * 更新節點狀態（建立關係模式和合併模式）
    */
   private updateNodeStates(): void {
     if (!this.svg) return;
     
     this.logService.debug('RelationshipGraphComponent', '更新節點狀態', {
       isCreatingRelationship: this.isCreatingRelationship,
-      firstSelectedNode: this.firstSelectedNode?.name
+      isMerging: this.isMerging,
+      firstSelectedNode: this.firstSelectedNode?.name,
+      firstSelectedNodeForMerge: this.firstSelectedNodeForMerge?.name
     });
     
     // 更新所有節點的樣式
@@ -1242,12 +1384,21 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
         if (this.isCreatingRelationship && this.firstSelectedNode && this.firstSelectedNode.id === d.id) {
           return 0.5; // 第一個選中的節點變半透明
         }
+        if (this.isMerging && this.firstSelectedNodeForMerge && this.firstSelectedNodeForMerge.id === d.id) {
+          return 0.5; // 合併模式第一個選中的節點變半透明
+        }
         return 1.0;
       })
       .style('cursor', (d: any) => {
         if (this.isCreatingRelationship) {
           if (this.firstSelectedNode && this.firstSelectedNode.id === d.id) {
             return 'not-allowed'; // 第一個節點不可選
+          }
+          return 'pointer'; // 其他節點可以選
+        }
+        if (this.isMerging) {
+          if (this.firstSelectedNodeForMerge && this.firstSelectedNodeForMerge.id === d.id) {
+            return 'not-allowed'; // 合併模式第一個節點不可選
           }
           return 'pointer'; // 其他節點可以選
         }
@@ -1327,7 +1478,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
         this.logService.info('RelationshipGraphComponent', '關係保存響應接收', {
           success: response.success,
           message: response.message,
-          currentGraphDataLinksCount: this.graphData?.links.length || 0
+          currentGraphDataLinksCount: this.graphData?.metadata?.totalLinks || 0
         });
         
         if (response.success) {
@@ -1335,14 +1486,14 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
             firstNode: this.firstSelectedNode?.name,
             secondNode: this.secondSelectedNode?.name,
             relationshipType: this.relationshipType,
-            currentLinksCount: this.graphData?.links.length || 0
+            currentLinksCount: this.graphData?.metadata?.totalLinks || 0
           });
           
           this.addNewRelationshipToGraph();
           this.resetRelationshipCreation();
           
           this.logService.info('RelationshipGraphComponent', '新連線添加完成，發出事件給父組件', {
-            finalLinksCount: this.graphData?.links.length || 0
+            finalLinksCount: this.graphData?.metadata?.totalLinks || 0
           });
           
           // 發出關係建立成功事件，通知父組件
@@ -1432,7 +1583,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
 
     this.logService.info('RelationshipGraphComponent', '添加新連線到圖譜 - 修復前狀態', {
       newLink,
-      currentLinksCount: this.graphData.links.length,
+      currentLinksCount: this.graphData.metadata?.totalLinks || 0,
       currentLinks: this.graphData.links.map(l => ({
         source: l.source,
         target: l.target,
@@ -1444,7 +1595,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     this.graphData.links.push(newLink);
 
     this.logService.info('RelationshipGraphComponent', '添加新連線到圖譜 - 修復後狀態', {
-      newLinksCount: this.graphData.links.length,
+      newLinksCount: this.graphData.metadata?.totalLinks || 0,
       allLinks: this.graphData.links.map(l => ({
         source: l.source,
         target: l.target,
@@ -1494,7 +1645,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     }
     
     this.logService.info('RelationshipGraphComponent', '開始計算可見連線', {
-      totalLinksInGraphData: this.graphData.links.length,
+      totalLinksInGraphData: this.graphData.metadata?.totalLinks || 0,
       hiddenNodesSize: this.hiddenNodes.size,
       hiddenNodes: Array.from(this.hiddenNodes),
       allLinksInGraphData: this.graphData.links.map(l => ({
@@ -1557,7 +1708,7 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     });
 
     this.logService.info('RelationshipGraphComponent', '更新圖譜顯示，保留所有現有連線', {
-      totalLinks: this.graphData.links.length,
+      totalLinks: this.graphData.metadata?.totalLinks || 0,
       visibleLinksCount: visibleLinks.length,
       visibleLinks: visibleLinks.map(l => ({
         source: l.source,
@@ -1763,5 +1914,97 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     
     // 恢復節點狀態
     this.updateNodeStates();
+  }
+
+  /**
+   * 統一處理節點照片載入
+   */
+  private loadNodePhoto(nodeData: any, imageElement: any, self: RelationshipGraphComponent): void {
+    // 確定照片索引來源
+    let photoIndex = nodeData.data?.photo;
+    
+    // 如果沒有直接的照片索引，嘗試從節點資料中獲取
+    if (!photoIndex || photoIndex === '' || photoIndex === '0') {
+      photoIndex = nodeData.photo;
+    }
+    
+    // 確定專案ID
+    const projectId = nodeData.data?.projectId || nodeData.projectId;
+    
+    // 確定人員姓名
+    const personName = nodeData.name || nodeData.data?.name;
+    
+    // 檢查是否有有效的照片資料
+    if (!photoIndex || photoIndex === '' || photoIndex === '0' || !projectId) {
+      // 沒有照片資料，保持預設圖標
+      self.logService?.debug('RelationshipGraphComponent', '無照片資料，使用預設圖標', {
+        nodeName: personName,
+        photoIndex: photoIndex,
+        projectId: projectId
+      });
+      return;
+    }
+    
+    // 使用PhotoUtilsService統一處理照片URL生成
+    const photoUrl = this.photoUtils.getPersonPhotoUrl(photoIndex, personName, projectId);
+    
+    // 檢查URL是否有效
+    if (!photoUrl) {
+      self.logService?.debug('RelationshipGraphComponent', '照片URL生成失敗，使用預設圖標', {
+        nodeName: personName,
+        photoIndex: photoIndex,
+        projectId: projectId
+      });
+      return;
+    }
+    
+    // 預載照片檢查是否存在
+    const testImage = new Image();
+    testImage.onload = () => {
+      // 照片載入成功，替換預設圖標
+      imageElement.select('.node-icon-default').remove();
+      imageElement.select('.node-image-photo').remove();
+      
+      // 添加圓形遮罩
+      const defs = self.svg?.select('defs').empty() ? 
+        self.svg?.append('defs') : self.svg?.select('defs');
+      
+      const clipId = `clip-circle-${nodeData.id}`;
+      defs?.selectAll(`#${clipId}`).remove();
+      defs?.append('clipPath')
+        .attr('id', clipId)
+        .append('circle')
+        .attr('r', 22) // 比節點圓圈稍小
+        .attr('cx', 0)
+        .attr('cy', 0);
+      
+      // 添加照片
+      imageElement.append('image')
+        .attr('class', 'node-image-photo')
+        .attr('href', photoUrl)
+        .attr('x', -22)
+        .attr('y', -22)
+        .attr('width', 44)
+        .attr('height', 44)
+        .attr('clip-path', `url(#${clipId})`)
+        .style('pointer-events', 'none');
+        
+      self.logService?.debug('RelationshipGraphComponent', '✅ 成功載入節點照片', {
+        nodeName: personName,
+        photoIndex: photoIndex,
+        photoUrl: photoUrl
+      });
+    };
+    
+    testImage.onerror = () => {
+      // 照片載入失敗，保持預設圖標
+      self.logService?.debug('RelationshipGraphComponent', '❌ 節點照片載入失敗，使用預設圖標', {
+        nodeName: personName,
+        photoIndex: photoIndex,
+        photoUrl: photoUrl
+      });
+    };
+    
+    testImage.src = photoUrl;
   }
 } 

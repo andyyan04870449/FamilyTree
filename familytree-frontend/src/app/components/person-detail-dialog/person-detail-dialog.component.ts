@@ -3,7 +3,7 @@ import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PersonDataService, PersonDataModel, PersonDataRequest } from '../../services/person-data.service';
-import { PhotoUploadService } from '../../services/photo-upload.service';
+import { PersonPhotoComponent } from '../person-photo/person-photo.component';
 
 interface RelationshipItem {
   index: number;
@@ -49,7 +49,7 @@ interface TravelRecordItem {
   templateUrl: './person-detail-dialog.component.html',
   styleUrls: ['./person-detail-dialog.component.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, PersonPhotoComponent]
 })
 export class PersonDetailDialogComponent implements OnChanges {
   @Input() personId: number | null = null;
@@ -67,7 +67,7 @@ export class PersonDetailDialogComponent implements OnChanges {
   activeTab = 'relationships'; // 預設顯示親屬關係
 
   // 照片URL（只在有照片時設定）
-  photoUrl: string | null = null;
+
 
   // 解析後的資料
   relationshipItems: RelationshipItem[] = [];
@@ -82,8 +82,7 @@ export class PersonDetailDialogComponent implements OnChanges {
   noteItems: string[] = [];
 
   constructor(
-    private personDataService: PersonDataService,
-    private photoUploadService: PhotoUploadService
+    private personDataService: PersonDataService
   ) {
     console.log('[PersonDetailDialog] 組件已建立');
   }
@@ -174,23 +173,9 @@ export class PersonDetailDialogComponent implements OnChanges {
     
     // 儲存原始資料
     this.originalData = { ...this.editData };
-    
-    // 載入照片
-    this.loadPhoto();
   }
 
-  loadPhoto(): void {
-    if (!this.personData?.photo) {
-      this.photoUrl = null;
-      return;
-    }
 
-    try {
-      this.photoUrl = this.photoUploadService.getPhotoFileUrlByIndex(this.personData.photo);
-    } catch (error) {
-      this.photoUrl = null;
-    }
-  }
 
   private parseData(): void {
     if (!this.personData) {

@@ -182,22 +182,37 @@ namespace familytree_backend.Services
 
             try
             {
-                _logger.LogInformation("📦 開始處理壓縮檔案: {FileName} ({Extension})", archiveFile.FileName, fileExtension);
+                _logger.LogInformation("📦 開始處理壓縮檔案: {FileName} ({Extension}), 大小: {FileSize}", 
+                    archiveFile.FileName, fileExtension, archiveFile.Length);
 
                 // 儲存壓縮檔案到臨時位置
                 using (var stream = new FileStream(tempArchivePath, FileMode.Create))
                 {
                     await archiveFile.CopyToAsync(stream);
+                    _logger.LogInformation("🔍 [DEBUG] 壓縮檔案儲存到臨時位置完成");
                 }
+
+                // 檢查臨時檔案大小
+                var tempFileInfo = new FileInfo(tempArchivePath);
+                _logger.LogInformation("🔍 [DEBUG] 臨時壓縮檔案大小: {TempFileSize}, 存在: {TempFileExists}", 
+                    tempFileInfo.Length, tempFileInfo.Exists);
 
                 // 使用 SharpCompress 處理多種壓縮格式
                 using (var archive = ArchiveFactory.Open(tempArchivePath))
                 {
+                    _logger.LogInformation("🔍 [DEBUG] 開啟壓縮檔案成功，總條目數: {TotalEntries}", archive.Entries.Count());
+                    
                     foreach (var entry in archive.Entries)
                     {
+                        _logger.LogInformation("🔍 [DEBUG] 處理壓縮條目: {EntryKey}, 大小: {EntrySize}, 是否目錄: {IsDirectory}", 
+                            entry.Key, entry.Size, entry.IsDirectory);
+                        
                         // 跳過目錄和隱藏檔案
                         if (entry.IsDirectory || string.IsNullOrEmpty(entry.Key) || entry.Key.StartsWith("."))
+                        {
+                            _logger.LogInformation("🔍 [DEBUG] 跳過條目: {EntryKey} (目錄或隱藏檔案)", entry.Key);
                             continue;
+                        }
 
                         var entryExtension = Path.GetExtension(entry.Key)?.ToLowerInvariant();
                         if (!IsImageFile(entryExtension, null))
@@ -208,12 +223,21 @@ namespace familytree_backend.Services
 
                         try
                         {
+                            _logger.LogInformation("🔍 [DEBUG] 開始解壓縮圖片: {FileName}", entry.Key);
+                            
                             // 解壓縮並儲存圖片
                             var savedFile = await ExtractAndSaveImageFromArchive(entry, projectId, projectPhotoDir);
                             if (savedFile != null)
                             {
                                 response.UploadedFiles.Add(savedFile);
-                                _logger.LogInformation("✅ 成功解壓縮圖片: {FileName}", entry.Key);
+                                _logger.LogInformation("✅ 成功解壓縮圖片: {FileName}, 儲存大小: {SavedSize}", 
+                                    entry.Key, savedFile.FileSize);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("⚠️ 解壓縮圖片失敗: {FileName}", entry.Key);
+                                response.FailedFiles = response.FailedFiles ?? new List<string>();
+                                response.FailedFiles.Add($"{entry.Key}: 解壓縮失敗");
                             }
                         }
                         catch (Exception ex)
@@ -225,17 +249,17 @@ namespace familytree_backend.Services
                     }
                 }
 
-                // 記錄壓縮檔案上傳記錄
-                await SaveFileUploadRecord(archiveFile, projectId, $"{fileExtension}_processed");
+                // 記錄ZIP檔案上傳記錄
+                await SaveFileUploadRecord(archiveFile, projectId, "archive_processed");
 
-                response.Message = $"{fileExtension?.ToUpper()} 檔案處理完成。成功: {response.UploadedFiles.Count} 個檔案";
+                response.Message = $"壓縮檔案處理完成。成功: {response.UploadedFiles.Count} 個檔案";
                 if (response.FailedFiles?.Count > 0)
                 {
                     response.Message += $"，失敗: {response.FailedFiles.Count} 個檔案";
                 }
 
-                _logger.LogInformation("📦 {Extension} 檔案處理完成 - 成功: {SuccessCount}, 失敗: {FailedCount}", 
-                    fileExtension?.ToUpper(), response.UploadedFiles.Count, response.FailedFiles?.Count ?? 0);
+                _logger.LogInformation("📦 壓縮檔案處理完成 - 成功: {SuccessCount}, 失敗: {FailedCount}", 
+                    response.UploadedFiles.Count, response.FailedFiles?.Count ?? 0);
 
                 return response;
             }
@@ -245,6 +269,7 @@ namespace familytree_backend.Services
                 if (File.Exists(tempArchivePath))
                 {
                     File.Delete(tempArchivePath);
+                    _logger.LogInformation("🔍 [DEBUG] 臨時壓縮檔案已清理: {TempPath}", tempArchivePath);
                 }
             }
         }
@@ -300,16 +325,43 @@ namespace familytree_backend.Services
         /// </summary>
         private async Task<PhotoFileInfo?> ExtractAndSaveImageFromArchive(IArchiveEntry entry, string projectId, string projectPhotoDir)
         {
-            using (var entryStream = entry.OpenEntryStream())
+            try
             {
-                var memoryStream = new MemoryStream();
-                await entryStream.CopyToAsync(memoryStream);
-                memoryStream.Position = 0;
+                _logger.LogInformation("🔍 [DEBUG] 開始解壓縮檔案: {EntryKey}, 大小: {EntrySize}, 是否目錄: {IsDirectory}", 
+                    entry.Key, entry.Size, entry.IsDirectory);
 
-                // 建立臨時 IFormFile 物件，FormFileFromStream將負責管理memoryStream的生命週期
-                using var formFile = new FormFileFromStream(memoryStream, entry.Key, entry.Key, "image/jpeg", memoryStream.Length);
-                
-                return await SaveImageFile(formFile, projectId, projectPhotoDir, entry.Key);
+                using (var entryStream = entry.OpenEntryStream())
+                {
+                    _logger.LogInformation("🔍 [DEBUG] 開啟entry stream成功，開始讀取資料");
+                    
+                    var memoryStream = new MemoryStream();
+                    await entryStream.CopyToAsync(memoryStream);
+                    
+                    _logger.LogInformation("🔍 [DEBUG] 複製到memory stream完成，MemoryStream長度: {MemoryStreamLength}", 
+                        memoryStream.Length);
+                    
+                    memoryStream.Position = 0;
+
+                    _logger.LogInformation("🔍 [DEBUG] 準備建立FormFileFromStream，檔名: {FileName}, 大小: {Size}", 
+                        entry.Key, memoryStream.Length);
+
+                    // 建立臨時 IFormFile 物件，不立即釋放，讓SaveImageFile完成所有操作
+                    var formFile = new FormFileFromStream(memoryStream, entry.Key, entry.Key, "image/jpeg", memoryStream.Length);
+                    
+                    _logger.LogInformation("🔍 [DEBUG] FormFileFromStream建立完成，Length屬性: {FormFileLength}", formFile.Length);
+                    
+                    var result = await SaveImageFile(formFile, projectId, projectPhotoDir, entry.Key);
+                    
+                    // 手動釋放資源
+                    formFile.Dispose();
+                    
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ [DEBUG] ExtractAndSaveImageFromArchive失敗: {EntryKey}", entry.Key);
+                return null;
             }
         }
 
@@ -320,11 +372,18 @@ namespace familytree_backend.Services
         {
             try
             {
+                _logger.LogInformation("🔍 [DEBUG] SaveImageFile開始，原始檔名: {OriginalFileName}, 檔案大小: {FileSize}", 
+                    originalFileName, imageFile.Length);
+
                 // 正規化檔名（數字檔名補零到6位）
                 var normalizedFileName = NormalizePhotoFileName(originalFileName);
+                _logger.LogInformation("🔍 [DEBUG] 檔名正規化: {OriginalFileName} -> {NormalizedFileName}", 
+                    originalFileName, normalizedFileName);
 
                 // 計算檔案MD5
+                _logger.LogInformation("🔍 [DEBUG] 開始計算MD5，檔案大小: {FileSize}", imageFile.Length);
                 var md5Hash = await CalculateMd5Async(imageFile);
+                _logger.LogInformation("🔍 [DEBUG] MD5計算完成: {Md5Hash}", md5Hash);
 
                 // 檢查重複檔案
                 var existingFile = await GetExistingPhotoByMd5Async(md5Hash, projectId);
@@ -337,12 +396,20 @@ namespace familytree_backend.Services
                 // 生成唯一檔名（處理重複檔名）
                 var uniqueFileName = GenerateUniqueFileName(projectPhotoDir, normalizedFileName);
                 var filePath = Path.Combine(projectPhotoDir, uniqueFileName);
+                _logger.LogInformation("🔍 [DEBUG] 生成檔案路徑: {FilePath}", filePath);
 
                 // 儲存檔案
+                _logger.LogInformation("🔍 [DEBUG] 開始儲存檔案到磁碟，檔案大小: {FileSize}", imageFile.Length);
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await imageFile.CopyToAsync(stream);
+                    _logger.LogInformation("🔍 [DEBUG] 檔案儲存完成");
                 }
+
+                // 檢查實際儲存的檔案大小
+                var fileInfo = new FileInfo(filePath);
+                _logger.LogInformation("🔍 [DEBUG] 實際儲存檔案大小: {ActualFileSize}, 檔案存在: {FileExists}", 
+                    fileInfo.Length, fileInfo.Exists);
 
                 // 建立檔案資訊
                 var photoInfo = new PhotoFileInfo
@@ -356,11 +423,13 @@ namespace familytree_backend.Services
                     UploadTime = DateTime.UtcNow
                 };
 
+                _logger.LogInformation("🔍 [DEBUG] PhotoFileInfo建立完成，FileSize: {FileSize}", photoInfo.FileSize);
+
                 // 儲存到資料庫
                 await SavePhotoToDatabaseAsync(photoInfo);
 
-                _logger.LogInformation("✅ 圖片儲存成功: {OriginalFileName} → {SavedFileName}", 
-                    originalFileName, uniqueFileName);
+                _logger.LogInformation("✅ 圖片儲存成功: {OriginalFileName} → {SavedFileName}, 大小: {FileSize}", 
+                    originalFileName, uniqueFileName, photoInfo.FileSize);
 
                 return photoInfo;
             }
@@ -424,15 +493,31 @@ namespace familytree_backend.Services
         }
 
         /// <summary>
-        /// 計算檔案MD5雜湊值
+        /// 計算檔案的MD5雜湊值
         /// </summary>
         private async Task<string> CalculateMd5Async(IFormFile file)
         {
-            using (var md5 = MD5.Create())
-            using (var stream = file.OpenReadStream())
+            try
             {
-                var hash = await md5.ComputeHashAsync(stream);
-                return Convert.ToHexString(hash).ToLowerInvariant();
+                _logger.LogInformation("🔍 [DEBUG] CalculateMd5Async開始，檔案大小: {FileSize}", file.Length);
+                
+                using (var md5 = MD5.Create())
+                using (var stream = file.OpenReadStream())
+                {
+                    _logger.LogInformation("🔍 [DEBUG] CalculateMd5Async - 開啟檔案stream，長度: {StreamLength}", stream.Length);
+                    
+                    var hash = await md5.ComputeHashAsync(stream);
+                    var hashString = Convert.ToHexString(hash).ToLowerInvariant();
+                    
+                    _logger.LogInformation("🔍 [DEBUG] CalculateMd5Async完成，MD5: {Md5Hash}", hashString);
+                    
+                    return hashString;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ [DEBUG] CalculateMd5Async失敗，檔案大小: {FileSize}", file.Length);
+                throw;
             }
         }
 
@@ -592,8 +677,18 @@ namespace familytree_backend.Services
         {
             try
             {
-                // 先取得照片資訊
-                var photoInfo = await GetPhotoInfoAsync(photoId);
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                // 先取得照片資訊以便刪除實體檔案
+                var photoInfoSql = @"
+                    SELECT id as Id, original_filename as OriginalFileName, saved_filename as SavedFileName, 
+                           file_path as FilePath, file_size as FileSize, md5_hash as Md5Hash, 
+                           project_id as ProjectId, upload_time as UploadTime
+                    FROM photos 
+                    WHERE id = @id";
+
+                var photoInfo = await connection.QueryFirstOrDefaultAsync<PhotoFileInfo>(photoInfoSql, new { id = photoId });
                 if (photoInfo == null)
                 {
                     return new PhotoDeleteResponse
@@ -611,28 +706,25 @@ namespace familytree_backend.Services
                 }
 
                 // 從資料庫刪除記錄
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    var sql = "DELETE FROM photos WHERE id = @PhotoId";
-                    var affectedRows = await connection.ExecuteAsync(sql, new { PhotoId = photoId });
+                var sql = "DELETE FROM photos WHERE id = @PhotoId";
+                var affectedRows = await connection.ExecuteAsync(sql, new { PhotoId = photoId });
 
-                    if (affectedRows > 0)
+                if (affectedRows > 0)
+                {
+                    _logger.LogInformation("✅ 照片刪除成功 - ID: {PhotoId}", photoId);
+                    return new PhotoDeleteResponse
                     {
-                        _logger.LogInformation("✅ 照片刪除成功 - ID: {PhotoId}", photoId);
-                        return new PhotoDeleteResponse
-                        {
-                            Success = true,
-                            Message = "照片刪除成功"
-                        };
-                    }
-                    else
+                        Success = true,
+                        Message = "照片刪除成功"
+                    };
+                }
+                else
+                {
+                    return new PhotoDeleteResponse
                     {
-                        return new PhotoDeleteResponse
-                        {
-                            Success = false,
-                            Message = "照片刪除失敗，資料庫記錄不存在"
-                        };
-                    }
+                        Success = false,
+                        Message = "照片刪除失敗，資料庫記錄不存在"
+                    };
                 }
             }
             catch (Exception ex)
@@ -646,31 +738,7 @@ namespace familytree_backend.Services
             }
         }
 
-        /// <summary>
-        /// 取得照片詳細資訊
-        /// </summary>
-        public async Task<PhotoFileInfo?> GetPhotoInfoAsync(int id)
-        {
-            try
-            {
-                using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
 
-                var sql = @"
-                    SELECT id, original_filename, saved_filename, file_path, file_size, 
-                           md5_hash, project_id, upload_time
-                    FROM photos 
-                    WHERE id = @id";
-
-                var photo = await connection.QueryFirstOrDefaultAsync<PhotoFileInfo>(sql, new { id });
-                return photo;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "取得照片詳細資訊失敗: {PhotoId}", id);
-                return null;
-            }
-        }
 
         /// <summary>
         /// 根據照片索引號查找照片
@@ -684,20 +752,23 @@ namespace familytree_backend.Services
 
                 // 查找匹配索引號的照片檔案
                 var sql = @"
-                    SELECT id, original_filename, saved_filename, file_path, file_size, 
-                           md5_hash, project_id, upload_time
+                    SELECT id as Id, original_filename as OriginalFileName, saved_filename as SavedFileName, 
+                           file_path as FilePath, file_size as FileSize, md5_hash as Md5Hash, 
+                           project_id as ProjectId, upload_time as UploadTime
                     FROM photos 
-                    WHERE project_id = @projectId 
-                    AND saved_filename LIKE @pattern
+                    WHERE project_id = @ProjectId 
+                    AND saved_filename LIKE @Pattern
                     ORDER BY saved_filename
                     LIMIT 1";
 
                 // 構建搜尋模式，支援不同格式
                 var pattern = $"{photoIndex.PadLeft(6, '0')}%"; // 將索引補零至6位並加上萬用字元
+                
+                _logger.LogInformation("SQL查詢參數: projectId={ProjectId}, pattern={Pattern}", projectId, pattern);
 
                 var photo = await connection.QueryFirstOrDefaultAsync<PhotoFileInfo>(sql, new { 
-                    projectId, 
-                    pattern 
+                    ProjectId = projectId, 
+                    Pattern = pattern 
                 });
 
                 _logger.LogInformation("根據索引查找照片: {PhotoIndex} -> {FileName}", 
@@ -713,73 +784,7 @@ namespace familytree_backend.Services
             }
         }
 
-        /// <summary>
-        /// 通過檔名取得照片資訊
-        /// </summary>
-        public async Task<PhotoFileInfo?> GetPhotoInfoByFileNameAsync(string fileName, string projectId)
-        {
-            try
-            {
-                using (var connection = new NpgsqlConnection(_connectionString))
-                {
-                    // 先嘗試完全匹配原始檔名
-                    var sql = @"
-                        SELECT id, original_filename, saved_filename, file_path, file_size, md5_hash, project_id, upload_time
-                        FROM photos 
-                        WHERE project_id = @ProjectId 
-                        AND (original_filename = @FileName OR saved_filename = @FileName)
-                        ORDER BY upload_time DESC
-                        LIMIT 1";
 
-                    var result = await connection.QueryFirstOrDefaultAsync<dynamic>(sql, new { 
-                        ProjectId = projectId, 
-                        FileName = fileName 
-                    });
-                    
-                    // 如果沒找到，嘗試模糊匹配（不含副檔名）
-                    if (result == null)
-                    {
-                        var fileNameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
-                        var sqlFuzzy = @"
-                            SELECT id, original_filename, saved_filename, file_path, file_size, md5_hash, project_id, upload_time
-                            FROM photos 
-                            WHERE project_id = @ProjectId 
-                            AND (original_filename ILIKE @FileNamePattern OR saved_filename ILIKE @FileNamePattern)
-                            ORDER BY upload_time DESC
-                            LIMIT 1";
-
-                        result = await connection.QueryFirstOrDefaultAsync<dynamic>(sqlFuzzy, new { 
-                            ProjectId = projectId, 
-                            FileNamePattern = $"{fileNameWithoutExt}%"
-                        });
-                    }
-                    
-                    if (result != null)
-                    {
-                        _logger.LogInformation("📸 找到照片檔案: {FileName} -> ID: {PhotoId}", fileName, (int)result.id);
-                        return new PhotoFileInfo
-                        {
-                            Id = result.id,
-                            OriginalFileName = result.original_filename,
-                            SavedFileName = result.saved_filename,
-                            FilePath = result.file_path,
-                            FileSize = result.file_size,
-                            Md5Hash = result.md5_hash,
-                            ProjectId = result.project_id,
-                            UploadTime = result.upload_time
-                        };
-                    }
-
-                    _logger.LogInformation("📸 找不到照片檔案: {FileName} 在專案 {ProjectId}", fileName, projectId);
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ 通過檔名取得照片資訊失敗 - 檔名: {FileName}, 專案: {ProjectId}", fileName, projectId);
-                return null;
-            }
-        }
 
         /// <summary>
         /// 正規化照片檔名（數字檔名補零到6位）
@@ -815,6 +820,8 @@ namespace familytree_backend.Services
                 return originalFileName;
             }
         }
+
+
     }
 
     /// <summary>
@@ -870,6 +877,7 @@ namespace familytree_backend.Services
         private readonly Stream _stream;
         private readonly string _name;
         private readonly string _fileName;
+        private readonly long _length;
         private bool _disposed = false;
 
         public FormFileFromStream(Stream stream, string name, string fileName, string contentType, long length)
@@ -878,22 +886,37 @@ namespace familytree_backend.Services
             _name = name;
             _fileName = fileName;
             ContentType = contentType;
-            Length = length;
+            _length = length;
         }
 
         public string ContentType { get; }
         public string ContentDisposition => $"form-data; name=\"{_name}\"; filename=\"{_fileName}\"";
         public IHeaderDictionary Headers => new HeaderDictionary();
-        public long Length { get; }
+        public long Length => _length;
         public string Name => _name;
         public string FileName => _fileName;
 
-        public Stream OpenReadStream() => _stream;
+        public Stream OpenReadStream()
+        {
+            // 創建一個新的 MemoryStream 副本，避免原始 stream 位置問題
+            var memoryStream = new MemoryStream();
+            _stream.Position = 0; // 重置原始 stream 位置
+            _stream.CopyTo(memoryStream);
+            memoryStream.Position = 0; // 重置新 stream 位置
+            return memoryStream;
+        }
 
-        public void CopyTo(Stream target) => _stream.CopyTo(target);
+        public void CopyTo(Stream target)
+        {
+            _stream.Position = 0;
+            _stream.CopyTo(target);
+        }
 
         public Task CopyToAsync(Stream target, CancellationToken cancellationToken = default)
-            => _stream.CopyToAsync(target, cancellationToken);
+        {
+            _stream.Position = 0; // Reset position before copying
+            return _stream.CopyToAsync(target, cancellationToken);
+        }
 
         public void Dispose()
         {

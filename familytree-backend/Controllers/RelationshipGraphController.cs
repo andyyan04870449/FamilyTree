@@ -41,6 +41,8 @@ namespace familytree_backend.Controllers
                 var persons = await connection.QueryAsync<PersonDataModel>(@"
                     SELECT 
                         id,
+                        project_id,
+                        photo_index,
                         name,
                         gender,
                         birthday,
@@ -277,7 +279,7 @@ namespace familytree_backend.Controllers
                         WHERE rl.target_person_id = ANY(@PersonIds)
                     )
                     SELECT DISTINCT 
-                        pp.id, pp.name, pp.gender, pp.birthday, pp.mobile,
+                        pp.id, pp.project_id, pp.photo_index, pp.name, pp.gender, pp.birthday, pp.mobile,
                         pp.family_relationships, pp.important_friends, pp.created_at, pp.updated_at
                     FROM person_profile pp
                     INNER JOIN related_persons rp ON pp.id = rp.id

@@ -12,6 +12,8 @@ namespace familytree_backend.Models
         
         public string? Photo { get; set; }                   // 照片
         
+        public string? PhotoIndex { get; set; }              // 照片索引
+        
         [Required]
         public string Name { get; set; } = string.Empty;     // 姓名
         

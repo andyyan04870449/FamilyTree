@@ -1,0 +1,152 @@
+<!-- 資料比較表彈出視窗 -->
+<div class="comparison-overlay" *ngIf="isVisible" (click)="cancel()">
+  <div class="comparison-dialog" (click)="$event.stopPropagation()">
+    
+    <!-- 標題列 -->
+    <div class="comparison-header">
+      <h2 class="comparison-title">資料比較表</h2>
+      <div class="header-actions">
+        <button class="quick-select-btn" (click)="selectAll('A')" title="選擇全部A">
+          全選A
+        </button>
+        <button class="quick-select-btn" (click)="selectAll('B')" title="選擇全部B">
+          全選B
+        </button>
+        <button class="close-button" (click)="cancel()">
+          <span class="close-icon">✕</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 載入狀態 -->
+    <div class="loading-container" *ngIf="loading">
+      <div class="loading-spinner"></div>
+      <p>正在載入人員資料...</p>
+    </div>
+
+    <!-- 錯誤狀態 -->
+    <div class="error-container" *ngIf="error">
+      <div class="error-icon">⚠️</div>
+      <p>{{ error }}</p>
+      <button class="retry-btn" (click)="ngOnChanges()">重試</button>
+    </div>
+
+    <!-- 比較表格容器 -->
+    <div class="comparison-content" *ngIf="!loading && !error">
+      <div class="comparison-table-container">
+        
+        <!-- 表格標題行 -->
+        <div class="table-header">
+          <div class="header-cell index-cell">項次</div>
+          <div class="header-cell field-cell">資料欄位</div>
+          <div class="header-cell person-cell person-a">
+            <div class="person-header">
+              <div class="selection-circle circle-a" 
+                   [class.selected]="true"
+                   title="選擇全部A資料"
+                   (click)="selectAll('A')"></div>
+              <span>{{ personA?.name || '人事資料A' }}</span>
+            </div>
+          </div>
+          <div class="header-cell person-cell person-b">
+            <div class="person-header">
+              <div class="selection-circle circle-b" 
+                   title="選擇全部B資料"
+                   (click)="selectAll('B')"></div>
+              <span>{{ personB?.name || '人事資料B' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 表格內容行 -->
+        <div class="table-body">
+          <div 
+            class="table-row" 
+            *ngFor="let field of comparisonFields; let i = index"
+            [class.even-row]="i % 2 === 1"
+          >
+            <!-- 項次 -->
+            <div class="body-cell index-cell">{{ i + 1 }}</div>
+            
+            <!-- 欄位名稱 -->
+            <div class="body-cell field-cell">{{ field.fieldName }}</div>
+            
+            <!-- 人員A的值 -->
+            <div class="body-cell person-cell person-a-cell" 
+                 [class.selected]="field.selectedValue === 'A'"
+                 (click)="selectFieldValue(field, 'A')">
+              <div class="cell-content">
+                <div class="selection-circle circle-a" 
+                     [class.selected]="field.selectedValue === 'A'"
+                     [class.disabled]="field.personA === '-' || field.personA === '無照片' || field.personA === '照片載入失敗'"></div>
+                
+                <!-- 照片欄位特殊處理 -->
+                <div *ngIf="field.fieldKey === 'photo_index'; else textContent" class="photo-content">
+                  <img *ngIf="field.personA !== '-' && field.personA !== '無照片' && field.personA !== '照片載入失敗'" 
+                       [src]="field.personA" 
+                       class="person-photo"
+                       (error)="$event.target.style.display='none'"
+                       alt="人員A照片">
+                  <span *ngIf="field.personA === '-' || field.personA === '無照片' || field.personA === '照片載入失敗'" 
+                        class="cell-text empty">{{ field.personA }}</span>
+                </div>
+                
+                <!-- 一般文字內容 -->
+                <ng-template #textContent>
+                  <span class="cell-text" [class.empty]="field.personA === '-'">
+                    {{ field.personA }}
+                  </span>
+                </ng-template>
+              </div>
+            </div>
+            
+            <!-- 人員B的值 -->
+            <div class="body-cell person-cell person-b-cell"
+                 [class.selected]="field.selectedValue === 'B'"
+                 (click)="selectFieldValue(field, 'B')">
+              <div class="cell-content">
+                <div class="selection-circle circle-b" 
+                     [class.selected]="field.selectedValue === 'B'"
+                     [class.disabled]="field.personB === '-' || field.personB === '無照片' || field.personB === '照片載入失敗'"></div>
+                
+                <!-- 照片欄位特殊處理 -->
+                <div *ngIf="field.fieldKey === 'photo_index'; else textContentB" class="photo-content">
+                  <img *ngIf="field.personB !== '-' && field.personB !== '無照片' && field.personB !== '照片載入失敗'" 
+                       [src]="field.personB" 
+                       class="person-photo"
+                       (error)="$event.target.style.display='none'"
+                       alt="人員B照片">
+                  <span *ngIf="field.personB === '-' || field.personB === '無照片' || field.personB === '照片載入失敗'" 
+                        class="cell-text empty">{{ field.personB }}</span>
+                </div>
+                
+                <!-- 一般文字內容 -->
+                <ng-template #textContentB>
+                  <span class="cell-text" [class.empty]="field.personB === '-'">
+                    {{ field.personB }}
+                  </span>
+                </ng-template>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+
+
+    <!-- 操作按鈕區 -->
+    <div class="comparison-footer">
+      <button class="action-button secondary" (click)="cancel()">
+        取消合併
+      </button>
+      <button class="action-button primary" 
+              (click)="confirmMergeAction()"
+              [disabled]="loading">
+        確認執行合併
+      </button>
+    </div>
+
+  </div>
+</div> 

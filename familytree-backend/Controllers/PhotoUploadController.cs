@@ -154,48 +154,7 @@ namespace familytree_backend.Controllers
             }, "照片刪除");
         }
 
-        /// <summary>
-        /// 照片檔案服務 API
-        /// </summary>
-        /// <param name="id">照片 ID</param>
-        /// <returns>照片檔案</returns>
-        [HttpGet("{id}/file")]
-        public async Task<IActionResult> GetPhotoFile(int id)
-        {
-            return await ExecuteWithExceptionHandling(async () =>
-            {
-                LogRequestStart("照片檔案查詢", new { PhotoId = id });
 
-                // 驗證參數
-                if (id <= 0)
-                {
-                    return CreateErrorResponse("無效的照片ID");
-                }
-
-                // 取得照片資訊
-                var photoInfo = await _photoUploadService.GetPhotoInfoAsync(id);
-                
-                if (photoInfo == null)
-                {
-                    return CreateErrorResponse("照片不存在");
-                }
-
-                // 檢查檔案是否存在
-                if (!System.IO.File.Exists(photoInfo.FilePath))
-                {
-                    Logger.LogWarning("照片檔案不存在: {FilePath}", photoInfo.FilePath);
-                    return CreateErrorResponse("照片檔案不存在");
-                }
-
-                // 返回檔案
-                var fileBytes = await System.IO.File.ReadAllBytesAsync(photoInfo.FilePath);
-                var contentType = GetContentType(photoInfo.SavedFileName);
-                
-                LogRequestComplete("照片檔案查詢");
-                return File(fileBytes, contentType, photoInfo.SavedFileName);
-
-            }, "照片檔案查詢");
-        }
 
         /// <summary>
         /// 根據照片索引號獲取照片檔案 API
@@ -247,56 +206,7 @@ namespace familytree_backend.Controllers
             }, "根據索引查詢照片");
         }
 
-        /// <summary>
-        /// 通過檔名獲取照片檔案 API
-        /// </summary>
-        /// <param name="filename">照片檔名</param>
-        /// <param name="project_id">專案 ID</param>
-        /// <returns>照片檔案</returns>
-        [HttpGet("file/{filename}")]
-        public async Task<IActionResult> GetPhotoFileByName(string filename, [FromQuery] string? project_id = null)
-        {
-            return await ExecuteWithExceptionHandling(async () =>
-            {
-                LogRequestStart("通過檔名查詢照片", new { FileName = filename, ProjectId = project_id });
 
-                // 驗證參數
-                if (string.IsNullOrWhiteSpace(filename))
-                {
-                    return CreateErrorResponse("檔名不能為空");
-                }
-
-                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
-                if (projectValidationResult != null)
-                {
-                    return projectValidationResult;
-                }
-
-                // 取得照片資訊
-                var photoInfo = await _photoUploadService.GetPhotoInfoByFileNameAsync(filename, project_id!);
-                
-                if (photoInfo == null)
-                {
-                    Logger.LogInformation("找不到照片檔案: {FileName} 在專案 {ProjectId}", filename, project_id);
-                    return CreateNotFoundResponse("照片檔案", filename);
-                }
-
-                // 檢查檔案是否存在
-                if (!System.IO.File.Exists(photoInfo.FilePath))
-                {
-                    Logger.LogWarning("照片檔案不存在於磁碟: {FilePath}", photoInfo.FilePath);
-                    return CreateErrorResponse("照片檔案不存在");
-                }
-
-                // 返回檔案
-                var fileBytes = await System.IO.File.ReadAllBytesAsync(photoInfo.FilePath);
-                var contentType = GetContentType(photoInfo.SavedFileName);
-                
-                LogRequestComplete("通過檔名查詢照片");
-                return File(fileBytes, contentType, photoInfo.SavedFileName);
-
-            }, "通過檔名查詢照片");
-        }
 
         /// <summary>
         /// 服務健康檢查 API
@@ -317,6 +227,8 @@ namespace familytree_backend.Controllers
 
             return CreateSuccessResponse(healthData, "照片上傳服務正常運作");
         }
+
+
 
         #region 私有輔助方法
 

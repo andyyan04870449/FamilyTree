@@ -1,0 +1,448 @@
+// 資料比較表組件樣式 - 完全基於Figma設計
+// 顏色規格：背景#333333, 標題#42413D, 偶數行#2E2D2A, 選中#3B82F6
+
+.comparison-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.comparison-dialog {
+  background-color: #333333;
+  border: 1px solid #4F565E;
+  border-radius: 10px;
+  width: 95vw;
+  max-width: 1200px;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  color: #FFFFFF;
+  font-family: 'Noto Sans CJK TC', sans-serif;
+  overflow: hidden;
+}
+
+// 標題區域
+.comparison-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #4F565E;
+  background-color: #42413D;
+  border-radius: 10px 10px 0 0;
+
+  .comparison-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #FFFFFF;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .quick-select-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+      }
+    }
+
+    .close-button {
+      background: none;
+      border: none;
+      color: #ffffff;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+}
+
+// 載入和錯誤狀態
+.loading-container, .error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #A3A3A3;
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top: 3px solid #ffffff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+  }
+
+  .error-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+  }
+
+  p {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+  }
+
+  .retry-btn {
+    background: #3B82F6;
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background: #2563EB;
+    }
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// 內容區域
+.comparison-content {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.comparison-table-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+// 表格標題行 - 4欄等寬布局（兩人比較專用）
+.table-header {
+  display: grid;
+  grid-template-columns: 60px 200px 1fr 1fr;
+  background-color: #42413D;
+  border-bottom: 1px solid #4F565E;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header-cell {
+  padding: 8px 16px;
+  font-weight: 400;
+  font-size: 16px;
+  color: #FFFFFF;
+  text-align: center;
+  border-right: 1px solid #4F565E;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  
+  &:last-child {
+    border-right: none;
+  }
+
+  &.index-cell {
+    justify-content: center;
+  }
+
+  &.field-cell {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  &.person-cell {
+    justify-content: flex-start;
+    
+    .person-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      
+      .selection-circle {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #3B82F6;
+        border-radius: 50%;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-shrink: 0;
+        
+        &.selected {
+          background: #3B82F6;
+        }
+        
+        &:hover {
+          transform: scale(1.1);
+        }
+      }
+      
+      span {
+        font-size: 16px;
+        font-weight: 400;
+        color: #FFFFFF;
+      }
+    }
+  }
+}
+
+// 表格內容區
+.table-body {
+  flex: 1;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 60px 200px 1fr 1fr;
+  border-bottom: 1px solid #4F565E;
+  background-color: #333333;
+  transition: background-color 0.2s;
+
+  &.even-row {
+    background-color: #2E2D2A;
+  }
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.body-cell {
+  padding: 8px 16px;
+  font-size: 16px;
+  color: #FFFFFF;
+  border-right: 1px solid #4F565E;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  
+  &:last-child {
+    border-right: none;
+  }
+
+  &.index-cell {
+    justify-content: center;
+    font-weight: 400;
+    color: #FFFFFF;
+  }
+
+  &.field-cell {
+    justify-content: flex-start;
+    font-weight: 400;
+    color: #FFFFFF;
+  }
+
+  &.person-cell {
+    cursor: pointer;
+    transition: all 0.2s;
+    
+    &:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    
+    &.selected {
+      background-color: rgba(59, 130, 246, 0.2);
+    }
+    
+    .cell-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      
+      .selection-circle {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #4F565E;
+        border-radius: 50%;
+        background: transparent;
+        transition: all 0.2s;
+        flex-shrink: 0;
+        
+        &.selected {
+          border-color: #3B82F6;
+          background: #3B82F6;
+        }
+        
+        &.disabled {
+          border-color: #2D2D2D;
+          background: #2D2D2D;
+        }
+      }
+      
+      .cell-text {
+        font-size: 16px;
+        font-weight: 400;
+        color: #FFFFFF;
+        line-height: 1.45;
+        word-break: break-word;
+        
+        &.empty {
+          color: #A3A3A3;
+        }
+      }
+
+      // 照片內容樣式
+      .photo-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+
+        .person-photo {
+          max-width: 60px;
+          max-height: 60px;
+          width: auto;
+          height: auto;
+          border-radius: 4px;
+          object-fit: cover;
+          border: 1px solid #4F565E;
+          background: #2D2D2D;
+        }
+      }
+    }
+  }
+}
+
+// 底部操作區
+.comparison-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #4F565E;
+  background-color: rgba(255, 255, 255, 0.02);
+
+  .action-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 100px;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    &.primary {
+      background: #dc3545;
+      color: #ffffff;
+
+      &:hover:not(:disabled) {
+        background: #c82333;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+      }
+
+      &:disabled {
+        background: #495057;
+        color: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+    }
+
+    &.secondary {
+      background: #6c757d;
+      color: #ffffff;
+
+      &:hover {
+        background: #5c636a;
+      }
+    }
+  }
+}
+
+// 響應式設計
+@media (max-width: 1200px) {
+  .comparison-dialog {
+    width: 98vw;
+    max-height: 98vh;
+  }
+
+  .table-header,
+  .table-row {
+    grid-template-columns: 50px 150px 1fr 1fr;
+  }
+
+  .header-cell,
+  .body-cell {
+    padding: 8px 12px;
+    font-size: 14px;
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .comparison-header {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+
+    .header-actions {
+      justify-content: center;
+    }
+  }
+
+  .table-header,
+  .table-row {
+    grid-template-columns: 40px 120px 1fr 1fr;
+  }
+
+  .header-cell,
+  .body-cell {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-height: 36px;
+  }
+
+  .comparison-footer {
+    flex-direction: column;
+
+    .action-button {
+      width: 100%;
+    }
+  }
+} 

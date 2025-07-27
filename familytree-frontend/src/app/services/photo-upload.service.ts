@@ -222,12 +222,7 @@ export class PhotoUploadService {
     );
   }
 
-  /**
-   * 取得照片檔案 URL
-   */
-  getPhotoFileUrl(photoId: number): string {
-    return `${this.apiUrl}/${photoId}/file`;
-  }
+
 
   /**
    * 根據照片編號獲取照片檔案 URL
@@ -238,11 +233,11 @@ export class PhotoUploadService {
       throw new Error('請先選擇專案');
     }
     
-    // 將照片編號轉換為6位數字格式並加上副檔名
+    // 將照片編號轉換為6位數字格式 (不加副檔名，讓後端處理)
     const formattedIndex = photoIndex.padStart(6, '0');
-    const fileName = `${formattedIndex}.PNG`;
     
-    return `${this.apiUrl}/file/${fileName}?project_id=${currentProject}`;
+    // 使用 photo-by-index 端點，更適合根據索引查找
+    return `${this.apiUrl}/photo-by-index/${formattedIndex}?project_id=${currentProject}`;
   }
 
   /**
