@@ -46,40 +46,40 @@ export class PersonComparisonComponent implements OnInit, OnChanges {
   loading: boolean = false;
   error: string = '';
 
-  // 比較欄位定義（基於person_profile資料表）
+  // 比較欄位定義（基於person_profile資料表，使用後端實際返回的camelCase欄位名稱）
   private fieldDefinitions = [
-    { key: 'Photo', name: '照片' },
+    { key: 'photo', name: '照片' },
     { key: 'name', name: '姓名' },
-    { key: 'DiscoveryProcess', name: '發掘來源' },
+    { key: 'discoveryProcess', name: '發掘來源' },
     { key: 'gender', name: '性別' },
     { key: 'birthday', name: '生日' },
-    { key: 'Birthplace', name: '出生地' },
+    { key: 'birthplace', name: '出生地' },
     { key: 'nationality', name: '國籍' },
-    { key: 'Ethnicity', name: '民族' },
-    { key: 'AncestralHome', name: '籍貫' },
-    { key: 'PoliticalParty', name: '政黨' },
-    { key: 'IdNumber', name: '身分證號碼' },
-    { key: 'PassportNumber', name: '護照號碼' },
+    { key: 'ethnicity', name: '民族' },
+    { key: 'ancestralHome', name: '籍貫' },
+    { key: 'politicalParty', name: '政黨' },
+    { key: 'idNumber', name: '身分證號碼' },
+    { key: 'passportNumber', name: '護照號碼' },
     { key: 'phone', name: '電話' },
     { key: 'mobile', name: '行動電話' },
-    { key: 'Email', name: '電子信箱' },
-    { key: 'CurrentWorkplace', name: '現職單位' },
-    { key: 'CurrentAddress', name: '地址' },
-    { key: 'MailingAddress', name: '通訊地址' },
-    { key: 'FamilyRelationships', name: '親屬關係' },
-    { key: 'Experience', name: '經歷' },
-    { key: 'Education', name: '學歷' },
-    { key: 'OnlineAccounts', name: '網路帳號' },
-    { key: 'Publications', name: '著作' },
-    { key: 'Activities', name: '活動' },
-    { key: 'ImportantFriends', name: '重要友人' },
-    { key: 'FrequentPlaces', name: '經常出入場所' },
-    { key: 'TravelRecords', name: '出國紀錄' },
-    { key: 'Notes', name: '備註' },
-    { key: 'CreatedAt', name: '建檔時間' },
-    { key: 'CreatedBy', name: '建檔人' },
-    { key: 'UpdatedAt', name: '更新時間' },
-    { key: 'UpdatedBy', name: '更新人' }
+    { key: 'email', name: '電子信箱' },
+    { key: 'currentWorkplace', name: '現職單位' },
+    { key: 'currentAddress', name: '地址' },
+    { key: 'mailingAddress', name: '通訊地址' },
+    { key: 'familyRelationships', name: '親屬關係' },
+    { key: 'experience', name: '經歷' },
+    { key: 'education', name: '學歷' },
+    { key: 'onlineAccounts', name: '網路帳號' },
+    { key: 'publications', name: '著作' },
+    { key: 'activities', name: '活動' },
+    { key: 'importantFriends', name: '重要友人' },
+    { key: 'frequentPlaces', name: '經常出入場所' },
+    { key: 'travelRecords', name: '出國紀錄' },
+    { key: 'notes', name: '備註' },
+    { key: 'createdAt', name: '建檔時間' },
+    { key: 'createdBy', name: '建檔人' },
+    { key: 'updatedAt', name: '更新時間' },
+    { key: 'updatedBy', name: '更新人' }
   ];
 
   constructor(
@@ -89,26 +89,16 @@ export class PersonComparisonComponent implements OnInit, OnChanges {
   ) {}
 
   ngOnInit() {
-    this.logService.info('PersonComparisonComponent', '合併比較組件初始化完成');
+    // 組件初始化
   }
 
   ngOnChanges() {
-    this.logService.info('PersonComparisonComponent', 'ngOnChanges 觸發', {
-      personAId: this.personAId,
-      personBId: this.personBId,
-      isVisible: this.isVisible,
-      shouldLoadData: !!(this.personAId && this.personBId && this.isVisible)
-    });
-
     if (this.personAId && this.personBId && this.isVisible) {
-      this.logService.info('PersonComparisonComponent', '開始載入人員資料');
-      this.loadPersonData();
-    } else {
-      this.logService.warn('PersonComparisonComponent', '不滿足載入資料條件', {
+      this.logService.info('PersonComparisonComponent', '開始載入比較資料', {
         personAId: this.personAId,
-        personBId: this.personBId,
-        isVisible: this.isVisible
+        personBId: this.personBId
       });
+      this.loadPersonData();
     }
   }
 
@@ -116,19 +106,11 @@ export class PersonComparisonComponent implements OnInit, OnChanges {
    * 載入人員資料
    */
   private async loadPersonData(): Promise<void> {
-    if (!this.personAId || !this.personBId) {
-      this.logService.error('PersonComparisonComponent', '人員ID不完整', {
-        personAId: this.personAId,
-        personBId: this.personBId
-      });
-      return;
-    }
+    if (!this.personAId || !this.personBId) return;
 
     try {
-      this.logService.info('PersonComparisonComponent', '開始載入人員資料', {
-        personAId: this.personAId,
-        personBId: this.personBId
-      });
+      this.loading = true;
+      this.error = '';
 
       // 同時載入兩個人員的資料
       const [personAResponse, personBResponse] = await Promise.all([
@@ -139,27 +121,31 @@ export class PersonComparisonComponent implements OnInit, OnChanges {
       this.personA = personAResponse;
       this.personB = personBResponse;
 
-      this.logService.info('PersonComparisonComponent', '人員A資料載入完成', {
-        personA: this.personA,
-        keys: this.personA ? Object.keys(this.personA) : [],
-        photoField: this.personA?.Photo,
-        projectIdField: this.personA?.project_id
+      this.logService.info('PersonComparisonComponent', '✅ 人員資料載入完成', {
+        personA: {
+          id: this.personA?.id,
+          name: this.personA?.name,
+          fieldsCount: this.personA ? Object.keys(this.personA).length : 0,
+          hasPhoto: !!this.personA?.Photo,
+          projectId: this.personA?.project_id
+        },
+        personB: {
+          id: this.personB?.id,
+          name: this.personB?.name,
+          fieldsCount: this.personB ? Object.keys(this.personB).length : 0,
+          hasPhoto: !!this.personB?.Photo,
+          projectId: this.personB?.project_id
+        }
       });
 
-      this.logService.info('PersonComparisonComponent', '人員B資料載入完成', {
-        personB: this.personB,
-        keys: this.personB ? Object.keys(this.personB) : [],
-        photoField: this.personB?.Photo,
-        projectIdField: this.personB?.project_id
-      });
-
-      // 初始化比較選擇（預設都選A）
+      // 初始化比較選擇
       this.buildComparisonData();
       
-      this.logService.info('PersonComparisonComponent', '人員資料載入完成，開始初始化比較表格');
-      
     } catch (error) {
-      this.logService.error('PersonComparisonComponent', '載入人員資料失敗', error);
+      this.error = '載入人員資料失敗';
+      this.logService.error('PersonComparisonComponent', '❌ 載入人員資料失敗', error);
+    } finally {
+      this.loading = false;
     }
   }
 
@@ -167,97 +153,60 @@ export class PersonComparisonComponent implements OnInit, OnChanges {
    * 建立比較資料結構
    */
   private buildComparisonData(): void {
-    this.logService.info('PersonComparisonComponent', '開始建立比較資料結構', {
-      fieldDefinitionsLength: this.fieldDefinitions.length,
-      personA: this.personA,
-      personB: this.personB
-    });
-
-    this.comparisonFields = this.fieldDefinitions.map((field, index) => {
-      this.logService.info('PersonComparisonComponent', `處理欄位 ${index + 1}/${this.fieldDefinitions.length}`, {
-        fieldName: field.name,
-        fieldKey: field.key
-      });
-
+    this.comparisonFields = this.fieldDefinitions.map(field => {
       const valueA = this.getFieldValue(this.personA, field.key);
       const valueB = this.getFieldValue(this.personB, field.key);
-      
-      if (field.key === 'Photo') {
-        this.logService.info('PersonComparisonComponent', '照片欄位處理結果', {
-          fieldKey: field.key,
-          valueA,
-          valueB,
-          personAPhoto_Photo: this.personA?.Photo,
-          personAPhoto_photo: this.personA?.photo,
-          personBPhoto_Photo: this.personB?.Photo,
-          personBPhoto_photo: this.personB?.photo
-        });
-      }
       
       // 預設選擇邏輯：如果A有值B沒有選A，如果B有值A沒有選B，都有值選A
       let defaultSelection: 'A' | 'B' = 'A';
       if (valueA === '-' && valueB !== '-') {
         defaultSelection = 'B';
-      } else {
-        defaultSelection = 'A';
       }
 
-      const result = {
+      return {
         fieldName: field.name,
         fieldKey: field.key,
         personA: valueA,
         personB: valueB,
         selectedValue: defaultSelection
       };
-
-      if (field.key === 'Photo') {
-        this.logService.info('PersonComparisonComponent', '照片欄位最終結果', {
-          result,
-          defaultSelection
-        });
-      }
-
-      return result;
     });
 
-    this.logService.info('PersonComparisonComponent', '比較資料結構建立完成', {
-      comparisonFieldsLength: this.comparisonFields.length,
-      photoField: this.comparisonFields.find(f => f.fieldKey === 'Photo')
-    });
+    // 記錄關鍵欄位的資料狀況
+    const emptyFields = this.comparisonFields.filter(f => f.personA === '-' && f.personB === '-');
+    const photoField = this.comparisonFields.find(f => f.fieldKey === 'Photo');
+    
+          this.logService.info('PersonComparisonComponent', '🔍 比較資料結構建立完成', {
+        totalFields: this.comparisonFields.length,
+        emptyFieldsCount: emptyFields.length,
+        emptyFields: emptyFields.map(f => f.fieldName),
+        photoStatus: {
+          personA: photoField?.personA || '無',
+          personB: photoField?.personB || '無'
+        },
+        sampleData: {
+          name: { A: this.personA?.name, B: this.personB?.name },
+          phone: { A: this.personA?.phone, B: this.personB?.phone },
+          email: { A: this.personA?.Email, B: this.personB?.Email }
+        }
+      });
+
+
   }
 
   /**
    * 獲取欄位值並格式化顯示
    */
   private getFieldValue(person: any, fieldKey: string): string {
-    if (!person) {
-      this.logService.warn('PersonComparisonComponent', 'getFieldValue: 人員資料為空', { fieldKey });
-      return '-';
-    }
+    if (!person) return '-';
     
     const value = person[fieldKey];
     
-    if (fieldKey === 'Photo') {
-      this.logService.info('PersonComparisonComponent', 'getFieldValue: 處理照片欄位', {
-        fieldKey,
-        person,
-        value,
-        photoIndex_Photo: person.Photo,
-        photoIndex_photo: person.photo,
-        projectId: person.project_id
-      });
-    }
-    
     switch (fieldKey) {
-      case 'Photo':
-        const photoUrl = this.getPhotoUrl(person);
-        this.logService.info('PersonComparisonComponent', 'getFieldValue: 照片URL處理完成', {
-          fieldKey,
-          photoUrl
-        });
-        return photoUrl;
-      case 'CreatedAt':
-      case 'UpdatedAt':
+      case 'photo':
+        return this.getPhotoUrl(person);
+      case 'createdAt':
+      case 'updatedAt':
         return value ? new Date(value).toLocaleString('zh-TW') : '-';
       default:
         return value || '-';
@@ -268,57 +217,35 @@ export class PersonComparisonComponent implements OnInit, OnChanges {
    * 獲取照片URL，如果沒有照片則返回預設值
    */
   private getPhotoUrl(person: any): string {
-    this.logService.info('PersonComparisonComponent', '開始獲取照片URL', {
-      person: person,
-      personKeys: person ? Object.keys(person) : [],
-      photoField_Photo: person?.Photo,      // PersonDataController 格式
-      photoField_photo: person?.photo,      // RelationshipGraphController 格式
-      nameField: person?.name,
-      projectIdField: person?.project_id
-    });
+    if (!person) return '無照片';
 
-    if (!person) {
-      this.logService.warn('PersonComparisonComponent', '人員資料為空，返回無照片');
-      return '無照片';
-    }
-
-    // 支援兩種照片欄位格式：
-    // 1. Photo（來自 PersonDataController）
-    // 2. photo（來自 RelationshipGraphController）
-    const photoIndex = person.Photo || person.photo;
+    // 支援兩種照片欄位格式：photo（主要）或 photoIndex（備用）
+    const photoIndex = person.photo || person.photoIndex;
 
     if (!photoIndex) {
-      this.logService.warn('PersonComparisonComponent', '照片索引為空，返回無照片', {
-        photoField_Photo: person.Photo,
-        photoField_photo: person.photo,
-        allFields: person
+      this.logService.debug('PersonComparisonComponent', `📷 ${person.name || 'Unknown'}: 無照片索引`, {
+        photo: person.photo,
+        photoIndex: person.photoIndex
       });
       return '無照片';
     }
     
     try {
-      this.logService.info('PersonComparisonComponent', '調用 photoUtils.getPersonPhotoUrl', {
-        photoIndex: photoIndex,
-        personName: person.name,
-        projectId: person.project_id,
-        dataSource: person.Photo ? 'PersonDataController' : 'RelationshipGraphController'
-      });
-
       const url = this.photoUtils.getPersonPhotoUrl(photoIndex, person.name, person.project_id);
       
-      this.logService.info('PersonComparisonComponent', '照片URL生成結果', {
-        generatedUrl: url,
-        isNull: url === null,
-        isUndefined: url === undefined,
-        photoIndex: photoIndex
-      });
+      if (!url) {
+        this.logService.warn('PersonComparisonComponent', `📷 ${person.name || 'Unknown'}: 照片URL生成失敗`, {
+          photoIndex,
+          projectId: person.project_id
+        });
+        return '無照片';
+      }
 
-      return url || '無照片';
+      return url;
     } catch (error) {
-      this.logService.error('PersonComparisonComponent', '獲取照片URL失敗', {
-        error: error,
-        person: person,
-        photoIndex: photoIndex,
+      this.logService.error('PersonComparisonComponent', `📷 ${person.name || 'Unknown'}: 照片載入錯誤`, {
+        error,
+        photoIndex,
         projectId: person.project_id
       });
       return '照片載入失敗';
@@ -330,10 +257,6 @@ export class PersonComparisonComponent implements OnInit, OnChanges {
    */
   selectFieldValue(field: ComparisonField, selection: 'A' | 'B'): void {
     field.selectedValue = selection;
-    this.logService.debug('PersonComparisonComponent', '選擇欄位值', {
-      field: field.fieldName,
-      selection: selection
-    });
   }
 
   /**
@@ -347,7 +270,6 @@ export class PersonComparisonComponent implements OnInit, OnChanges {
    * 取消比較
    */
   cancel(): void {
-    this.logService.info('PersonComparisonComponent', '取消資料比較');
     this.closeComparison.emit();
   }
 
@@ -377,8 +299,11 @@ export class PersonComparisonComponent implements OnInit, OnChanges {
       mergedData: mergedData
     };
 
-    this.logService.info('PersonComparisonComponent', '確認合併操作', {
-      mergeSelection: mergeSelection
+    this.logService.info('PersonComparisonComponent', '🔄 執行合併操作', {
+      personA: this.personA.name,
+      personB: this.personB.name,
+      selectedFields: this.comparisonFields.filter(f => f.selectedValue === 'A').length + ' from A, ' +
+                     this.comparisonFields.filter(f => f.selectedValue === 'B').length + ' from B'
     });
 
     this.confirmMerge.emit(mergeSelection);
@@ -388,14 +313,19 @@ export class PersonComparisonComponent implements OnInit, OnChanges {
    * 快速選擇全部A或全部B
    */
   selectAll(selection: 'A' | 'B'): void {
+    let changedCount = 0;
     this.comparisonFields.forEach(field => {
       if (selection === 'A' && field.personA !== '-') {
         field.selectedValue = 'A';
+        changedCount++;
       } else if (selection === 'B' && field.personB !== '-') {
         field.selectedValue = 'B';
+        changedCount++;
       }
     });
     
-    this.logService.info('PersonComparisonComponent', `快速選擇全部${selection}`);
+    this.logService.info('PersonComparisonComponent', `📋 快速選擇全部${selection}`, {
+      changedFields: changedCount
+    });
   }
 } 

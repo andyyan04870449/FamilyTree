@@ -64,7 +64,7 @@
             class="table-row" 
             *ngFor="let field of comparisonFields; let i = index"
             [class.even-row]="i % 2 === 1"
-            [class.photo-row]="field.fieldKey === 'Photo'"
+            [class.photo-row]="field.fieldKey === 'photo'"
           >
             <!-- 項次 -->
             <div class="body-cell index-cell">{{ i + 1 }}</div>
@@ -82,7 +82,7 @@
                      [class.disabled]="field.personA === '-' || field.personA === '無照片' || field.personA === '照片載入失敗'"></div>
                 
                 <!-- 照片欄位特殊處理 -->
-                <div *ngIf="field.fieldKey === 'Photo'; else textContent" class="photo-content">
+                <div *ngIf="field.fieldKey === 'photo'; else textContent" class="photo-content">
                   <img *ngIf="field.personA !== '-' && field.personA !== '無照片' && field.personA !== '照片載入失敗'" 
                        [src]="field.personA" 
                        class="person-photo"
@@ -111,7 +111,7 @@
                      [class.disabled]="field.personB === '-' || field.personB === '無照片' || field.personB === '照片載入失敗'"></div>
                 
                 <!-- 照片欄位特殊處理 -->
-                <div *ngIf="field.fieldKey === 'Photo'; else textContentB" class="photo-content">
+                <div *ngIf="field.fieldKey === 'photo'; else textContentB" class="photo-content">
                   <img *ngIf="field.personB !== '-' && field.personB !== '無照片' && field.personB !== '照片載入失敗'" 
                        [src]="field.personB" 
                        class="person-photo"

@@ -1143,14 +1143,10 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
    * 處理合併功能
    */
   handleMerge(): void {
-    if (!this.selectedNodeForMenu) {
-      this.logService.error('RelationshipGraphComponent', '沒有選中的節點進行合併');
-      return;
-    }
+    if (!this.selectedNodeForMenu) return;
 
-    this.logService.info('RelationshipGraphComponent', '開始合併流程', {
-      nodeName: this.selectedNodeForMenu.name,
-      nodeId: this.selectedNodeForMenu.id
+    this.logService.info('RelationshipGraphComponent', '🔀 開始合併流程', {
+      person: this.selectedNodeForMenu.name
     });
 
     // 進入合併模式
@@ -1176,7 +1172,6 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
    * 取消合併確認對話框
    */
   cancelMergeConfirm(): void {
-    this.logService.info('RelationshipGraphComponent', '取消合併確認');
     this.showMergeConfirmDialog = false;
     this.resetMergeState();
   }
@@ -1185,9 +1180,9 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
    * 確認合併並進入比較對話框
    */
   confirmMergeAndProceed(): void {
-    this.logService.info('RelationshipGraphComponent', '確認合併，進入比較對話框', {
-      personAId: this.mergePersonAId,
-      personBId: this.mergePersonBId
+    this.logService.info('RelationshipGraphComponent', '🔄 開始比較資料', {
+      personA: this.firstSelectedNodeForMerge?.name,
+      personB: this.secondSelectedNodeForMerge?.name
     });
     
     // 關閉合併確認對話框，顯示人員比較對話框
@@ -1200,7 +1195,6 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
    * 關閉人員比較對話框
    */
   closePersonComparison(): void {
-    this.logService.info('RelationshipGraphComponent', '關閉人員比較對話框');
     this.showPersonComparison = false;
     this.resetMergeState();
   }
@@ -1209,19 +1203,17 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
    * 處理人員比較結果，執行實際合併
    */
   handleMergeComparison(mergeSelection: any): void {
-    this.logService.info('RelationshipGraphComponent', '處理人員比較結果', {
-      mergeSelection: mergeSelection
+    this.logService.info('RelationshipGraphComponent', '✅ 合併資料完成', {
+      personA: mergeSelection.personAId,
+      personB: mergeSelection.personBId,
+      mergedFieldsCount: Object.keys(mergeSelection.mergedData || {}).length
     });
     
     // 關閉人員比較對話框
     this.showPersonComparison = false;
     
     // TODO: 這裡需要調用後端API執行實際的合併操作
-    this.logService.warn('RelationshipGraphComponent', '後端合併API尚未實現', {
-      personAId: mergeSelection.personAId,
-      personBId: mergeSelection.personBId,
-      mergedData: mergeSelection.mergedData
-    });
+    this.logService.warn('RelationshipGraphComponent', '⚠️ 後端合併API尚未實現');
     
     // 暫時顯示成功訊息
     alert(`合併操作已準備完成，但後端API尚未實現。\n\n合併資料預覽：\n${JSON.stringify(mergeSelection.mergedData, null, 2)}`);
