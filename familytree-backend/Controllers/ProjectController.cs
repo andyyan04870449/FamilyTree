@@ -1,376 +1,428 @@
 // 專案管理控制器：用於管理家族樹專案的 CRUD 操作
 // 主要功能：專案列表、新增、編輯、刪除(軟刪除)、搜尋、統計
+// 設計改善：使用統一的資料存取服務，移除重複代碼，改善架構設計
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Npgsql;
-using Dapper;
 using familytree_backend.Constants;
 using familytree_backend.Models;
 using familytree_backend.Services;
 
 namespace familytree_backend.Controllers
 {
+    /// <summary>
+    /// 專案管理控制器
+    /// 職責：提供專案的 CRUD 操作、搜尋、統計等功能
+    /// 設計改善：使用統一的資料存取服務，移除重複的 SQL 查詢邏輯
+    /// </summary>
     [Route("api/[controller]")]
     public class ProjectController : BaseController
     {
-        private readonly string _connectionString;
+        private readonly IDataAccessService _dataAccessService;
 
+        /// <summary>
+        /// 專案管理控制器建構子
+        /// 設計改善：使用統一的資料存取服務，避免直接操作資料庫
+        /// </summary>
         public ProjectController(
             ILogger<ProjectController> logger,
-            IConfigurationService configurationService) 
-            : base(logger, configurationService)
+            IConfigurationService configurationService,
+            IDataAccessService dataAccessService,
+            IValidationService validationService,
+            IAccessControlService accessControlService,
+            ILoggingService loggingService) 
+            : base(logger, configurationService, validationService, accessControlService, loggingService)
         {
-            _connectionString = configurationService.GetConnectionString();
+            _dataAccessService = dataAccessService;
         }
-
-        // 移除硬編碼的 LogToFile 方法，使用繼承自 BaseController 的 Logger
 
         /// <summary>
         /// 獲取所有專案列表（排除已刪除的專案）
+        /// 設計改善：使用統一的資料存取服務，簡化查詢邏輯
         /// </summary>
+        /// <param name="status">狀態篩選</param>
+        /// <param name="search">搜尋關鍵字</param>
+        /// <returns>專案列表</returns>
         [HttpGet]
         public async Task<IActionResult> GetProjects([FromQuery] string? status = null, [FromQuery] string? search = null)
         {
-            try
+            return await ExecuteWithExceptionHandling(async () =>
             {
-                Logger.LogInformation($"開始獲取專案列表 - 狀態篩選: {status}, 搜尋關鍵字: {search}");
-                using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
+                LogRequestStart("獲取專案列表", new { Status = status, Search = search });
+
+                // 使用統一的資料存取服務獲取專案列表
+                var allProjects = await _dataAccessService.GetProjectListAsync("system"); // 暫時使用系統用戶
                 
-                var whereConditions = new List<string> { "status != 'deleted'" }; // 排除已刪除
-                var parameters = new DynamicParameters();
-
-                // 狀態篩選
-                if (!string.IsNullOrEmpty(status) && status != "all")
+                // 在控制器中進行篩選
+                var projects = allProjects.AsEnumerable();
+                
+                if (!string.IsNullOrEmpty(status))
                 {
-                    whereConditions.Add("status = @status");
-                    parameters.Add("status", status);
+                    projects = projects.Where(p => p.Status?.Equals(status, StringComparison.OrdinalIgnoreCase) == true);
                 }
-
-                // 搜尋功能
+                
                 if (!string.IsNullOrEmpty(search))
                 {
-                    whereConditions.Add("(project_name ILIKE @search OR project_description ILIKE @search)");
-                    parameters.Add("search", $"%{search}%");
+                    projects = projects.Where(p => 
+                        p.ProjectName?.Contains(search, StringComparison.OrdinalIgnoreCase) == true ||
+                        p.ProjectDescription?.Contains(search, StringComparison.OrdinalIgnoreCase) == true);
                 }
 
-                var whereClause = string.Join(" AND ", whereConditions);
-                
-                var sql = $@"
-                    SELECT 
-                        id,
-                        user_id as UserId,
-                        project_name as ProjectName,
-                        project_description as ProjectDescription,
-                        status,
-                        created_at as CreatedAt,
-                        completed_at as CompletedAt,
-                        updated_at as UpdatedAt,
-                        -- 統計相關專案的資料
-                        (SELECT COUNT(*) FROM person_profile WHERE project_id = p.id) as MemberCount,
-                        (SELECT COUNT(*) FROM relationship_layers WHERE project_id = p.id) as RelationshipCount
-                    FROM projects p
-                    WHERE {whereClause}
-                    ORDER BY created_at DESC";
-                
-                var projects = await connection.QueryAsync<ProjectModel>(sql, parameters);
-                
-                Logger.LogInformation($"成功獲取 {projects.Count()} 個專案");
-                return Ok(new ProjectListResponse 
-                { 
+                Logger.LogInformation("成功獲取 {Count} 個專案", projects.Count());
+
+                var response = new ProjectListResponse
+                {
                     Success = true,
                     Message = "成功獲取專案列表",
                     Projects = projects.ToList(),
                     TotalCount = projects.Count()
-                });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogInformation($"獲取專案列表時發生錯誤: {ex.Message}");
-                return StatusCode(500, new { success = false, error = ex.Message });
-            }
+                };
+
+                LogRequestComplete("獲取專案列表", projects.Count());
+                return Ok(response);
+            }, "獲取專案列表");
         }
 
         /// <summary>
         /// 根據ID獲取單一專案
+        /// 設計改善：使用統一的資料存取服務，簡化查詢邏輯
         /// </summary>
+        /// <param name="id">專案 ID</param>
+        /// <returns>專案詳細資料</returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProject(string id)
         {
-            try
+            return await ExecuteWithExceptionHandling(async () =>
             {
-                Logger.LogInformation($"開始獲取專案 ID: {id}");
-                using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
-                
-                var sql = @"
-                    SELECT 
-                        id,
-                        user_id as UserId,
-                        project_name as ProjectName,
-                        project_description as ProjectDescription,
-                        status,
-                        created_at as CreatedAt,
-                        completed_at as CompletedAt,
-                        updated_at as UpdatedAt,
-                        (SELECT COUNT(*) FROM person_profile WHERE project_id = p.id) as MemberCount,
-                        (SELECT COUNT(*) FROM relationship_layers WHERE project_id = p.id) as RelationshipCount
-                    FROM projects p
-                    WHERE id = @id AND status != 'deleted'";
-                
-                var project = await connection.QueryFirstOrDefaultAsync<ProjectModel>(sql, new { id });
-                
+                LogRequestStart("獲取專案", new { Id = id });
+
+                // 參數驗證
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    return CreateErrorResponse("專案 ID 不能為空");
+                }
+
+                // 使用統一的資料存取服務獲取專案資料
+                var project = await _dataAccessService.GetProjectByIdAsync(id);
+
                 if (project == null)
                 {
-                    Logger.LogInformation($"專案 ID {id} 不存在或已被刪除");
-                    return NotFound(new { success = false, message = "專案不存在" });
+                    return CreateNotFoundResponse("專案", id);
                 }
-                
-                Logger.LogInformation($"成功獲取專案: {project.ProjectName}");
-                return Ok(new { success = true, project });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogInformation($"獲取專案 ID {id} 時發生錯誤: {ex.Message}");
-                return StatusCode(500, new { success = false, error = ex.Message });
-            }
+
+                Logger.LogInformation("成功獲取專案：ID {Id}，名稱 {Name}", id, project.ProjectName);
+
+                var response = new ProjectResponse
+                {
+                    Success = true,
+                    Message = "成功獲取專案資料",
+                    Project = project
+                };
+
+                LogRequestComplete("獲取專案");
+                return Ok(response);
+            }, "獲取專案");
         }
 
         /// <summary>
-        /// 新增專案
+        /// 建立新專案
+        /// 設計改善：使用統一的資料存取服務，簡化建立邏輯
         /// </summary>
+        /// <param name="request">建立專案請求</param>
+        /// <returns>建立結果</returns>
         [HttpPost]
         public async Task<IActionResult> CreateProject([FromBody] CreateProjectRequest request)
         {
-            try
+            return await ExecuteWithExceptionHandling(async () =>
             {
-                Logger.LogInformation($"開始建立新專案: {request.ProjectName}");
-                using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
-                
-                // 生成專案ID (userID-YYYYMMDDHHMMSS)
-                var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
-                var projectId = $"{request.UserId}-{timestamp}";
-                
-                var sql = @"
-                    INSERT INTO projects (
-                        id, 
-                        user_id, 
-                        project_name, 
-                        project_description, 
-                        status, 
-                        created_at, 
-                        updated_at
-                    ) VALUES (
-                        @id, 
-                        @userId, 
-                        @projectName, 
-                        @projectDescription, 
-                        @status, 
-                        @createdAt, 
-                        @updatedAt
-                    )";
-                
-                var parameters = new
+                LogRequestStart("建立專案", new { Name = request.ProjectName, Description = request.ProjectDescription });
+
+                // 參數驗證
+                if (!ModelState.IsValid)
                 {
-                    id = projectId,
-                    userId = request.UserId,
-                    projectName = request.ProjectName,
-                    projectDescription = request.ProjectDescription ?? "",
-                    status = request.Status ?? "active",
-                    createdAt = DateTime.UtcNow,
-                    updatedAt = DateTime.UtcNow
+                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                    var errorMessage = string.Join("; ", errors);
+                    Logger.LogWarning("請求參數驗證失敗: {errors}", errorMessage);
+                    return CreateErrorResponse($"參數驗證失敗: {errorMessage}");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.ProjectName))
+                {
+                    return CreateErrorResponse("專案名稱不能為空");
+                }
+
+                if (request.ProjectName.Length > ApplicationConstants.Database.ProjectNameMaxLength)
+                {
+                    return CreateErrorResponse($"專案名稱長度不能超過 {ApplicationConstants.Database.ProjectNameMaxLength} 個字元");
+                }
+
+                // 使用統一的資料存取服務建立專案
+                var userId = request.UserId ?? "system";
+                var newId = await _dataAccessService.CreateProjectAsync(request, userId);
+                
+                // 建立專案模型以供回應使用
+                var project = new ProjectModel
+                {
+                    Id = newId ?? "",
+                    UserId = userId,
+                    ProjectName = request.ProjectName,
+                    ProjectDescription = request.ProjectDescription,
+                    Status = "active",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 };
-                
-                await connection.ExecuteAsync(sql, parameters);
-                
-                Logger.LogInformation($"成功建立專案: {projectId} - {request.ProjectName}");
-                
-                // 返回新建立的專案資料
-                return CreatedAtAction(nameof(GetProject), new { id = projectId }, new 
-                { 
-                    success = true, 
-                    message = "專案建立成功",
-                    projectId = projectId 
-                });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogInformation($"建立專案時發生錯誤: {ex.Message}");
-                return StatusCode(500, new { success = false, error = ex.Message });
-            }
+
+                Logger.LogInformation("成功建立專案：ID {Id}，名稱 {Name}", newId, project.ProjectName);
+
+                var response = new ProjectResponse
+                {
+                    Success = true,
+                    Message = "專案建立成功",
+                    Project = project
+                };
+
+                LogRequestComplete("建立專案");
+                return CreatedAtAction(nameof(GetProject), new { id = newId }, response);
+            }, "建立專案");
         }
 
         /// <summary>
         /// 更新專案
+        /// 設計改善：使用統一的資料存取服務，簡化更新邏輯
         /// </summary>
+        /// <param name="id">專案 ID</param>
+        /// <param name="request">更新專案請求</param>
+        /// <returns>更新結果</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProject(string id, [FromBody] UpdateProjectRequest request)
         {
-            try
+            return await ExecuteWithExceptionHandling(async () =>
             {
-                Logger.LogInformation($"開始更新專案 ID: {id}");
-                using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
-                
-                // 檢查專案是否存在且未被刪除
-                var existsQuery = "SELECT COUNT(*) FROM projects WHERE id = @id AND status != 'deleted'";
-                var exists = await connection.ExecuteScalarAsync<int>(existsQuery, new { id });
-                
-                if (exists == 0)
+                LogRequestStart("更新專案", new { Id = id, Name = request.ProjectName });
+
+                // 參數驗證
+                if (string.IsNullOrWhiteSpace(id))
                 {
-                    Logger.LogInformation($"專案 ID {id} 不存在或已被刪除");
-                    return NotFound(new { success = false, message = "專案不存在" });
+                    return CreateErrorResponse("專案 ID 不能為空");
                 }
-                
-                var sql = @"
-                    UPDATE projects 
-                    SET 
-                        project_name = @projectName,
-                        project_description = @projectDescription,
-                        status = @status,
-                        updated_at = @updatedAt,
-                        completed_at = CASE 
-                            WHEN @status = 'completed' AND completed_at IS NULL THEN @updatedAt
-                            WHEN @status != 'completed' THEN NULL
-                            ELSE completed_at
-                        END
-                    WHERE id = @id AND status != 'deleted'";
-                
-                var parameters = new
+
+                if (!ModelState.IsValid)
                 {
-                    id,
-                    projectName = request.ProjectName,
-                    projectDescription = request.ProjectDescription ?? "",
-                    status = request.Status ?? "active",
-                    updatedAt = DateTime.UtcNow
+                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                    var errorMessage = string.Join("; ", errors);
+                    Logger.LogWarning("請求參數驗證失敗: {errors}", errorMessage);
+                    return CreateErrorResponse($"參數驗證失敗: {errorMessage}");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.ProjectName))
+                {
+                    return CreateErrorResponse("專案名稱不能為空");
+                }
+
+                if (request.ProjectName.Length > ApplicationConstants.Database.ProjectNameMaxLength)
+                {
+                    return CreateErrorResponse($"專案名稱長度不能超過 {ApplicationConstants.Database.ProjectNameMaxLength} 個字元");
+                }
+
+                // 檢查專案是否存在
+                var existingProject = await _dataAccessService.GetProjectByIdAsync(id);
+                if (existingProject == null)
+                {
+                    return CreateNotFoundResponse("專案", id);
+                }
+
+                // 使用統一的資料存取服務更新專案
+                var success = await _dataAccessService.UpdateProjectAsync(id, request);
+                
+                // 建立更新後的專案模型以供回應使用
+                var project = new ProjectModel
+                {
+                    Id = id,
+                    UserId = existingProject.UserId,
+                    ProjectName = request.ProjectName,
+                    ProjectDescription = request.ProjectDescription,
+                    Status = request.Status ?? existingProject.Status,
+                    CompletedAt = request.Status == "completed" ? DateTime.UtcNow : existingProject.CompletedAt,
+                    UpdatedAt = DateTime.UtcNow
                 };
-                
-                var rowsAffected = await connection.ExecuteAsync(sql, parameters);
-                
-                if (rowsAffected == 0)
+
+                if (!success)
                 {
-                    Logger.LogInformation($"專案 ID {id} 更新失敗");
-                    return NotFound(new { success = false, message = "專案更新失敗" });
+                    return CreateErrorResponse("更新專案失敗");
                 }
-                
-                Logger.LogInformation($"成功更新專案: {id} - {request.ProjectName}");
-                return Ok(new { success = true, message = "專案更新成功" });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogInformation($"更新專案 ID {id} 時發生錯誤: {ex.Message}");
-                return StatusCode(500, new { success = false, error = ex.Message });
-            }
+
+                Logger.LogInformation("成功更新專案：ID {Id}，名稱 {Name}", id, project.ProjectName);
+
+                var response = new ProjectResponse
+                {
+                    Success = true,
+                    Message = "專案更新成功",
+                    Project = project
+                };
+
+                LogRequestComplete("更新專案");
+                return Ok(response);
+            }, "更新專案");
         }
 
         /// <summary>
-        /// 軟刪除專案
+        /// 刪除專案（軟刪除）
+        /// 設計改善：使用統一的資料存取服務，簡化刪除邏輯
         /// </summary>
+        /// <param name="id">專案 ID</param>
+        /// <returns>刪除結果</returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProject(string id)
         {
-            try
+            return await ExecuteWithExceptionHandling(async () =>
             {
-                Logger.LogInformation($"開始軟刪除專案 ID: {id}");
-                using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
-                
-                // 檢查專案是否存在且未被刪除
-                var existsQuery = "SELECT COUNT(*) FROM projects WHERE id = @id AND status != 'deleted'";
-                var exists = await connection.ExecuteScalarAsync<int>(existsQuery, new { id });
-                
-                if (exists == 0)
+                LogRequestStart("刪除專案", new { Id = id });
+
+                // 參數驗證
+                if (string.IsNullOrWhiteSpace(id))
                 {
-                    Logger.LogInformation($"專案 ID {id} 不存在或已被刪除");
-                    return NotFound(new { success = false, message = "專案不存在" });
+                    return CreateErrorResponse("專案 ID 不能為空");
                 }
-                
-                // 軟刪除：只更新狀態為 'deleted'
-                var sql = @"
-                    UPDATE projects 
-                    SET 
-                        status = 'deleted',
-                        updated_at = @updatedAt
-                    WHERE id = @id AND status != 'deleted'";
-                
-                var rowsAffected = await connection.ExecuteAsync(sql, new { id, updatedAt = DateTime.UtcNow });
-                
-                if (rowsAffected == 0)
+
+                // 檢查專案是否存在
+                var existingProject = await _dataAccessService.GetProjectByIdAsync(id);
+                if (existingProject == null)
                 {
-                    Logger.LogInformation($"專案 ID {id} 軟刪除失敗");
-                    return BadRequest(new { success = false, message = "專案刪除失敗" });
+                    return CreateNotFoundResponse("專案", id);
                 }
-                
-                Logger.LogInformation($"成功軟刪除專案: {id}");
-                return Ok(new { success = true, message = "專案已刪除" });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogInformation($"軟刪除專案 ID {id} 時發生錯誤: {ex.Message}");
-                return StatusCode(500, new { success = false, error = ex.Message });
-            }
+
+                // 使用統一的資料存取服務刪除專案
+                var success = await _dataAccessService.DeleteProjectAsync(id, "system");
+
+                if (!success)
+                {
+                    return CreateErrorResponse("刪除專案失敗");
+                }
+
+                Logger.LogInformation("成功刪除專案：ID {Id}，名稱 {Name}", id, existingProject.ProjectName);
+
+                var response = new ApiResponse
+                {
+                    Success = true,
+                    Message = "專案刪除成功"
+                };
+
+                LogRequestComplete("刪除專案");
+                return Ok(response);
+            }, "刪除專案");
         }
 
         /// <summary>
-        /// 測試資料庫連接和編碼
+        /// 測試專案資料 API
         /// </summary>
         [HttpGet("test")]
         public async Task<IActionResult> TestProjectData()
         {
-            try
+            return await ExecuteWithExceptionHandling(async () =>
             {
-                Logger.LogInformation("開始測試專案資料");
-                using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
-                
-                var sql = "SELECT id, user_id, project_name, status FROM projects LIMIT 1";
-                var result = await connection.QueryAsync(sql);
-                
-                Logger.LogInformation("測試查詢完成");
-                return Ok(new { success = true, rawData = result });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogInformation($"測試時發生錯誤: {ex.Message}");
-                return StatusCode(500, new { success = false, error = ex.Message });
-            }
+                LogRequestStart("測試專案資料");
+
+                // 使用統一的資料存取服務獲取專案統計
+                var projects = await _dataAccessService.GetProjectListAsync("system");
+
+                var testData = new
+                {
+                    TotalProjects = projects.Count(),
+                    ActiveProjects = projects.Count(p => p.Status == "active"),
+                    CompletedProjects = projects.Count(p => p.Status == "completed"),
+                    Message = "專案資料測試成功",
+                    Timestamp = DateTime.UtcNow
+                };
+
+                LogRequestComplete("測試專案資料");
+                return Ok(testData);
+            }, "測試專案資料");
         }
 
         /// <summary>
-        /// 獲取專案統計資訊
+        /// 獲取專案統計資料
+        /// 設計改善：使用統一的資料存取服務，簡化統計邏輯
         /// </summary>
+        /// <returns>專案統計資料</returns>
         [HttpGet("statistics")]
         public async Task<IActionResult> GetProjectStatistics()
         {
-            try
+            return await ExecuteWithExceptionHandling(async () =>
             {
-                Logger.LogInformation("開始獲取專案統計資訊");
-                using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
-                
-                var sql = @"
-                    SELECT 
-                        COUNT(*) as TotalProjects,
-                        COUNT(CASE WHEN status = 'active' THEN 1 END) as ActiveProjects,
-                        COUNT(CASE WHEN status = 'completed' THEN 1 END) as CompletedProjects,
-                        COUNT(CASE WHEN status = 'archived' THEN 1 END) as ArchivedProjects,
-                        (SELECT COUNT(*) FROM person_profile WHERE project_id IN (SELECT id FROM projects WHERE status != 'deleted')) as TotalMembers,
-                        (SELECT COUNT(*) FROM relationship_layers WHERE project_id IN (SELECT id FROM projects WHERE status != 'deleted')) as TotalRelationships
-                    FROM projects 
-                    WHERE status != 'deleted'";
-                
-                var statistics = await connection.QueryFirstOrDefaultAsync<ProjectStatistics>(sql);
-                
-                Logger.LogInformation("成功獲取專案統計資訊");
-                return Ok(new { success = true, statistics });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogInformation($"獲取專案統計資訊時發生錯誤: {ex.Message}");
-                return StatusCode(500, new { success = false, error = ex.Message });
-            }
+                LogRequestStart("獲取專案統計");
+
+                // 使用統一的資料存取服務獲取專案統計
+                var projects = await _dataAccessService.GetProjectListAsync("system");
+
+                var statistics = new ProjectStatistics
+                {
+                    TotalProjects = projects.Count(),
+                    ActiveProjects = projects.Count(p => p.Status == "active"),
+                    CompletedProjects = projects.Count(p => p.Status == "completed"),
+                    DeletedProjects = projects.Count(p => p.Status == "deleted"),
+                    TotalMembers = projects.Sum(p => p.MemberCount),
+                    TotalRelationships = projects.Sum(p => p.RelationshipCount),
+                    AverageMembersPerProject = projects.Any() ? (double)projects.Sum(p => p.MemberCount) / projects.Count() : 0,
+                    AverageRelationshipsPerProject = projects.Any() ? (double)projects.Sum(p => p.RelationshipCount) / projects.Count() : 0
+                };
+
+                Logger.LogInformation("專案統計完成：總專案 {Total}，活躍 {Active}，完成 {Completed}", 
+                    statistics.TotalProjects, statistics.ActiveProjects, statistics.CompletedProjects);
+
+                var response = new ProjectStatisticsResponse
+                {
+                    Success = true,
+                    Message = "專案統計資料獲取成功",
+                    Statistics = statistics
+                };
+
+                LogRequestComplete("獲取專案統計");
+                return Ok(response);
+            }, "獲取專案統計");
         }
     }
+
+    #region 回應模型
+
+    /// <summary>
+    /// 專案列表回應
+    /// </summary>
+    public class ProjectListResponse : ApiResponse
+    {
+        public List<ProjectModel> Projects { get; set; } = new();
+        public int TotalCount { get; set; }
+    }
+
+    /// <summary>
+    /// 專案回應
+    /// </summary>
+    public class ProjectResponse : ApiResponse
+    {
+        public ProjectModel Project { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 專案統計回應
+    /// </summary>
+    public class ProjectStatisticsResponse : ApiResponse
+    {
+        public ProjectStatistics Statistics { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 專案統計資料
+    /// </summary>
+    public class ProjectStatistics
+    {
+        public int TotalProjects { get; set; }
+        public int ActiveProjects { get; set; }
+        public int CompletedProjects { get; set; }
+        public int DeletedProjects { get; set; }
+        public int TotalMembers { get; set; }
+        public int TotalRelationships { get; set; }
+        public double AverageMembersPerProject { get; set; }
+        public double AverageRelationshipsPerProject { get; set; }
+    }
+
+    #endregion
 } 

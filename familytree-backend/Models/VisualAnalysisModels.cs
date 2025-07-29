@@ -40,20 +40,7 @@ namespace familytree_backend.Models
         public string UpdatedBy { get; set; } = "user";
     }
 
-    /// <summary>
-    /// 更新視覺化分析圖請求模型
-    /// </summary>
-    public class UpdateVisualAnalysisGraphRequest
-    {
-        [Required(ErrorMessage = "分析圖名稱不能為空")]
-        [StringLength(255, ErrorMessage = "分析圖名稱長度不能超過255字符")]
-        public string Name { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "至少需要選擇一個專案")]
-        public List<string> ProjectIds { get; set; } = new List<string>();
-        
-        public string UpdatedBy { get; set; } = "user";
-    }
 
     /// <summary>
     /// 視覺化分析圖列表響應模型

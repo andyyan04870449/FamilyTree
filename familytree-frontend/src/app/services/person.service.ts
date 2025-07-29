@@ -44,9 +44,9 @@ export class PersonService {
     
     if (currentProject) {
       params = params.set('project_id', currentProject.id);
-      console.log('🎯 添加專案 ID 到請求:', currentProject.id);
+      // 添加專案 ID 到請求
     } else {
-      console.warn('⚠️ 沒有當前專案，不進行 API 請求');
+      // 沒有當前專案，不進行 API 請求
       throw new Error('請先選擇專案');
     }
     
@@ -57,9 +57,9 @@ export class PersonService {
     const params = this.getProjectParams();
     return this.http.get<any>(this.apiUrl, { params }).pipe(
       map(response => {
-        // 適配新的後端回應格式 { success: true, data: [...], pagination: {...} }
-        if (response && response.data) {
-          return response.data;
+        // 適配新的後端回應格式 { success: true, personDataList: [...], pagination: {...} }
+        if (response && response.personDataList) {
+          return response.personDataList;
         }
         // 如果是舊格式直接返回陣列
         return Array.isArray(response) ? response : [];
@@ -71,9 +71,9 @@ export class PersonService {
     const params = this.getProjectParams();
     return this.http.get<any>(`${this.apiUrl}/${id}`, { params }).pipe(
       map(response => {
-        // 適配新的後端回應格式 { success: true, data: {...} }
-        if (response && response.data) {
-          return response.data;
+        // 適配新的後端回應格式 { success: true, personData: {...} }
+        if (response && response.personData) {
+          return response.personData;
         }
         // 如果是舊格式直接返回物件
         return response;

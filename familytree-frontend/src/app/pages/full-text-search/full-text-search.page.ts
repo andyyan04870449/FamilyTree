@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { FullTextSearchService, SearchRequest, SearchResult as ApiSearchResult, PersonSearchResult } from '../../services/fulltext-search.service';
 import { FavoritesService } from '../../services/favorites.service';
+import { ProjectService } from '../../services/project.service';
 import { PersonDetailDialogComponent } from '../../components/person-detail-dialog/person-detail-dialog.component';
 
 // 搜索結果接口
@@ -79,6 +80,7 @@ export class FullTextSearchPage implements OnInit {
   constructor(
     private fullTextSearchService: FullTextSearchService,
     private favoritesService: FavoritesService,
+    private projectService: ProjectService,
     private router: Router
   ) {}
 
@@ -217,9 +219,14 @@ export class FullTextSearchPage implements OnInit {
     this.error = '';
 
     try {
+      // 獲取當前專案ID
+      const currentProject = this.projectService.getCurrentProject();
+      const projectId = currentProject?.id || null;
+
       const searchRequest: SearchRequest = {
         keyword: this.searchKeyword.trim(),
         type: this.searchType,
+        projectId: projectId,
         page: this.currentPage,
         pageSize: this.pageSize
       };

@@ -100,7 +100,7 @@ export class PersonDataService {
     private http: HttpClient,
     private projectService: ProjectService
   ) {
-    console.log('[PersonDataService] 初始化，API URL:', this.apiUrl);
+    // 初始化完成
   }
 
   /**
@@ -112,9 +112,9 @@ export class PersonDataService {
     
     if (currentProject) {
       params = params.set('project_id', currentProject.id);
-      console.log('🎯 [PersonDataService] 添加專案 ID 到請求:', currentProject.id);
+      // 添加專案 ID 到請求
     } else {
-      console.warn('⚠️ [PersonDataService] 沒有當前專案，不進行 API 請求');
+      // 沒有當前專案，不進行 API 請求
       // 拋出錯誤或返回預設值
       throw new Error('請先選擇專案');
     }
@@ -124,7 +124,7 @@ export class PersonDataService {
 
   // 取得人員資料列表
   getPersonDataList(page: number = 1, pageSize: number = 20): Observable<any> {
-    console.log('[PersonDataService] 獲取人員列表 - 頁面:', page, '每頁數量:', pageSize);
+    // 獲取人員列表
     let params = this.getProjectParams();
     params = params.set('page', page.toString());
     params = params.set('pageSize', pageSize.toString());
@@ -134,35 +134,35 @@ export class PersonDataService {
 
   // 取得單一人員資料
   getPersonData(id: number): Observable<any> {
-    console.log('[PersonDataService] 獲取人員資料 - ID:', id);
+    // 獲取人員資料
     const params = this.getProjectParams();
     return this.http.get(`${this.apiUrl}/${id}`, { params });
   }
 
   // 新增人員資料
   createPersonData(personData: PersonDataRequest): Observable<any> {
-    console.log('[PersonDataService] 創建人員資料:', personData);
+    // 創建人員資料
     const params = this.getProjectParams();
     return this.http.post(this.apiUrl, personData, { params });
   }
 
   // 更新人員資料
   updatePersonData(id: number, personData: PersonDataRequest): Observable<any> {
-    console.log('[PersonDataService] 更新人員資料 - ID:', id, '資料:', personData);
+    // 更新人員資料
     const params = this.getProjectParams();
     return this.http.put(`${this.apiUrl}/${id}`, personData, { params });
   }
 
   // 刪除人員資料
   deletePersonData(id: number): Observable<any> {
-    console.log('[PersonDataService] 刪除人員資料 - ID:', id);
+    // 刪除人員資料
     const params = this.getProjectParams();
     return this.http.delete(`${this.apiUrl}/${id}`, { params });
   }
 
   // 搜尋人員資料
   searchPersonData(name?: string, page: number = 1, pageSize: number = 20): Observable<any> {
-    console.log('[PersonDataService] 搜尋人員資料 - 名稱:', name, '頁面:', page, '每頁數量:', pageSize);
+    // 搜尋人員資料
     let params = this.getProjectParams();
     params = params.set('page', page.toString());
     params = params.set('pageSize', pageSize.toString());

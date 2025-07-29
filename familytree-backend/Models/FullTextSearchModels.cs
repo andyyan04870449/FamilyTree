@@ -18,6 +18,7 @@ namespace familytree_backend.Models
         [Required(ErrorMessage = "搜索類型不能為空")]
         public string SearchType { get; set; } = "fuzzy"; // exact: 精準查詢, fuzzy: 模糊查詢
         
+        public string? ProjectId { get; set; }
         public int Page { get; set; } = 1;
         
         public int PageSize { get; set; } = 10;
@@ -63,7 +64,8 @@ namespace familytree_backend.Models
         public string? IdNumber { get; set; }
         public string? PassportNumber { get; set; }
         public string? FamilyRelationships { get; set; }
-        public string? Friends { get; set; }
+        public string? CurrentEmployer { get; set; }
+        public string? Education { get; set; }        public string? Friends { get; set; }
         public string? ProfileData { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
@@ -72,7 +74,7 @@ namespace familytree_backend.Models
         public bool IsFavorited { get; set; } = false; // 是否已收藏
         public string Source { get; set; } = "分公司客戶基資表"; // 資料來源
         public string MatchedFields { get; set; } = string.Empty; // 匹配的欄位
-    }
+        public string? ProjectId { get; set; }    }
 
     /// <summary>
     /// 搜索關鍵字記錄模型
@@ -198,34 +200,5 @@ namespace familytree_backend.Models
         public string? UserAgent { get; set; }
     }
 
-    /// <summary>
-    /// API 基礎回應模型
-    /// </summary>
-    public class ApiResponse<T>
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public T? Data { get; set; }
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-        
-        public static ApiResponse<T> SuccessResult(T data, string message = "操作成功")
-        {
-            return new ApiResponse<T>
-            {
-                Success = true,
-                Message = message,
-                Data = data
-            };
-        }
-        
-        public static ApiResponse<T> ErrorResult(string message, T? data = default)
-        {
-            return new ApiResponse<T>
-            {
-                Success = false,
-                Message = message,
-                Data = data
-            };
-        }
-    }
+
 } 

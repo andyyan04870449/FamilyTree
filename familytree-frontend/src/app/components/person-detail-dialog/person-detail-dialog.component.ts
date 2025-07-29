@@ -119,13 +119,13 @@ export class PersonDetailDialogComponent implements OnChanges {
         console.log('[PersonDetailDialog] API 回應:', response);
         this.loading = false;
         
-        if (response.success && response.data) {
-          console.log('[PersonDetailDialog] 資料載入成功:', response.data);
-          this.personData = response.data;
+        if (response.success && response.personData) {
+          console.log('[PersonDetailDialog] 資料載入成功:', response.personData);
+          this.personData = response.personData;
           this.setEditDataFromPersonData();
           this.parseData();
         } else {
-          console.error('[PersonDetailDialog] API 回應失敗 - success:', response.success, 'data:', response.data);
+          console.error('[PersonDetailDialog] API 回應失敗 - success:', response.success, 'personData:', response.personData);
           this.error = response.message || '載入人員資料失敗';
         }
       },

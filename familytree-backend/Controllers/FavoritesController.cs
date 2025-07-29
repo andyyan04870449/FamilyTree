@@ -15,8 +15,11 @@ namespace familytree_backend.Controllers
     {
         private readonly string _connectionString;
 
-        public FavoritesController(IConfiguration configuration, ILogger<FavoritesController> logger, IConfigurationService configurationService)
-            : base(logger, configurationService)
+        public FavoritesController(IConfiguration configuration, ILogger<FavoritesController> logger, IConfigurationService configurationService,
+            IValidationService validationService,
+            IAccessControlService accessControlService,
+            ILoggingService loggingService)
+            : base(logger, configurationService, validationService, accessControlService, loggingService)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("找不到資料庫連接字符串");
         }

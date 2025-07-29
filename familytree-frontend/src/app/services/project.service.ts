@@ -81,7 +81,7 @@ export class ProjectService {
   public loading$ = this.loadingSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    console.log('🏗️ ProjectService 初始化');
+    // ProjectService 初始化
     this.loadStoredCurrentProject();
   }
 
@@ -89,7 +89,7 @@ export class ProjectService {
    * 獲取所有專案列表
    */
   getProjects(status?: string, search?: string): Observable<ProjectListResponse> {
-    console.log('📋 獲取專案列表', { status, search, baseUrl: this.baseUrl });
+    // 獲取專案列表
     this.setLoading(true);
     
     let params = new HttpParams();
@@ -101,35 +101,29 @@ export class ProjectService {
     }
 
     const fullUrl = `${this.baseUrl}`;
-    console.log('🔗 完整請求URL:', fullUrl);
+    // 完整請求URL
 
     return this.http.get<ProjectListResponse>(fullUrl, { params }).pipe(
       retry(2),
       tap(response => {
-        console.log('📥 API 回應:', response);
+        // API 回應
         if (response && response.success) {
           this.projectsSubject.next(response.projects || []);
-          console.log('✅ 專案列表載入成功', response.projects?.length || 0);
+          // 專案列表載入成功
         } else {
-          console.warn('⚠️ API 回應表示失敗:', response);
+          // API 回應表示失敗
         }
       }),
       catchError(error => {
-        console.error('❌ 獲取專案列表失敗:', {
-          error,
-          url: fullUrl,
-          status: error.status,
-          statusText: error.statusText,
-          message: error.message
-        });
+        // 獲取專案列表失敗
         
         // 設定載入狀態為 false
         this.setLoading(false);
         
         // 如果是網路連接問題，建議使用直接連接
         if (error.status === 0 || error.status === 504) {
-          console.warn('🔧 網路連接問題，建議啟用直接 API 連接');
-          console.warn('💡 在瀏覽器控制台執行: localStorage.setItem("use-direct-api", "true") 然後重新整理頁面');
+          // 網路連接問題，建議啟用直接 API 連接
+          // 在瀏覽器控制台執行: localStorage.setItem("use-direct-api", "true") 然後重新整理頁面
         }
         
         // 回傳更詳細的錯誤信息
@@ -151,18 +145,18 @@ export class ProjectService {
    * 根據ID獲取單一專案
    */
   getProject(id: string): Observable<Project> {
-    console.log('🔍 獲取專案詳情:', id);
+    // 獲取專案詳情
     
     return this.http.get<{ success: boolean; project: Project }>(`${this.baseUrl}/${id}`).pipe(
       map(response => {
         if (response.success) {
-          console.log('✅ 專案詳情載入成功:', response.project.projectName);
+          // 專案詳情載入成功
           return response.project;
         }
         throw new Error('專案不存在');
       }),
       catchError(error => {
-        console.error('❌ 獲取專案詳情失敗:', error);
+        // 獲取專案詳情失敗
         return throwError(() => error);
       })
     );
@@ -172,7 +166,7 @@ export class ProjectService {
    * 創建新專案
    */
   createProject(request: CreateProjectRequest): Observable<{ projectId: string }> {
-    console.log('➕ 創建新專案:', request.projectName);
+    // 創建新專案
     this.setLoading(true);
 
     return this.http.post<{ success: boolean; projectId: string; message: string }>(`${this.baseUrl}`, request).pipe(
@@ -186,7 +180,7 @@ export class ProjectService {
         throw new Error(response.message || '創建專案失敗');
       }),
       catchError(error => {
-        console.error('❌ 創建專案失敗:', error);
+        // 創建專案失敗
         return throwError(() => error);
       }),
       tap(() => this.setLoading(false))
@@ -197,13 +191,13 @@ export class ProjectService {
    * 更新專案
    */
   updateProject(id: string, request: UpdateProjectRequest): Observable<void> {
-    console.log('✏️ 更新專案:', id, request.projectName);
+    // 更新專案
     this.setLoading(true);
 
     return this.http.put<{ success: boolean; message: string }>(`${this.baseUrl}/${id}`, request).pipe(
       map(response => {
         if (response.success) {
-          console.log('✅ 專案更新成功');
+          // 專案更新成功
           // 重新載入專案列表
           this.refreshProjects();
           // 如果是當前專案，重新載入詳情
@@ -217,7 +211,7 @@ export class ProjectService {
         throw new Error(response.message || '更新專案失敗');
       }),
       catchError(error => {
-        console.error('❌ 更新專案失敗:', error);
+        // 更新專案失敗
         return throwError(() => error);
       }),
       tap(() => this.setLoading(false))
@@ -228,13 +222,13 @@ export class ProjectService {
    * 軟刪除專案
    */
   deleteProject(id: string): Observable<void> {
-    console.log('🗑️ 刪除專案:', id);
+    // 刪除專案
     this.setLoading(true);
 
     return this.http.delete<{ success: boolean; message: string }>(`${this.baseUrl}/${id}`).pipe(
       map(response => {
         if (response.success) {
-          console.log('✅ 專案刪除成功');
+          // 專案刪除成功
           // 重新載入專案列表
           this.refreshProjects();
           // 如果刪除的是當前專案，清除當前專案
@@ -246,7 +240,7 @@ export class ProjectService {
         throw new Error(response.message || '刪除專案失敗');
       }),
       catchError(error => {
-        console.error('❌ 刪除專案失敗:', error);
+        // 刪除專案失敗
         return throwError(() => error);
       }),
       tap(() => this.setLoading(false))
@@ -257,27 +251,21 @@ export class ProjectService {
    * 獲取專案統計資訊
    */
   getProjectStatistics(): Observable<ProjectStatistics> {
-    console.log('📊 獲取專案統計');
+    // 獲取專案統計
     const fullUrl = `${this.baseUrl}/statistics`;
-    console.log('🔗 統計 API URL:', fullUrl);
+    // 統計 API URL
     
     return this.http.get<{ success: boolean; statistics: ProjectStatistics }>(fullUrl).pipe(
       map(response => {
-        console.log('📥 統計 API 回應:', response);
+        // 統計 API 回應
         if (response && response.success) {
-          console.log('✅ 統計資訊載入成功');
+          // 統計資訊載入成功
           return response.statistics;
         }
         throw new Error('統計 API 回應表示失敗');
       }),
       catchError(error => {
-        console.error('❌ 獲取統計資訊失敗:', {
-          error,
-          url: fullUrl,
-          status: error.status,
-          statusText: error.statusText,
-          message: error.message
-        });
+        // 獲取統計資訊失敗
         return throwError(() => error);
       })
     );

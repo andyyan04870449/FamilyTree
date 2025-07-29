@@ -1,0 +1,181 @@
+using familytree_backend.Models;
+
+// 資料存取服務介面 - 定義統一的資料庫操作規範
+namespace familytree_backend.Services
+{
+    /// <summary>
+    /// 資料存取服務介面
+    /// 設計理念：統一所有資料庫操作，確保一致性和可維護性
+    /// </summary>
+    public interface IDataAccessService
+    {
+        #region 人員資料操作
+
+        /// <summary>
+        /// 獲取人員資料列表（分頁）
+        /// </summary>
+        Task<(IEnumerable<PersonDataModel> Data, int TotalCount)> GetPersonDataListAsync(
+            string projectId, 
+            int page, 
+            int pageSize, 
+            string? keyword = null,
+            string? sortBy = null,
+            string? sortOrder = null);
+#endregion
+        /// <summary>
+        /// 根據ID獲取人員資料
+        /// </summary>
+        Task<PersonDataModel?> GetPersonDataByIdAsync(int id, string projectId);
+#endregion
+        /// <summary>
+        /// 建立人員資料
+        /// </summary>
+        Task<int> CreatePersonDataAsync(PersonDataModel personData);
+#endregion
+        /// <summary>
+        /// 更新人員資料
+        /// </summary>
+        Task<bool> UpdatePersonDataAsync(PersonDataModel personData);
+#endregion
+        /// <summary>
+        /// 刪除人員資料
+        /// </summary>
+        Task<bool> DeletePersonDataAsync(int id, string projectId);
+#endregion
+        /// <summary>
+        /// 檢查人員資料是否存在
+        /// </summary>
+        Task<bool> PersonDataExistsAsync(int id, string projectId);
+#endregion
+#endregion
+
+        #region 全文檢索操作
+
+        /// <summary>
+        /// 執行全文檢索搜索
+        /// </summary>
+        Task<(IEnumerable<PersonSearchResult> Data, int TotalCount)> SearchPersonDataAsync(
+            SearchRequest request);
+#endregion
+        /// <summary>
+        /// 記錄搜索關鍵字
+        /// </summary>
+        Task RecordSearchKeywordAsync(string keyword, string searchType, string? projectId = null);
+#endregion
+        /// <summary>
+        /// 獲取熱門關鍵字
+        /// </summary>
+        Task<List<string>> GetPopularKeywordsAsync(string? projectId = null, int limit = 10);
+#endregion
+        /// <summary>
+        /// 獲取搜索歷史
+        /// </summary>
+        Task<List<string>> GetSearchHistoryAsync(string? projectId = null, int limit = 20);
+#endregion
+#endregion
+
+        #region 專案管理操作
+
+        /// <summary>
+        /// 獲取專案列表
+        /// </summary>
+        Task<IEnumerable<ProjectModel>> GetProjectListAsync(string userId);
+#endregion
+        /// <summary>
+        /// 建立專案
+        /// </summary>
+        Task<string> CreateProjectAsync(CreateProjectRequest request);
+#endregion
+        /// <summary>
+        /// 更新專案
+        /// </summary>
+        Task<bool> UpdateProjectAsync(string projectId, UpdateProjectRequest request);
+#endregion
+        /// <summary>
+        /// 刪除專案
+        /// </summary>
+        Task<bool> DeleteProjectAsync(string projectId);
+#endregion
+#endregion
+
+        #region 關係圖譜操作
+
+        /// <summary>
+        /// 獲取人員關係資料
+        /// </summary>
+        Task<IEnumerable<RelationshipData>> GetPersonRelationshipsAsync(int personId, string projectId);
+#endregion
+        /// <summary>
+        /// 建立人員關係
+        /// </summary>
+        Task<bool> CreateRelationshipAsync(RelationshipData relationship);
+#endregion
+#endregion
+
+        #region 檔案上傳操作
+
+        /// <summary>
+        /// 檢查檔案是否已存在
+        /// </summary>
+        Task<bool> FileExistsAsync(string md5Hash);
+#endregion
+        /// <summary>
+        /// 記錄檔案上傳
+        /// </summary>
+        Task RecordFileUploadAsync(FileUploadRecord record);
+#endregion
+
+        /// <summary>
+        /// 獲取檔案上傳記錄
+        /// </summary>
+        Task<IEnumerable<FileUploadRecord>> GetFileUploadRecordsAsync(string projectId);
+#endregion
+        /// <summary>
+        /// 通過 ID 獲取專案
+        /// </summary>
+        Task<ProjectModel?> GetProjectByIdAsync(string projectId);
+#endregion
+        /// <summary>
+        /// 執行通用查詢
+        /// </summary>
+        Task<IEnumerable<T>> ExecuteQueryAsync<T>(string sql, object? parameters = null);
+#endregion
+        /// <summary>
+        /// 執行標量查詢
+        /// </summary>
+        Task<T?> ExecuteScalarAsync<T>(string sql, object? parameters = null);
+#endregion    }
+
+
+
+    /// <summary>
+    /// 關係資料模型
+    /// </summary>
+    public class RelationshipData
+    {
+        public int SourcePersonId { get; set; }
+        public int TargetPersonId { get; set; }
+        public string RelationType { get; set; } = string.Empty;
+        public string? SourceField { get; set; }
+        public string? ProjectId { get; set; }
+        public string FilePath { get; set; } = string.Empty;
+        public string FileType { get; set; } = string.Empty;        public string RelationshipType { get; set; } = string.Empty;
+        public int? VisualAnalysisGraphId { get; set; }
+        public DateTime CreatedAt { get; set; }    }
+
+    /// <summary>
+    /// 檔案上傳記錄模型
+    /// </summary>
+    public class FileUploadRecord
+    {
+        public string FileName { get; set; } = string.Empty;
+        public string Md5Hash { get; set; } = string.Empty;
+        public long FileSize { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string? ProjectId { get; set; }
+        public string FilePath { get; set; } = string.Empty;
+        public string FileType { get; set; } = string.Empty;        public string RelationshipType { get; set; } = string.Empty;
+        public int? VisualAnalysisGraphId { get; set; }
+        public DateTime CreatedAt { get; set; }        public DateTime UploadTime { get; set; }
+    }
+} 

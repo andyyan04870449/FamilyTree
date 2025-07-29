@@ -48,7 +48,7 @@ namespace familytree_backend.Models
         public string Message { get; set; } = string.Empty;
         public FileUploadModel? FileInfo { get; set; }
         public bool IsDuplicate { get; set; }
-    }
+        public string FilePath { get; set; } = string.Empty;    }
 
     public class FileListResponse
     {

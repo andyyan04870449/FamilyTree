@@ -18,8 +18,11 @@ namespace familytree_backend.Controllers
 
         public VisualAnalysisController(
             ILogger<VisualAnalysisController> logger,
-            IConfigurationService configurationService) 
-            : base(logger, configurationService)
+            IConfigurationService configurationService,
+            IValidationService validationService,
+            IAccessControlService accessControlService,
+            ILoggingService loggingService) 
+            : base(logger, configurationService, validationService, accessControlService, loggingService)
         {
             _connectionString = configurationService.GetConnectionString();
         }
@@ -173,76 +176,7 @@ namespace familytree_backend.Controllers
             }
         }
 
-        /// <summary>
-        /// 更新視覺化分析圖
-        /// </summary>
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateVisualAnalysisGraph(int id, [FromBody] UpdateVisualAnalysisGraphRequest request)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(new VisualAnalysisApiResponse
-                    {
-                        Success = false,
-                        Message = "輸入資料驗證失敗",
-                        Data = ModelState
-                    });
-                }
 
-                Logger.LogInformation($"開始更新視覺化分析圖 ID: {id}");
-
-                using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
-
-                // 檢查分析圖是否存在
-                var existingSql = "SELECT COUNT(*) FROM visual_analysis_graphs WHERE id = @id";
-                var exists = await connection.QuerySingleAsync<int>(existingSql, new { id }) > 0;
-
-                if (!exists)
-                {
-                    return NotFound(new VisualAnalysisApiResponse
-                    {
-                        Success = false,
-                        Message = "視覺化分析圖不存在"
-                    });
-                }
-
-                // 更新分析圖
-                var updateSql = @"
-                    UPDATE visual_analysis_graphs 
-                    SET name = @name, project_ids = @projectIds, updated_by = @updatedBy, updated_at = @updatedAt 
-                    WHERE id = @id";
-
-                var projectIds = string.Join(",", request.ProjectIds);
-                await connection.ExecuteAsync(updateSql, new
-                {
-                    id = id,
-                    name = request.Name,
-                    projectIds = projectIds,
-                    updatedBy = request.UpdatedBy,
-                    updatedAt = DateTime.Now
-                });
-
-                Logger.LogInformation($"成功更新視覺化分析圖 ID: {id}");
-
-                return Ok(new VisualAnalysisApiResponse
-                {
-                    Success = true,
-                    Message = "更新視覺化分析圖成功"
-                });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, $"更新視覺化分析圖時發生錯誤 ID: {id}");
-                return StatusCode(500, new VisualAnalysisApiResponse
-                {
-                    Success = false,
-                    Message = "更新視覺化分析圖失敗"
-                });
-            }
-        }
 
         /// <summary>
         /// 刪除視覺化分析圖
@@ -527,66 +461,7 @@ namespace familytree_backend.Controllers
             }
         }
 
-        /// <summary>
-        /// 重置图谱节点数据 - 清除旧节点并重新生成
-        /// </summary>
-        [HttpPost("{id}/reset-nodes")]
-        public async Task<IActionResult> ResetGraphNodes(int id)
-        {
-            try
-            {
-                Logger.LogInformation($"开始重置图谱节点数据 ID: {id}");
 
-                using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
-
-                // 获取图表信息
-                var graphSql = "SELECT id, name, project_ids FROM visual_analysis_graphs WHERE id = @id";
-                var graphRow = await connection.QuerySingleOrDefaultAsync(graphSql, new { id });
-                
-                if (graphRow == null)
-                {
-                    return NotFound(new VisualAnalysisApiResponse
-                    {
-                        Success = false,
-                        Message = "找不到指定的视觉化分析图"
-                    });
-                }
-
-                var graph = new VisualAnalysisGraphModel
-                {
-                    Id = (int)graphRow.id,
-                    Name = graphRow.name?.ToString() ?? string.Empty,
-                    ProjectIds = !string.IsNullOrEmpty(graphRow.project_ids?.ToString()) 
-                        ? ParseProjectIds(graphRow.project_ids.ToString())
-                        : new List<string>()
-                };
-
-                // 删除所有旧节点
-                var deleteSql = "DELETE FROM visual_analysis_nodes WHERE graph_id = @id";
-                await connection.ExecuteAsync(deleteSql, new { id });
-                Logger.LogInformation($"已清除图谱 {id} 的所有旧节点");
-
-                // 重新创建节点
-                await CreateNodesForGraph(connection, graph);
-                Logger.LogInformation($"已为图谱 {id} 重新创建节点");
-
-                return Ok(new VisualAnalysisApiResponse
-                {
-                    Success = true,
-                    Message = "重置图谱节点数据成功"
-                });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, $"重置图谱节点数据时发生错误 ID: {id}");
-                return StatusCode(500, new VisualAnalysisApiResponse
-                {
-                    Success = false,
-                    Message = "重置图谱节点数据失败"
-                });
-            }
-        }
 
         /// <summary>
         /// 為圖表建立節點資料

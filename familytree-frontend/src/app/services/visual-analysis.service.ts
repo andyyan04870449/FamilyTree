@@ -25,11 +25,7 @@ export interface CreateVisualAnalysisRequest {
   updatedBy?: string;
 }
 
-export interface UpdateVisualAnalysisRequest {
-  name: string;
-  projectIds: string[];
-  updatedBy?: string;
-}
+
 
 export interface VisualAnalysisListResponse {
   success: boolean;
@@ -79,18 +75,7 @@ export class VisualAnalysisService {
     return this.http.post<VisualAnalysisApiResponse>(this.baseUrl, payload);
   }
 
-  /**
-   * 更新視覺化分析圖
-   */
-  updateVisualAnalysisGraph(id: number, request: UpdateVisualAnalysisRequest): Observable<VisualAnalysisApiResponse> {
-    const payload = {
-      name: request.name,
-      projectIds: request.projectIds,
-      updatedBy: request.updatedBy || 'user'
-    };
 
-    return this.http.put<VisualAnalysisApiResponse>(`${this.baseUrl}/${id}`, payload);
-  }
 
   /**
    * 刪除視覺化分析圖

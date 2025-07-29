@@ -17,11 +17,14 @@ namespace familytree_backend.Controllers
     {
         private readonly PhotoUploadService _photoUploadService;
 
-        public PhotoUploadController(
-            PhotoUploadService photoUploadService, 
+                public PhotoUploadController(
+            PhotoUploadService photoUploadService,
             ILogger<PhotoUploadController> logger,
-            IConfigurationService configurationService) 
-            : base(logger, configurationService)
+            IConfigurationService configurationService,
+            IValidationService validationService,
+            IAccessControlService accessControlService,
+            ILoggingService loggingService) 
+            : base(logger, configurationService, validationService, accessControlService, loggingService)
         {
             _photoUploadService = photoUploadService ?? throw new ArgumentNullException(nameof(photoUploadService));
         }

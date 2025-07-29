@@ -9,22 +9,33 @@ namespace familytree_backend.Controllers
     /// <summary>
     /// 基礎控制器抽象類別
     /// 設計理念：將所有控制器的共通功能集中在此，避免代碼重複
-    /// 職責：提供統一的日誌、配置、參數驗證和回應格式化功能
+    /// 職責：提供統一的日誌、配置、參數驗證、安全性檢查和回應格式化功能
     /// </summary>
     [ApiController]
     public abstract class BaseController : ControllerBase
     {
         protected readonly ILogger Logger;
         protected readonly IConfigurationService ConfigurationService;
+        protected readonly IValidationService ValidationService;
+        protected readonly IAccessControlService AccessControlService;
+        protected readonly ILoggingService LoggingService;
 
         /// <summary>
         /// 基礎控制器建構子
-        /// 設計考量：所有子控制器都需要日誌和配置服務，在基類統一注入
+        /// 設計考量：所有子控制器都需要日誌、配置、驗證和存取控制服務，在基類統一注入
         /// </summary>
-        protected BaseController(ILogger logger, IConfigurationService configurationService)
+        protected BaseController(
+            ILogger logger, 
+            IConfigurationService configurationService,
+            IValidationService validationService,
+            IAccessControlService accessControlService,
+            ILoggingService loggingService)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             ConfigurationService = configurationService ?? throw new ArgumentNullException(nameof(configurationService));
+            ValidationService = validationService ?? throw new ArgumentNullException(nameof(validationService));
+            AccessControlService = accessControlService ?? throw new ArgumentNullException(nameof(accessControlService));
+            LoggingService = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
         }
 
         #region 專案參數處理
@@ -54,6 +65,123 @@ namespace familytree_backend.Controllers
             }
 
             return null; // 驗證通過
+        }
+
+        #endregion
+
+        #region 安全性驗證
+
+        /// <summary>
+        /// 驗證專案 ID 並檢查存取權限
+        /// 設計理念：統一的專案存取權限檢查
+        /// </summary>
+        /// <param name="projectId">專案 ID</param>
+        /// <param name="accessLevel">需要的存取等級</param>
+        /// <param name="userId">用戶 ID</param>
+        /// <returns>驗證結果</returns>
+        protected async Task<IActionResult?> ValidateProjectAccessAsync(string? projectId, ProjectAccessLevel accessLevel, string? userId = null)
+        {
+            // 驗證專案 ID 格式
+            var projectValidation = ValidationService.ValidateProjectId(projectId);
+            if (!projectValidation.IsValid)
+            {
+                Logger.LogWarning("專案 ID 驗證失敗：{ErrorMessage}", projectValidation.ErrorMessage);
+                return BadRequest(CreateErrorResponse(projectValidation.ErrorMessage));
+            }
+
+            // 檢查專案存取權限
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var hasAccess = await AccessControlService.HasProjectAccessAsync(userId, projectId!, accessLevel);
+                if (!hasAccess)
+                {
+                    Logger.LogWarning("專案存取權限檢查失敗：用戶 {UserId} 無權存取專案 {ProjectId}", userId, projectId);
+                    return Forbid();
+                }
+            }
+
+            return null; // 驗證通過
+        }
+
+        /// <summary>
+        /// 驗證搜尋關鍵字
+        /// 設計理念：統一的搜尋關鍵字安全性驗證
+        /// </summary>
+        /// <param name="keyword">搜尋關鍵字</param>
+        /// <returns>驗證結果</returns>
+        protected IActionResult? ValidateSearchKeyword(string? keyword)
+        {
+            var validation = ValidationService.ValidateSearchKeyword(keyword);
+            if (!validation.IsValid)
+            {
+                Logger.LogWarning("搜尋關鍵字驗證失敗：{ErrorMessage}", validation.ErrorMessage);
+                return BadRequest(CreateErrorResponse(validation.ErrorMessage));
+            }
+
+            return null; // 驗證通過
+        }
+
+        /// <summary>
+        /// 驗證檔案上傳
+        /// 設計理念：統一的檔案上傳安全性驗證
+        /// </summary>
+        /// <param name="fileName">檔案名稱</param>
+        /// <param name="fileSize">檔案大小</param>
+        /// <param name="allowedExtensions">允許的副檔名</param>
+        /// <param name="maxSize">最大檔案大小</param>
+        /// <returns>驗證結果</returns>
+        protected IActionResult? ValidateFileUpload(string? fileName, long fileSize, string[] allowedExtensions, long maxSize)
+        {
+            // 驗證檔案名稱
+            var fileNameValidation = ValidationService.ValidateFileName(fileName);
+            if (!fileNameValidation.IsValid)
+            {
+                Logger.LogWarning("檔案名稱驗證失敗：{ErrorMessage}", fileNameValidation.ErrorMessage);
+                return BadRequest(CreateErrorResponse(fileNameValidation.ErrorMessage));
+            }
+
+            // 驗證檔案類型
+            var fileTypeValidation = ValidationService.ValidateFileType(fileName, allowedExtensions);
+            if (!fileTypeValidation.IsValid)
+            {
+                Logger.LogWarning("檔案類型驗證失敗：{ErrorMessage}", fileTypeValidation.ErrorMessage);
+                return BadRequest(CreateErrorResponse(fileTypeValidation.ErrorMessage));
+            }
+
+            // 驗證檔案大小
+            var fileSizeValidation = ValidationService.ValidateFileSize(fileSize, maxSize);
+            if (!fileSizeValidation.IsValid)
+            {
+                Logger.LogWarning("檔案大小驗證失敗：{ErrorMessage}", fileSizeValidation.ErrorMessage);
+                return BadRequest(CreateErrorResponse(fileSizeValidation.ErrorMessage));
+            }
+
+            return null; // 驗證通過
+        }
+
+        /// <summary>
+        /// 檢查操作權限
+        /// 設計理念：統一的操作權限檢查
+        /// </summary>
+        /// <param name="action">操作名稱</param>
+        /// <param name="userId">用戶 ID</param>
+        /// <param name="context">操作上下文</param>
+        /// <returns>權限檢查結果</returns>
+        protected async Task<bool> CheckOperationPermissionAsync(string action, string? userId, object? context = null)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                Logger.LogWarning("操作權限檢查失敗：用戶 ID 為空");
+                return false;
+            }
+
+            var hasPermission = await AccessControlService.CanPerformActionAsync(userId, action, context);
+            if (!hasPermission)
+            {
+                Logger.LogWarning("操作權限檢查失敗：用戶 {UserId} 無權執行操作 {Action}", userId, action);
+            }
+
+            return hasPermission;
         }
 
         #endregion

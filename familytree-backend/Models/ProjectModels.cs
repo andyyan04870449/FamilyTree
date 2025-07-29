@@ -108,32 +108,7 @@ namespace familytree_backend.Models
         public string? Status { get; set; }
     }
 
-    /// <summary>
-    /// 專案列表回應模型
-    /// </summary>
-    public class ProjectListResponse
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public List<ProjectModel> Projects { get; set; } = new List<ProjectModel>();
-        public int TotalCount { get; set; }
-        public int PageNumber { get; set; } = 1;
-        public int PageSize { get; set; } = 50;
-        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
-    }
 
-    /// <summary>
-    /// 專案統計模型
-    /// </summary>
-    public class ProjectStatistics
-    {
-        public int TotalProjects { get; set; }              // 總專案數
-        public int ActiveProjects { get; set; }             // 進行中專案數
-        public int CompletedProjects { get; set; }          // 已完成專案數
-        public int ArchivedProjects { get; set; }           // 已封存專案數
-        public int TotalMembers { get; set; }               // 總成員數
-        public int TotalRelationships { get; set; }         // 總關係數
-    }
 
     /// <summary>
     /// 專案搜尋參數模型

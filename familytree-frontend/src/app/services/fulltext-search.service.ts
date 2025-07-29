@@ -11,6 +11,7 @@ import { ProjectService } from './project.service';
 export interface SearchRequest {
   keyword: string;
   type: 'exact' | 'fuzzy';
+  projectId?: string | null;
   page?: number;
   pageSize?: number;
 }
@@ -159,7 +160,7 @@ export class FullTextSearchService {
     private http: HttpClient,
     private projectService: ProjectService
   ) {
-    console.log('📋 FullTextSearchService 初始化');
+    // FullTextSearchService 初始化
     // 初始化時載入收藏列表和熱門關鍵字
     this.loadInitialData();
   }
@@ -173,9 +174,9 @@ export class FullTextSearchService {
     
     if (currentProject) {
       params = params.set('project_id', currentProject.id);
-      console.log('🎯 [FullTextSearchService] 添加專案 ID 到請求:', currentProject.id);
+      // 添加專案 ID 到請求
     } else {
-      console.warn('⚠️ [FullTextSearchService] 沒有當前專案，不進行 API 請求');
+      // 沒有當前專案，不進行 API 請求
       throw new Error('請先選擇專案');
     }
     
@@ -186,13 +187,13 @@ export class FullTextSearchService {
    * 初始化載入資料
    */
   private loadInitialData(): void {
-    console.log('🔄 載入初始資料');
+    // 載入初始資料
     try {
       this.loadFavorites();
       this.loadPopularKeywords();
       this.loadSearchHistory();
     } catch (error) {
-      console.warn('⚠️ 初始化時沒有當前專案，跳過資料載入');
+      // 初始化時沒有當前專案，跳過資料載入
     }
   }
 
@@ -202,13 +203,14 @@ export class FullTextSearchService {
    * 執行全文檢索搜索 - 全專案搜尋
    */
   search(request: SearchRequest): Observable<SearchResult> {
-    console.log('🔍 執行全文檢索搜索 (全專案):', request);
+    // 執行全文檢索搜索
     
     const searchRequest = {
-      Keyword: request.keyword,
-      SearchType: request.type,
-      Page: request.page || 1,
-      PageSize: request.pageSize || 10
+      keyword: request.keyword,
+      searchType: request.type,
+      projectId: request.projectId || null,
+      page: request.page || 1,
+      pageSize: request.pageSize || 10
     };
 
     return this.http.post<SearchResult>(`${this.searchUrl}/search`, searchRequest);
@@ -218,7 +220,7 @@ export class FullTextSearchService {
    * 獲取熱門關鍵字
    */
   getPopularKeywords(): Observable<ApiResponse<string[]>> {
-    console.log('🔥 獲取熱門關鍵字');
+    // 獲取熱門關鍵字
     const params = this.getProjectParams();
     return this.http.get<ApiResponse<string[]>>(`${this.searchUrl}/popular-keywords`, { params });
   }
@@ -227,7 +229,7 @@ export class FullTextSearchService {
    * 獲取搜索歷史
    */
   getSearchHistory(): Observable<ApiResponse<string[]>> {
-    console.log('📚 獲取搜索歷史');
+    // 獲取搜索歷史
     const params = this.getProjectParams();
     return this.http.get<ApiResponse<string[]>>(`${this.searchUrl}/search-history`, { params });
   }
@@ -236,7 +238,7 @@ export class FullTextSearchService {
    * 清除搜索歷史
    */
   clearSearchHistory(): Observable<ApiResponse<any>> {
-    console.log('🗑️ 清除搜索歷史');
+    // 清除搜索歷史
     const params = this.getProjectParams();
     return this.http.delete<ApiResponse<any>>(`${this.searchUrl}/search-history`, { params });
   }
@@ -245,7 +247,7 @@ export class FullTextSearchService {
    * 獲取搜索統計
    */
   getSearchStatistics(): Observable<ApiResponse<SearchStatistics>> {
-    console.log('📊 獲取搜索統計');
+    // 獲取搜索統計
     const params = this.getProjectParams();
     return this.http.get<ApiResponse<SearchStatistics>>(`${this.searchUrl}/statistics`, { params });
   }
@@ -255,7 +257,7 @@ export class FullTextSearchService {
    * 注意：搜索時會自動記錄關鍵字，此方法僅為相容性保留
    */
   recordSearch(keyword: string): Promise<void> {
-    console.log('📝 搜索關鍵字會自動記錄，無需單獨調用');
+    // 搜索關鍵字會自動記錄，無需單獨調用
     return Promise.resolve();
   }
 
@@ -264,7 +266,7 @@ export class FullTextSearchService {
    * 注意：後端暫未實現匯出功能，此方法僅為相容性保留
    */
   exportResults(results: any[]): Promise<void> {
-    console.log('📊 匯出功能暫未實現');
+    // 匯出功能暫未實現
     return Promise.reject(new Error('匯出功能暫未實現'));
   }
 
@@ -274,7 +276,7 @@ export class FullTextSearchService {
    * 獲取收藏列表
    */
   getFavorites(): Observable<FavoriteListResult> {
-    console.log('💖 獲取收藏列表');
+    // 獲取收藏列表
     const params = this.getProjectParams();
     return this.http.get<FavoriteListResult>(`${this.favoritesUrl}`, { params });
   }
@@ -283,7 +285,7 @@ export class FullTextSearchService {
    * 添加收藏
    */
   addFavorite(request: FavoriteRequest): Observable<FavoriteResult> {
-    console.log('➕ 添加收藏:', request);
+    // 添加收藏
     const params = this.getProjectParams();
     return this.http.post<FavoriteResult>(`${this.favoritesUrl}`, request, { params });
   }
@@ -292,7 +294,7 @@ export class FullTextSearchService {
    * 刪除收藏（通過收藏ID）
    */
   removeFavorite(favoriteId: number): Observable<FavoriteResult> {
-    console.log('➖ 刪除收藏:', favoriteId);
+    // 刪除收藏
     const params = this.getProjectParams();
     return this.http.delete<FavoriteResult>(`${this.favoritesUrl}/${favoriteId}`, { params });
   }
@@ -301,7 +303,7 @@ export class FullTextSearchService {
    * 刪除收藏（通過人員ID）
    */
   removeFavoriteByPersonId(personId: number): Observable<FavoriteResult> {
-    console.log('➖ 通過人員ID刪除收藏:', personId);
+    // 通過人員ID刪除收藏
     const params = this.getProjectParams();
     return this.http.delete<FavoriteResult>(`${this.favoritesUrl}/person/${personId}`, { params });
   }
@@ -310,7 +312,7 @@ export class FullTextSearchService {
    * 檢查收藏狀態
    */
   checkFavoriteStatus(personId: number): Observable<ApiResponse<any>> {
-    console.log('🔍 檢查收藏狀態:', personId);
+    // 檢查收藏狀態
     const params = this.getProjectParams();
     return this.http.get<ApiResponse<any>>(`${this.favoritesUrl}/check/${personId}`, { params });
   }
@@ -319,7 +321,7 @@ export class FullTextSearchService {
    * 更新查看時間
    */
   updateViewTime(personId: number): Observable<ApiResponse<any>> {
-    console.log('👁️ 更新查看時間:', personId);
+    // 更新查看時間
     const params = this.getProjectParams();
     return this.http.put<ApiResponse<any>>(`${this.favoritesUrl}/view/${personId}`, {}, { params });
   }
@@ -328,7 +330,7 @@ export class FullTextSearchService {
    * 獲取收藏統計
    */
   getFavoriteStatistics(): Observable<ApiResponse<any>> {
-    console.log('📊 獲取收藏統計');
+    // 獲取收藏統計
     const params = this.getProjectParams();
     return this.http.get<ApiResponse<any>>(`${this.favoritesUrl}/statistics`, { params });
   }
@@ -342,15 +344,15 @@ export class FullTextSearchService {
      this.getFavorites().subscribe({
        next: (result) => {
          if (result.success && result.data) {
-           console.log('✅ 收藏列表載入成功:', result.data.length);
+           // 收藏列表載入成功
            this.favoritesSubject.next(result.data);
          } else {
-           console.error('❌ 收藏列表載入失敗:', result.message);
+           // 收藏列表載入失敗
            this.favoritesSubject.next([]);
          }
        },
        error: (error) => {
-         console.error('❌ 收藏列表載入錯誤:', error);
+         // 收藏列表載入錯誤
          this.favoritesSubject.next([]);
        }
      });
@@ -363,15 +365,15 @@ export class FullTextSearchService {
     this.getPopularKeywords().subscribe({
       next: (result) => {
         if (result.success && result.data) {
-          console.log('✅ 熱門關鍵字載入成功:', result.data.length);
+          // 熱門關鍵字載入成功
           this.popularKeywordsSubject.next(result.data);
         } else {
-          console.error('❌ 熱門關鍵字載入失敗:', result.message);
+          // 熱門關鍵字載入失敗
           this.popularKeywordsSubject.next([]);
         }
       },
-      error: (error) => {
-        console.error('❌ 熱門關鍵字載入錯誤:', error);
+              error: (error) => {
+          // 熱門關鍵字載入錯誤
         this.popularKeywordsSubject.next([]);
       }
     });
@@ -384,15 +386,15 @@ export class FullTextSearchService {
     this.getSearchHistory().subscribe({
       next: (result) => {
         if (result.success && result.data) {
-          console.log('✅ 搜索歷史載入成功:', result.data.length);
+          // 搜索歷史載入成功
           this.searchHistorySubject.next(result.data);
         } else {
-          console.error('❌ 搜索歷史載入失敗:', result.message);
+          // 搜索歷史載入失敗
           this.searchHistorySubject.next([]);
         }
       },
-      error: (error) => {
-        console.error('❌ 搜索歷史載入錯誤:', error);
+              error: (error) => {
+          // 搜索歷史載入錯誤
         this.searchHistorySubject.next([]);
       }
     });

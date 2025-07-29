@@ -189,28 +189,28 @@ namespace familytree_backend.Services
                 using (var stream = new FileStream(tempArchivePath, FileMode.Create))
                 {
                     await archiveFile.CopyToAsync(stream);
-                    _logger.LogInformation("🔍 [DEBUG] 壓縮檔案儲存到臨時位置完成");
+                    _logger.LogDebug("壓縮檔案儲存到臨時位置完成");
                 }
 
                 // 檢查臨時檔案大小
                 var tempFileInfo = new FileInfo(tempArchivePath);
-                _logger.LogInformation("🔍 [DEBUG] 臨時壓縮檔案大小: {TempFileSize}, 存在: {TempFileExists}", 
+                _logger.LogDebug("臨時壓縮檔案大小: {TempFileSize}, 存在: {TempFileExists}", 
                     tempFileInfo.Length, tempFileInfo.Exists);
 
                 // 使用 SharpCompress 處理多種壓縮格式
                 using (var archive = ArchiveFactory.Open(tempArchivePath))
                 {
-                    _logger.LogInformation("🔍 [DEBUG] 開啟壓縮檔案成功，總條目數: {TotalEntries}", archive.Entries.Count());
+                    _logger.LogDebug("開啟壓縮檔案成功，總條目數: {TotalEntries}", archive.Entries.Count());
                     
                     foreach (var entry in archive.Entries)
                     {
-                        _logger.LogInformation("🔍 [DEBUG] 處理壓縮條目: {EntryKey}, 大小: {EntrySize}, 是否目錄: {IsDirectory}", 
+                        _logger.LogDebug("處理壓縮條目: {EntryKey}, 大小: {EntrySize}, 是否目錄: {IsDirectory}", 
                             entry.Key, entry.Size, entry.IsDirectory);
                         
                         // 跳過目錄和隱藏檔案
                         if (entry.IsDirectory || string.IsNullOrEmpty(entry.Key) || entry.Key.StartsWith("."))
                         {
-                            _logger.LogInformation("🔍 [DEBUG] 跳過條目: {EntryKey} (目錄或隱藏檔案)", entry.Key);
+                            _logger.LogDebug("跳過條目: {EntryKey} (目錄或隱藏檔案)", entry.Key);
                             continue;
                         }
 
@@ -223,7 +223,7 @@ namespace familytree_backend.Services
 
                         try
                         {
-                            _logger.LogInformation("🔍 [DEBUG] 開始解壓縮圖片: {FileName}", entry.Key);
+                            _logger.LogDebug("開始解壓縮圖片: {FileName}", entry.Key);
                             
                             // 解壓縮並儲存圖片
                             var savedFile = await ExtractAndSaveImageFromArchive(entry, projectId, projectPhotoDir);
@@ -269,7 +269,7 @@ namespace familytree_backend.Services
                 if (File.Exists(tempArchivePath))
                 {
                     File.Delete(tempArchivePath);
-                    _logger.LogInformation("🔍 [DEBUG] 臨時壓縮檔案已清理: {TempPath}", tempArchivePath);
+                    _logger.LogDebug("臨時壓縮檔案已清理: {TempPath}", tempArchivePath);
                 }
             }
         }
@@ -327,28 +327,28 @@ namespace familytree_backend.Services
         {
             try
             {
-                _logger.LogInformation("🔍 [DEBUG] 開始解壓縮檔案: {EntryKey}, 大小: {EntrySize}, 是否目錄: {IsDirectory}", 
+                _logger.LogDebug("開始解壓縮檔案: {EntryKey}, 大小: {EntrySize}, 是否目錄: {IsDirectory}", 
                     entry.Key, entry.Size, entry.IsDirectory);
 
                 using (var entryStream = entry.OpenEntryStream())
                 {
-                    _logger.LogInformation("🔍 [DEBUG] 開啟entry stream成功，開始讀取資料");
+                    _logger.LogDebug("開啟entry stream成功，開始讀取資料");
                     
                     var memoryStream = new MemoryStream();
                     await entryStream.CopyToAsync(memoryStream);
                     
-                    _logger.LogInformation("🔍 [DEBUG] 複製到memory stream完成，MemoryStream長度: {MemoryStreamLength}", 
+                    _logger.LogDebug("複製到memory stream完成，MemoryStream長度: {MemoryStreamLength}", 
                         memoryStream.Length);
                     
                     memoryStream.Position = 0;
 
-                    _logger.LogInformation("🔍 [DEBUG] 準備建立FormFileFromStream，檔名: {FileName}, 大小: {Size}", 
+                    _logger.LogDebug("準備建立FormFileFromStream，檔名: {FileName}, 大小: {Size}", 
                         entry.Key, memoryStream.Length);
 
                     // 建立臨時 IFormFile 物件，不立即釋放，讓SaveImageFile完成所有操作
                     var formFile = new FormFileFromStream(memoryStream, entry.Key, entry.Key, "image/jpeg", memoryStream.Length);
                     
-                    _logger.LogInformation("🔍 [DEBUG] FormFileFromStream建立完成，Length屬性: {FormFileLength}", formFile.Length);
+                    _logger.LogDebug("FormFileFromStream建立完成，Length屬性: {FormFileLength}", formFile.Length);
                     
                     var result = await SaveImageFile(formFile, projectId, projectPhotoDir, entry.Key);
                     
@@ -360,7 +360,7 @@ namespace familytree_backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ [DEBUG] ExtractAndSaveImageFromArchive失敗: {EntryKey}", entry.Key);
+                _logger.LogError(ex, "ExtractAndSaveImageFromArchive失敗: {EntryKey}", entry.Key);
                 return null;
             }
         }
@@ -372,18 +372,18 @@ namespace familytree_backend.Services
         {
             try
             {
-                _logger.LogInformation("🔍 [DEBUG] SaveImageFile開始，原始檔名: {OriginalFileName}, 檔案大小: {FileSize}", 
+                _logger.LogDebug("SaveImageFile開始，原始檔名: {OriginalFileName}, 檔案大小: {FileSize}", 
                     originalFileName, imageFile.Length);
 
                 // 正規化檔名（數字檔名補零到6位）
                 var normalizedFileName = NormalizePhotoFileName(originalFileName);
-                _logger.LogInformation("🔍 [DEBUG] 檔名正規化: {OriginalFileName} -> {NormalizedFileName}", 
+                _logger.LogDebug("檔名正規化: {OriginalFileName} -> {NormalizedFileName}", 
                     originalFileName, normalizedFileName);
 
                 // 計算檔案MD5
-                _logger.LogInformation("🔍 [DEBUG] 開始計算MD5，檔案大小: {FileSize}", imageFile.Length);
+                _logger.LogDebug("開始計算MD5，檔案大小: {FileSize}", imageFile.Length);
                 var md5Hash = await CalculateMd5Async(imageFile);
-                _logger.LogInformation("🔍 [DEBUG] MD5計算完成: {Md5Hash}", md5Hash);
+                _logger.LogDebug("MD5計算完成: {Md5Hash}", md5Hash);
 
                 // 檢查重複檔案
                 var existingFile = await GetExistingPhotoByMd5Async(md5Hash, projectId);
@@ -396,19 +396,19 @@ namespace familytree_backend.Services
                 // 生成唯一檔名（處理重複檔名）
                 var uniqueFileName = GenerateUniqueFileName(projectPhotoDir, normalizedFileName);
                 var filePath = Path.Combine(projectPhotoDir, uniqueFileName);
-                _logger.LogInformation("🔍 [DEBUG] 生成檔案路徑: {FilePath}", filePath);
+                _logger.LogDebug("生成檔案路徑: {FilePath}", filePath);
 
                 // 儲存檔案
-                _logger.LogInformation("🔍 [DEBUG] 開始儲存檔案到磁碟，檔案大小: {FileSize}", imageFile.Length);
+                _logger.LogDebug("開始儲存檔案到磁碟，檔案大小: {FileSize}", imageFile.Length);
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await imageFile.CopyToAsync(stream);
-                    _logger.LogInformation("🔍 [DEBUG] 檔案儲存完成");
+                    _logger.LogDebug("檔案儲存完成");
                 }
 
                 // 檢查實際儲存的檔案大小
                 var fileInfo = new FileInfo(filePath);
-                _logger.LogInformation("🔍 [DEBUG] 實際儲存檔案大小: {ActualFileSize}, 檔案存在: {FileExists}", 
+                _logger.LogDebug("實際儲存檔案大小: {ActualFileSize}, 檔案存在: {FileExists}", 
                     fileInfo.Length, fileInfo.Exists);
 
                 // 建立檔案資訊
@@ -423,7 +423,7 @@ namespace familytree_backend.Services
                     UploadTime = DateTime.UtcNow
                 };
 
-                _logger.LogInformation("🔍 [DEBUG] PhotoFileInfo建立完成，FileSize: {FileSize}", photoInfo.FileSize);
+                _logger.LogDebug("PhotoFileInfo建立完成，FileSize: {FileSize}", photoInfo.FileSize);
 
                 // 儲存到資料庫
                 await SavePhotoToDatabaseAsync(photoInfo);
@@ -499,24 +499,24 @@ namespace familytree_backend.Services
         {
             try
             {
-                _logger.LogInformation("🔍 [DEBUG] CalculateMd5Async開始，檔案大小: {FileSize}", file.Length);
+                _logger.LogDebug("CalculateMd5Async開始，檔案大小: {FileSize}", file.Length);
                 
                 using (var md5 = MD5.Create())
                 using (var stream = file.OpenReadStream())
                 {
-                    _logger.LogInformation("🔍 [DEBUG] CalculateMd5Async - 開啟檔案stream，長度: {StreamLength}", stream.Length);
+                    _logger.LogDebug("CalculateMd5Async - 開啟檔案stream，長度: {StreamLength}", stream.Length);
                     
                     var hash = await md5.ComputeHashAsync(stream);
                     var hashString = Convert.ToHexString(hash).ToLowerInvariant();
                     
-                    _logger.LogInformation("🔍 [DEBUG] CalculateMd5Async完成，MD5: {Md5Hash}", hashString);
+                    _logger.LogDebug("CalculateMd5Async完成，MD5: {Md5Hash}", hashString);
                     
                     return hashString;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ [DEBUG] CalculateMd5Async失敗，檔案大小: {FileSize}", file.Length);
+                _logger.LogError(ex, "CalculateMd5Async失敗，檔案大小: {FileSize}", file.Length);
                 throw;
             }
         }

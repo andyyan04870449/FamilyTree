@@ -279,8 +279,8 @@ namespace familytree_backend.Services
                     personData = new PersonDataModel
                     {
                         FileMd5 = fileMd5,
-                        CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff"),
-                        UpdatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff")
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
                     };
 
                     // 處理每個欄位

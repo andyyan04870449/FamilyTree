@@ -51,6 +51,10 @@ namespace familytree_backend.Models
         
         public string? FamilyRelationships { get; set; }     // 親屬關係（職稱，姓名）
         
+        public string? CurrentEmployer { get; set; }         // 現職
+        
+        public string? Friends { get; set; }                 // 友人
+        
         public string? Experience { get; set; }              // 經歷（單位，職稱，任職期間）
         
         public string? Education { get; set; }               // 學歷
@@ -71,32 +75,16 @@ namespace familytree_backend.Models
         
         public string? ProjectId { get; set; }              // 專案ID
         
-        public string? CreatedAt { get; set; }              // 建檔時間
+        public DateTime CreatedAt { get; set; }              // 建檔時間
         
         public string? CreatedBy { get; set; }               // 建檔人
         
-        public string? UpdatedAt { get; set; }              // 最後更新時間
+        public DateTime UpdatedAt { get; set; }              // 最後更新時間
         
         public string? UpdatedBy { get; set; }               // 最後更新人
     }
 
-    public class PersonDataResponse
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public PersonDataModel? PersonData { get; set; }
-    }
 
-    public class PersonDataListResponse
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public List<PersonDataModel> PersonDataList { get; set; } = new();
-        public int TotalCount { get; set; }
-        public int PageNumber { get; set; }
-        public int PageSize { get; set; }
-        public int TotalPages { get; set; }
-    }
 
     public class PersonDataRequest
     {
