@@ -1,57 +1,43 @@
-// 案件管理頁面樣式：深色主題，匹配提供的截圖設計
-// 主要特色：深色背景、表格式布局、彩色功能按鈕
+// 案件管理頁面樣式：使用統一設計系統
+@import '../../../styles/foundation/tokens';
+@import '../../../styles/foundation/mixins';
 
 .case-management-page {
-  background: #1a1a2e;
+  background: $bg-primary;
   min-height: 100vh;
-  padding: 1.5rem;
-  color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  padding: $spacing-xl;
+  color: $text-primary;
+  font-family: $font-family-base;
 }
 
 // 頁面標題區域
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding: 1rem 0;
+  @include flex-between;
+  margin-bottom: $spacing-xl;
+  padding: $spacing-lg 0;
 
   .header-left {
     h1 {
+      @include text-heading-2;
       margin: 0;
-      font-size: 1.5rem;
-      font-weight: 500;
-      color: #ffffff;
     }
   }
 
   .header-right {
     .btn-new-case {
-      background: #4a90e2;
-      color: white;
-      border: none;
-      padding: 0.5rem 1.2rem;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: background 0.2s;
-
-      &:hover {
-        background: #357abd;
-      }
+      @include button-primary;
     }
   }
 }
 
 // 列表標題
 .list-header {
-  margin-bottom: 1rem;
+  margin-bottom: $spacing-lg;
 
   .list-title {
-    font-size: 1rem;
-    color: #ffffff;
-    font-weight: 500;
+    font-size: $font-size-base;
+    color: $text-primary;
+    font-weight: $font-weight-medium;
   }
 }
 
@@ -59,20 +45,18 @@
 
 // 載入中
 .loading-section {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem;
-  color: #ffffff;
+  @include flex-center;
+  padding: $spacing-4xl;
+  color: $text-primary;
 
   .loading-spinner {
     width: 20px;
     height: 20px;
-    border: 2px solid #3a3a5c;
-    border-top: 2px solid #4a90e2;
-    border-radius: 50%;
+    border: 2px solid $border-primary;
+    border-top: 2px solid $primary;
+    border-radius: $radius-full;
     animation: spin 1s linear infinite;
-    margin-right: 0.75rem;
+    margin-right: $spacing-md;
   }
 }
 
@@ -84,7 +68,7 @@
 
 // 表格區域
 .table-section {
-  background: #2a2a3e;
+  background: $bg-surface;
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 1.5rem;
@@ -94,15 +78,15 @@
     border-collapse: collapse;
 
     thead {
-      background: #3a3a5c;
+      background: $bg-secondary;
 
       th {
-        padding: 1rem;
+        padding: $spacing-lg;
         text-align: left;
-        font-weight: 500;
-        font-size: 0.9rem;
-        color: #ffffff;
-        border-bottom: 1px solid #4a4a6c;
+        font-weight: $font-weight-medium;
+        font-size: $font-size-sm;
+        color: $text-primary;
+        border-bottom: 1px solid $border-primary;
 
         &.col-index { 
           width: 80px; 
@@ -128,29 +112,29 @@
 
         // 排序箭頭
         &:hover {
-          background: #4a4a6c;
+          background: $bg-tertiary;
           cursor: pointer;
         }
       }
 
       // 搜尋列樣式
       .search-row {
-        background: #2a2a3e;
+        background: $bg-surface;
 
         th {
-          background: #2a2a3e;
+          background: $bg-surface;
           padding: 0.75rem 1rem;
-          border-bottom: 1px solid #3a3a5c;
+          border-bottom: 1px solid $bg-secondary;
 
           &:hover {
-            background: #2a2a3e;
+            background: $bg-surface;
             cursor: default;
           }
 
           .search-input {
-            background: #1a1a2e;
-            color: #ffffff;
-            border: 1px solid #3a3a5c;
+            background: $bg-primary;
+            color: $text-primary;
+            border: 1px solid $bg-secondary;
             border-radius: 4px;
             padding: 0.5rem 0.75rem;
             width: 100%;
@@ -158,13 +142,13 @@
             box-sizing: border-box;
 
             &::placeholder {
-              color: #8a8a9a;
+              color: $text-tertiary;
             }
 
             &:focus {
               outline: none;
-              border-color: #4a90e2;
-              background: #353548;
+              border-color: $primary;
+              background: $border-primary;
             }
           }
         }
@@ -173,22 +157,22 @@
 
     tbody {
       .case-row {
-        border-bottom: 1px solid #3a3a5c;
+        border-bottom: 1px solid $bg-secondary;
         transition: background-color 0.2s ease;
 
         &:hover {
-          background: #353548;
+          background: $border-primary;
         }
 
         td {
           padding: 1rem;
           font-size: 0.9rem;
-          color: #ffffff;
+          color: $text-primary;
 
           &.col-index {
             text-align: center;
             font-weight: 500;
-            color: #8a8a9a;
+            color: $text-tertiary;
           }
 
           &.col-name {
@@ -196,27 +180,27 @@
                 cursor: pointer;
 
                 .case-title {
-                  color: #ffffff;
+                  color: $text-primary;
                   
                   &:hover {
-                    color: #4a90e2;
+                    color: $primary;
                   }
                 }
               }
           }
 
           &.col-creator {
-            color: #ffffff;
+            color: $text-primary;
           }
 
           &.col-members {
             text-align: center;
             font-weight: 500;
-            color: #ffffff;
+            color: $text-primary;
           }
 
           &.col-date {
-            color: #8a8a9a;
+            color: $text-tertiary;
             font-size: 0.85rem;
           }
 
@@ -237,34 +221,34 @@
                 color: white;
 
                 &.btn-edit {
-                  background: #f39c12;
+                  background: $warning;
 
                   &:hover {
-                    background: #e67e22;
+                    background: $warning-hover;
                   }
                 }
 
                 &.btn-upload {
-                  background: #27ae60;
+                  background: $success;
 
                   &:hover {
-                    background: #229954;
+                    background: $success-hover;
                   }
                 }
 
                 &.btn-analysis {
-                  background: #3498db;
+                  background: $info;
 
                   &:hover {
-                    background: #2980b9;
+                    background: $info-hover;
                   }
                 }
 
                 &.btn-delete {
-                  background: #e74c3c;
+                  background: $error;
 
                   &:hover {
-                    background: #c0392b;
+                    background: $error-hover;
                   }
                 }
               }
@@ -280,8 +264,8 @@
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  color: #8a8a9a;
-  background: #2a2a3e;
+  color: $text-tertiary;
+  background: $bg-surface;
   border-radius: 4px;
 
   .empty-icon {
@@ -291,7 +275,7 @@
 
   h3 {
     margin: 0 0 0.5rem 0;
-    color: #ffffff;
+    color: $text-primary;
     font-weight: 500;
   }
 
@@ -307,12 +291,12 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: #2a2a3e;
+  background: $bg-surface;
   border-radius: 4px;
 
   .pagination-info {
     font-size: 0.9rem;
-    color: #8a8a9a;
+    color: $text-tertiary;
   }
 
   .pagination-controls {
@@ -322,16 +306,16 @@
 
     .pagination-btn {
       padding: 0.5rem 0.75rem;
-      border: 1px solid #3a3a5c;
-      background: #2a2a3e;
-      color: #ffffff;
+      border: 1px solid $bg-secondary;
+      background: $bg-surface;
+      color: $text-primary;
       border-radius: 4px;
       cursor: pointer;
       font-size: 0.9rem;
       transition: all 0.2s ease;
 
       &:hover:not(:disabled) {
-        background: #353548;
+        background: $border-primary;
       }
 
       &:disabled {
@@ -340,9 +324,9 @@
       }
 
       &.page-number.active {
-        background: #f39c12;
+        background: $warning;
         color: white;
-        border-color: #f39c12;
+        border-color: $warning;
       }
     }
 
@@ -353,16 +337,16 @@
 
     .page-selector {
       padding: 0.5rem;
-      border: 1px solid #3a3a5c;
+      border: 1px solid $bg-secondary;
       border-radius: 4px;
-      background: #2a2a3e;
-      color: #ffffff;
+      background: $bg-surface;
+      color: $text-primary;
       font-size: 0.9rem;
       margin-left: 0.5rem;
 
       &:focus {
         outline: none;
-        border-color: #4a90e2;
+        border-color: $primary;
       }
     }
   }
@@ -382,7 +366,7 @@
   z-index: 1000;
 
   .dialog {
-    background: #2a2a3e;
+    background: $bg-surface;
     border-radius: 8px;
     width: 90%;
     max-width: 500px;
@@ -395,13 +379,13 @@
       justify-content: space-between;
       align-items: center;
       padding: 1.5rem;
-      border-bottom: 1px solid #3a3a5c;
+      border-bottom: 1px solid $bg-secondary;
 
       h2 {
         margin: 0;
         font-size: 1.25rem;
         font-weight: 600;
-        color: #ffffff;
+        color: $text-primary;
       }
 
       .close-button {
@@ -409,7 +393,7 @@
         border: none;
         font-size: 1.5rem;
         cursor: pointer;
-        color: #8a8a9a;
+        color: $text-tertiary;
         padding: 0;
         width: 30px;
         height: 30px;
@@ -418,7 +402,7 @@
         justify-content: center;
 
         &:hover {
-          color: #ffffff;
+          color: $text-primary;
         }
       }
     }
@@ -433,7 +417,7 @@
           display: block;
           margin-bottom: 0.5rem;
           font-weight: 500;
-          color: #ffffff;
+          color: $text-primary;
           font-size: 0.9rem;
         }
 
@@ -442,19 +426,19 @@
         .form-select {
           width: 100%;
           padding: 0.75rem;
-          border: 1px solid #3a3a5c;
+          border: 1px solid $bg-secondary;
           border-radius: 4px;
           font-size: 0.9rem;
-          background: #1a1a2e;
-          color: #ffffff;
+          background: $bg-primary;
+          color: $text-primary;
 
           &:focus {
             outline: none;
-            border-color: #4a90e2;
+            border-color: $primary;
           }
 
           &::placeholder {
-            color: #8a8a9a;
+            color: $text-tertiary;
           }
         }
 
@@ -465,7 +449,7 @@
       }
 
       .warning-text {
-        color: #e74c3c;
+        color: $error;
         font-size: 0.9rem;
         margin-top: 0.5rem;
       }
@@ -476,24 +460,24 @@
       justify-content: flex-end;
       gap: 0.75rem;
       padding: 1.5rem;
-      border-top: 1px solid #3a3a5c;
+      border-top: 1px solid $bg-secondary;
 
       .btn-cancel {
-        background: #3a3a5c;
-        color: #ffffff;
-        border: 1px solid #3a3a5c;
+        background: $bg-secondary;
+        color: $text-primary;
+        border: 1px solid $bg-secondary;
         padding: 0.75rem 1.5rem;
         border-radius: 4px;
         cursor: pointer;
         font-weight: 500;
 
         &:hover {
-          background: #4a4a6c;
+          background: $bg-tertiary;
         }
       }
 
       .btn-confirm {
-        background: #4a90e2;
+        background: $primary;
         color: white;
         border: none;
         padding: 0.75rem 1.5rem;
@@ -502,7 +486,7 @@
         font-weight: 500;
 
         &:hover:not(:disabled) {
-          background: #357abd;
+          background: $primary-hover;
         }
 
         &:disabled {
@@ -512,7 +496,7 @@
       }
 
       .btn-danger {
-        background: #e74c3c;
+        background: $error;
         color: white;
         border: none;
         padding: 0.75rem 1.5rem;
@@ -521,7 +505,7 @@
         font-weight: 500;
 
         &:hover:not(:disabled) {
-          background: #c0392b;
+          background: $error-hover;
         }
 
         &:disabled {

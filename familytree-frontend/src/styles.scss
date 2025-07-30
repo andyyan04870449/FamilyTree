@@ -1,8 +1,2 @@
-@import 'app/styles/_variables';
-
-body {
-  background: $bg-dark;
-  color: $text-primary;
-  font-family: 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
-  margin: 0;
-}
+// 引入新的設計系統
+@import 'styles/index';

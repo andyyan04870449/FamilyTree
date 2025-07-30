@@ -12,6 +12,9 @@ export interface GraphNode {
   name: string;
   gender: 'male' | 'female';
   photo?: string;
+  photoIndex?: string;
+  projectId?: string;
+  birthday?: string;
   isExpanded?: boolean;
   x?: number;
   y?: number;

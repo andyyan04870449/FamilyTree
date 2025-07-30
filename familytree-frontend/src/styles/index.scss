@@ -1,0 +1,273 @@
+// ================================
+// FamilyTree 設計系統 - 主樣式文件
+// ================================
+// 統一的樣式系統入口點
+
+// ================================
+// 基礎系統
+// ================================
+@import 'foundation/tokens';
+@import 'foundation/mixins';
+
+// ================================
+// 全局樣式重置
+// ================================
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+// ================================
+// 根元素設定
+// ================================
+
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+html {
+  line-height: 1.15;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  font-weight: $font-weight-normal;
+  line-height: $line-height-normal;
+  color: $text-primary;
+  background: $bg-primary;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// ================================
+// 基礎元素樣式
+// ================================
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  margin-bottom: $spacing-md;
+  font-weight: $font-weight-semibold;
+  line-height: $line-height-tight;
+  color: $text-primary;
+}
+
+h1 { @include text-heading-1; }
+h2 { @include text-heading-2; }
+h3 { @include text-heading-3; }
+
+p {
+  margin-top: 0;
+  margin-bottom: $spacing-md;
+  @include text-body;
+}
+
+a {
+  color: $primary;
+  text-decoration: none;
+  transition: color $duration-normal $easing-ease-in-out;
+
+  &:hover {
+    color: $primary-hover;
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $primary;
+    outline-offset: 2px;
+  }
+}
+
+ul, ol {
+  margin-top: 0;
+  margin-bottom: $spacing-md;
+  padding-left: $spacing-lg;
+}
+
+li {
+  margin-bottom: $spacing-xs;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+button {
+  font-family: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+}
+
+// ================================
+// 工具類別
+// ================================
+
+// 文字工具類
+.text-xs { font-size: $font-size-xs; }
+.text-sm { font-size: $font-size-sm; }
+.text-base { font-size: $font-size-base; }
+.text-lg { font-size: $font-size-lg; }
+.text-xl { font-size: $font-size-xl; }
+.text-2xl { font-size: $font-size-2xl; }
+
+.font-light { font-weight: $font-weight-light; }
+.font-normal { font-weight: $font-weight-normal; }
+.font-medium { font-weight: $font-weight-medium; }
+.font-semibold { font-weight: $font-weight-semibold; }
+.font-bold { font-weight: $font-weight-bold; }
+
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+.text-primary { color: $text-primary; }
+.text-secondary { color: $text-secondary; }
+.text-tertiary { color: $text-tertiary; }
+.text-success { color: $success; }
+.text-warning { color: $warning; }
+.text-error { color: $error; }
+
+.truncate { @include truncate; }
+.line-clamp-2 { @include line-clamp(2); }
+.line-clamp-3 { @include line-clamp(3); }
+
+// 間距工具類
+.m-0 { margin: 0; }
+.m-1 { margin: $space-1; }
+.m-2 { margin: $space-2; }
+.m-4 { margin: $space-4; }
+.m-8 { margin: $space-8; }
+.m-12 { margin: $space-12; }
+.m-16 { margin: $space-16; }
+
+.p-0 { padding: 0; }
+.p-1 { padding: $space-1; }
+.p-2 { padding: $space-2; }
+.p-4 { padding: $space-4; }
+.p-8 { padding: $space-8; }
+.p-12 { padding: $space-12; }
+.p-16 { padding: $space-16; }
+
+.mt-0 { margin-top: 0; }
+.mt-2 { margin-top: $space-2; }
+.mt-4 { margin-top: $space-4; }
+.mt-8 { margin-top: $space-8; }
+
+.mb-0 { margin-bottom: 0; }
+.mb-2 { margin-bottom: $space-2; }
+.mb-4 { margin-bottom: $space-4; }
+.mb-8 { margin-bottom: $space-8; }
+
+// 高頻組合工具類 (基於重複模式分析)
+.p-sm-md { padding: $spacing-sm $spacing-md; }      // 8px 12px - 最常用
+.p-md-lg { padding: $spacing-md $spacing-lg; }      // 12px 16px - 次常用
+.p-xs-md { padding: $spacing-xs $spacing-md; }      // 6px 12px
+.p-sm-lg { padding: $spacing-sm $spacing-lg; }      // 8px 16px
+.p-xl-2xl { padding: $spacing-xl $spacing-2xl; }    // 20px 24px - 卡片/對話框
+.p-4xl-xl { padding: $spacing-4xl $spacing-xl; }    // 60px 20px - 空狀態
+
+// 圓角工具類
+.rounded-sm { border-radius: $radius-sm; }          // 4px - 最常用
+.rounded-md { border-radius: $radius-md; }          // 6px - 次常用  
+.rounded-lg { border-radius: $radius-lg; }          // 8px
+.rounded-xl { border-radius: $radius-xl; }          // 12px
+.rounded-2xl { border-radius: $radius-2xl; }        // 16px
+.rounded-full { border-radius: $radius-full; }      // 圓形
+
+// 佈局工具類
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-row { flex-direction: row; }
+.flex-wrap { flex-wrap: wrap; }
+.flex-nowrap { flex-wrap: nowrap; }
+
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.items-end { align-items: flex-end; }
+
+.justify-center { justify-content: center; }
+.justify-start { justify-content: flex-start; }
+.justify-end { justify-content: flex-end; }
+.justify-between { justify-content: space-between; }
+
+// 高頻布局組合工具類 (基於重複模式分析)
+.flex-between { @include flex-between; }        // flex + justify-between + items-center
+.flex-center { @include flex-center; }          // flex + justify-center + items-center
+.flex-start { display: flex; align-items: center; justify-content: flex-start; }
+.flex-end { display: flex; align-items: center; justify-content: flex-end; }
+
+// 交互工具類
+.cursor-pointer { cursor: pointer; }
+.cursor-default { cursor: default; }
+.cursor-not-allowed { cursor: not-allowed; }
+
+// 過渡動畫工具類
+.transition { transition: all $duration-normal $easing-ease-in-out; }
+.transition-fast { transition: all $duration-fast $easing-ease-in-out; }
+.transition-slow { transition: all $duration-slow $easing-ease-in-out; }
+
+.gap-2 { gap: $space-2; }
+.gap-4 { gap: $space-4; }
+.gap-8 { gap: $space-8; }
+.gap-12 { gap: $space-12; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.min-h-screen { min-height: 100vh; }
+
+.hidden { display: none; }
+.block { display: block; }
+.inline { display: inline; }
+.inline-block { display: inline-block; }
+
+// 響應式工具類
+@include mobile {
+  .mobile\:hidden { display: none; }
+  .mobile\:block { display: block; }
+  .mobile\:flex { display: flex; }
+  .mobile\:flex-col { flex-direction: column; }
+  .mobile\:text-center { text-align: center; }
+  .mobile\:text-sm { font-size: $font-size-sm; }
+}
+
+@include desktop {
+  .desktop\:hidden { display: none; }
+  .desktop\:block { display: block; }
+  .desktop\:flex { display: flex; }
+}
+
+// 無障礙工具類
+.sr-only { @include sr-only; }
+
+.focus\:outline-none:focus {
+  outline: none;
+}
+
+.focus\:ring:focus {
+  box-shadow: $shadow-focus;
+}
+
+// ================================
+// 組件樣式
+// ================================
+@import 'components/buttons';
+@import 'components/forms';
+@import 'components/tables';
+@import 'components/cards';

@@ -1,5 +1,6 @@
 @use 'sass:color';
-@import '../../../../src/styles/_variables';
+@import '../../../styles/foundation/tokens';
+@import '../../../styles/foundation/mixins';
 
 // ============ 組織圖頁面樣式 ============
 
@@ -17,7 +18,7 @@
 .page-header {
   padding: $spacing-xl;
   background: $bg-secondary;
-  border-bottom: 1px solid $border-color;
+  border-bottom: 1px solid $border-primary;
 
   h1 {
     font-size: 2.5rem;
@@ -40,7 +41,7 @@
   align-items: center;
   padding: $spacing-lg;
   background: $bg-tertiary;
-  border-bottom: 1px solid $border-color;
+  border-bottom: 1px solid $border-primary;
 
   .toolbar-left,
   .toolbar-right {
@@ -78,11 +79,11 @@
     }
 
     &.btn-secondary {
-      background: $secondary;
+      background: $color-neutral-300;
       color: white;
 
       &:hover {
-        background: color.adjust($secondary, $lightness: -10%);
+        background: color.adjust($color-neutral-300, $lightness: -10%);
       }
     }
 
@@ -117,7 +118,7 @@
   gap: $spacing-3xl;
   padding: $spacing-lg;
   background: $bg-secondary;
-  border-bottom: 1px solid $border-color;
+  border-bottom: 1px solid $border-primary;
 
   .stat-item {
     display: flex;
@@ -152,7 +153,7 @@
   .loading-spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid $border-color;
+    border: 4px solid $border-primary;
     border-top-color: $primary;
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -351,7 +352,7 @@
 
   .control-btn {
     background: $bg-secondary;
-    border: 1px solid $border-color;
+    border: 1px solid $border-primary;
     border-radius: 6px;
     padding: $spacing-sm;
     cursor: pointer;

@@ -1,0 +1,166 @@
+// ================================
+// 按鈕組件樣式
+// ================================
+
+@import '../foundation/tokens';
+@import '../foundation/mixins';
+
+// ================================
+// 基礎按鈕類別
+// ================================
+
+.btn {
+  @include button-base;
+
+  // 主要按鈕
+  &--primary {
+    @include button-primary;
+  }
+
+  // 次要按鈕
+  &--secondary {
+    @include button-secondary;
+  }
+
+  // 危險按鈕
+  &--danger {
+    @include button-danger;
+  }
+
+  // 成功按鈕
+  &--success {
+    @include button-success;
+  }
+
+  // 幽靈按鈕
+  &--ghost {
+    @include button-base;
+    background: transparent;
+    color: $text-primary;
+    border: 1px solid $border-primary;
+
+    &:hover:not(:disabled) {
+      background: $bg-secondary;
+    }
+  }
+
+  // 文字按鈕
+  &--text {
+    @include button-base;
+    background: transparent;
+    color: $primary;
+    padding: $spacing-xs $spacing-sm;
+
+    &:hover:not(:disabled) {
+      background: rgba($primary, 0.1);
+    }
+  }
+
+  // 尺寸變體
+  &--small {
+    @include button-small;
+  }
+
+  &--large {
+    @include button-large;
+  }
+
+  // 全寬按鈕
+  &--block {
+    width: 100%;
+  }
+
+  // 圓形按鈕
+  &--rounded {
+    border-radius: $radius-full;
+  }
+
+  // 載入狀態
+  &--loading {
+    position: relative;
+    color: transparent;
+
+    &::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      top: 50%;
+      left: 50%;
+      margin-left: -8px;
+      margin-top: -8px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ================================
+// 按鈕群組
+// ================================
+
+.btn-group {
+  display: inline-flex;
+  vertical-align: middle;
+
+  .btn {
+    position: relative;
+    flex: 1 1 auto;
+    margin: 0;
+
+    &:not(:first-child) {
+      margin-left: -1px;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+
+    &:not(:last-child) {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    &:hover,
+    &:focus,
+    &.active {
+      z-index: 1;
+    }
+  }
+}
+
+// ================================
+// 浮動操作按鈕
+// ================================
+
+.fab {
+  @include button-primary;
+  width: 56px;
+  height: 56px;
+  border-radius: $radius-full;
+  position: fixed;
+  bottom: $spacing-2xl;
+  right: $spacing-2xl;
+  z-index: $z-fixed;
+  box-shadow: $shadow-lg;
+
+  &:hover {
+    box-shadow: $shadow-xl;
+  }
+
+  &--small {
+    width: 40px;
+    height: 40px;
+  }
+
+  &--large {
+    width: 72px;
+    height: 72px;
+  }
+}

@@ -1,11 +1,12 @@
-@import '../../../styles/_variables';
+@import '../../../styles/foundation/tokens';
+@import '../../../styles/foundation/mixins';
 
 .file-list-container {
-  background: $card-bg;
-  border-radius: $border-radius-xl;
+  background: $bg-surface;
+  border-radius: $radius-xl;
   box-shadow: $shadow-md;
   overflow: hidden;
-  border: 1px solid $border-color;
+  border: 1px solid $border-primary;
 }
 
 .file-list-header {
@@ -13,9 +14,9 @@
   justify-content: space-between;
   align-items: center;
   padding: $spacing-xl;
-  background: $bg-dark-tertiary;
+  background: $bg-tertiary;
   color: $text-primary;
-  border-bottom: 1px solid $border-color;
+  border-bottom: 1px solid $border-primary;
 
   h3 {
     margin: 0;
@@ -28,7 +29,7 @@
     border: 1px solid rgba($primary, 0.3);
     color: $primary;
     padding: $spacing-md $spacing-lg;
-    border-radius: $border-radius-md;
+    border-radius: $radius-md;
     cursor: pointer;
     font-size: $font-size-sm;
     transition: all 0.2s ease;
@@ -60,7 +61,7 @@
   .loading-spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid $border-color;
+    border: 4px solid $border-primary;
     border-top: 4px solid $primary;
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -84,7 +85,7 @@
   padding: $spacing-md;
   background: rgba($error, 0.1);
   border: 1px solid rgba($error, 0.3);
-  border-radius: $border-radius-md;
+  border-radius: $radius-md;
   color: $error;
 
   .error-icon {
@@ -102,7 +103,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: $spacing-5xl $spacing-xl;
+  padding: $spacing-4xl $spacing-xl;
   color: $text-tertiary;
   text-align: center;
 
@@ -135,13 +136,13 @@
   justify-content: space-between;
   align-items: center;
   padding: $spacing-md;
-  background: $bg-dark-tertiary;
-  border: 1px solid $border-color;
-  border-radius: $border-radius-md;
+  background: $bg-tertiary;
+  border: 1px solid $border-primary;
+  border-radius: $radius-md;
   transition: all 0.2s ease;
 
   &:hover {
-    background: $hover-bg;
+    background: $bg-secondary;
     border-color: $primary;
     transform: translateY(-1px);
     box-shadow: $shadow-md;
@@ -227,8 +228,8 @@
   }
 
   &.status-secondary {
-    background: rgba($text-muted, 0.1);
-    color: $text-muted;
+    background: rgba($text-tertiary, 0.1);
+    color: $text-tertiary;
   }
 }
 
@@ -236,7 +237,7 @@
   padding: 2px 6px;
   background: $success;
   color: white;
-  border-radius: $border-radius-sm;
+  border-radius: $radius-sm;
   font-size: $font-size-xs;
   font-weight: $font-weight-semibold;
 }
@@ -251,13 +252,13 @@
   color: white;
   border: none;
   padding: $spacing-sm $spacing-md;
-  border-radius: $border-radius-md;
+  border-radius: $radius-md;
   cursor: pointer;
   font-size: $font-size-base;
   transition: all 0.2s ease;
 
   &:hover {
-    background: $error-red-light;
+    background: $error;
     transform: scale(1.05);
   }
 

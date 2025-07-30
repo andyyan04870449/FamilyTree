@@ -1,10 +1,11 @@
+@import '../../../styles/foundation/tokens';
+@import '../../../styles/foundation/mixins';
+
 .login-bg {
   width: 100vw;
   height: 100vh;
   background: url('/assets/login-bg.png') center/cover no-repeat;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @include flex-center;
   position: fixed;
   top: 0;
   left: 0;
@@ -15,10 +16,10 @@
 .login-form-container {
   background: rgba(255,255,255,0.6);
   backdrop-filter: blur(35px);
-  box-shadow: 0 4px 32px rgba(0,0,0,0.08);
-  border-radius: 40px;
-  border: 1px solid #CDCFD1;
-  padding: 40px 32px;
+  box-shadow: $shadow-xl;
+  border-radius: $radius-2xl;
+  border: 1px solid $border-primary;
+  padding: $spacing-3xl $spacing-2xl;
   min-width: 400px;
   width: 512px;
 }
@@ -30,26 +31,20 @@
 }
 
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  @include form-group;
 }
 
 .form-group label {
-  font-family: 'Noto Sans TC', sans-serif;
-  font-weight: 400;
-  font-size: 16px;
+  @include form-label;
+  font-family: $font-family-base;
   color: #283C64;
-  margin-bottom: 4px;
 }
 
 .form-group input {
-  padding: 6px 10px;
-  border: 1px solid #CDCFD1;
-  border-radius: 8px;
-  font-size: 16px;
-  background: #fff;
+  @include form-control;
   height: 36px;
+  background: #fff;
+  border-color: #CDCFD1;
 }
 
 .captcha-group {
@@ -66,28 +61,27 @@
 }
 
 .refresh-captcha {
+  @include button-base;
   background: #efa82d;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 28px;
-  cursor: pointer;
-  font-family: 'Noto Sans TC', sans-serif;
-  font-weight: 700;
-  font-size: 16px;
+  color: $text-inverse;
+  padding: $spacing-md $spacing-2xl;
+  font-weight: $font-weight-bold;
   height: 48px;
+  
+  &:hover {
+    background: darken(#efa82d, 10%);
+  }
 }
 
 .login-btn {
+  @include button-primary;
   background: #326FD1;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 28px;
-  cursor: pointer;
-  font-family: 'Noto Sans TC', sans-serif;
-  font-weight: 700;
-  font-size: 16px;
+  padding: $spacing-md $spacing-2xl;
+  font-weight: $font-weight-bold;
   width: 100%;
   height: 48px;
+  
+  &:hover {
+    background: darken(#326FD1, 10%);
+  }
 } 

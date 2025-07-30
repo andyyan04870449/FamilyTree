@@ -1,4 +1,5 @@
-@import '../../../styles/_variables';
+@import '../../../styles/foundation/tokens';
+@import '../../../styles/foundation/mixins';
 
 .person-list-page {
   max-width: 1400px;
@@ -38,8 +39,8 @@
     .search-input {
       flex: 1;
       padding: 0.75rem 1rem;
-      border: 2px solid $border-color;
-      border-radius: $border-radius;
+      border: 2px solid $border-primary;
+      border-radius: $radius-md;
       font-size: 1rem;
       background-color: $bg-secondary;
       color: $text-primary;
@@ -52,14 +53,14 @@
       }
       
       &::placeholder {
-        color: $text-muted;
+        color: $text-tertiary;
       }
     }
     
     .search-btn, .clear-btn {
       padding: 0.75rem 1.5rem;
       border: none;
-      border-radius: $border-radius;
+      border-radius: $radius-md;
       font-size: 1rem;
       font-weight: 500;
       cursor: pointer;
@@ -81,11 +82,11 @@
     }
     
     .clear-btn {
-      background-color: $secondary;
+      background-color: $color-neutral-300;
       color: white;
       
       &:hover:not(:disabled) {
-        background-color: darken($secondary, 10%);
+        background-color: darken($color-neutral-300, 10%);
       }
     }
   }
@@ -98,8 +99,8 @@
   margin-bottom: 2rem;
   padding: 1.5rem;
   background-color: $bg-secondary;
-  border-radius: $border-radius;
-  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  border: 1px solid $border-primary;
   
   .stat-item {
     text-align: center;
@@ -128,7 +129,7 @@
   .loading-spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid $border-color;
+    border: 4px solid $border-primary;
     border-top: 4px solid $primary;
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -153,7 +154,7 @@
   padding: 1rem;
   background-color: rgba($error, 0.1);
   border: 1px solid rgba($error, 0.3);
-  border-radius: $border-radius;
+  border-radius: $radius-md;
   color: $error;
   
   .error-icon {
@@ -174,7 +175,7 @@
     .placeholder-icon {
       font-size: 4rem;
       margin-bottom: 1rem;
-      color: $text-muted;
+      color: $text-tertiary;
     }
     
     h3 {
@@ -328,15 +329,15 @@
   margin-top: 2rem;
   padding: 1rem;
   background-color: $bg-secondary;
-  border-radius: $border-radius;
-  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  border: 1px solid $border-primary;
   
   .page-btn {
     padding: 0.5rem 1rem;
-    border: 1px solid $border-color;
+    border: 1px solid $border-primary;
     background-color: $bg-tertiary;
     color: $text-primary;
-    border-radius: $border-radius;
+    border-radius: $radius-md;
     cursor: pointer;
     transition: all 0.2s;
     font-weight: 500;

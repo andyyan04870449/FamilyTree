@@ -1,6 +1,9 @@
+@import '../../../styles/foundation/tokens';
+@import '../../../styles/foundation/mixins';
+
 .visual-analysis-editor {
-  background-color: #2a2a2a;
-  color: #ffffff;
+  background-color: $bg-surface;
+  color: $text-primary;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -11,9 +14,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #333333;
+    background-color: $bg-secondary;
     padding: 0.75rem 1.5rem;
-    border-bottom: 1px solid #444444;
+    border-bottom: 1px solid $border-primary;
     min-height: 60px;
     flex-shrink: 0;
 
@@ -24,18 +27,18 @@
 
       h1 {
         font-size: 1.3rem;
-        color: #ffffff;
+        color: $text-primary;
         margin: 0;
         font-weight: 600;
       }
 
       .graph-title {
-        color: #bbbbbb;
+        color: $text-secondary;
         font-size: 0.9rem;
         padding: 0.4rem 1rem;
-        background-color: #404040;
+        background-color: $bg-tertiary;
         border-radius: 6px;
-        border: 1px solid #555555;
+        border: 1px solid $border-primary;
         font-weight: 500;
       }
     }
@@ -46,8 +49,8 @@
       align-items: center;
 
       .tool-btn {
-        background-color: #555555;
-        color: #ffffff;
+        background-color: $border-primary;
+        color: $text-primary;
         border: none;
         border-radius: 8px;
         padding: 0.6rem 1.2rem;
@@ -62,29 +65,29 @@
         justify-content: center;
 
         &:hover {
-          background-color: #666666;
+          background-color: $text-tertiary;
           transform: translateY(-2px);
           box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
 
         &.active {
-          background-color: #4CAF50;
+          background-color: $success;
           color: #fff;
           box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
         }
 
         &.search-btn.active {
-          background-color: #2196F3;
+          background-color: $info;
           box-shadow: 0 2px 8px rgba(33, 150, 243, 0.4);
         }
 
         // 按鈕特定樣式
         &.show-all-btn:hover {
-          background-color: #4CAF50;
+          background-color: $success;
         }
 
         &.export-btn:hover {
-          background-color: #FF9800;
+          background-color: $warning;
         }
 
         &.undo-btn, &.redo-btn {
@@ -110,8 +113,8 @@
     // 左側搜尋面板
     .search-panel {
       width: 0;
-      background-color: #333333;
-      border-right: 1px solid #444444;
+      background-color: $bg-secondary;
+      border-right: 1px solid $border-primary;
       transition: width 0.3s ease;
       overflow: hidden;
       display: flex;
@@ -126,21 +129,21 @@
         justify-content: space-between;
         align-items: center;
         padding: 1rem 1.5rem;
-        border-bottom: 1px solid #444444;
-        background-color: #404040;
+        border-bottom: 1px solid $border-primary;
+        background-color: $bg-tertiary;
         flex-shrink: 0;
 
         h3 {
           margin: 0;
           font-size: 1.1rem;
-          color: #ffffff;
+          color: $text-primary;
           font-weight: 600;
         }
 
         .close-btn {
           background: none;
           border: none;
-          color: #ffffff;
+          color: $text-primary;
           font-size: 1.5rem;
           cursor: pointer;
           padding: 0;
@@ -153,7 +156,7 @@
           transition: all 0.2s;
 
           &:hover {
-            background-color: #555555;
+            background-color: $border-primary;
             color: #ff6b6b;
           }
         }
@@ -170,11 +173,11 @@
 
           .search-input {
             flex: 1;
-            background-color: #404040;
-            border: 1px solid #555555;
+            background-color: $bg-tertiary;
+            border: 1px solid $border-primary;
             border-radius: 8px 0 0 8px;
             padding: 0.75rem;
-            color: #ffffff;
+            color: $text-primary;
             font-size: 0.9rem;
             transition: all 0.2s;
 
@@ -184,23 +187,23 @@
 
             &:focus {
               outline: none;
-              border-color: #2196F3;
+              border-color: $info;
               box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.25);
             }
           }
 
           .search-submit-btn {
-            background-color: #2196F3;
+            background-color: $info;
             border: none;
             border-radius: 0 8px 8px 0;
             padding: 0.75rem 1rem;
-            color: #ffffff;
+            color: $text-primary;
             cursor: pointer;
             transition: all 0.2s;
             font-weight: 500;
 
             &:hover {
-              background-color: #1976D2;
+              background-color: $info-hover;
               transform: translateY(-1px);
             }
           }
@@ -209,7 +212,7 @@
         .select-all-option {
           margin-bottom: 1.5rem;
           padding-bottom: 1rem;
-          border-bottom: 1px solid #444444;
+          border-bottom: 1px solid $border-primary;
         }
 
         .project-tree {
@@ -234,7 +237,7 @@
                 margin-right: 0.75rem;
                 font-size: 0.9rem;
                 transition: transform 0.2s ease;
-                color: #ffffff;
+                color: $text-primary;
               }
             }
 
@@ -254,7 +257,7 @@
                   transition: all 0.2s ease;
 
                   &:hover {
-                    background-color: #404040;
+                    background-color: $bg-tertiary;
                     transform: translateX(4px);
                   }
 
@@ -271,7 +274,7 @@
                     align-items: center;
                     justify-content: center;
                     font-size: 0.8rem;
-                    color: #ffffff;
+                    color: $text-primary;
                     font-weight: 500;
                   }
 
@@ -290,7 +293,7 @@
           align-items: center;
           gap: 0.75rem;
           cursor: pointer;
-          color: #ffffff;
+          color: $text-primary;
           font-size: 0.9rem;
           font-weight: 500;
 
@@ -307,19 +310,19 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      background-color: #2a2a2a;
+      background-color: $bg-primary;
       overflow: hidden;
 
       .analysis-result-header {
         padding: 1rem 1.5rem;
-        border-bottom: 1px solid #444444;
-        background-color: #333333;
+        border-bottom: 1px solid $border-primary;
+        background-color: $bg-secondary;
         flex-shrink: 0;
 
         h2 {
           margin: 0;
           font-size: 1.2rem;
-          color: #ffffff;
+          color: $text-primary;
           font-weight: 600;
         }
       }
@@ -373,15 +376,15 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #333333;
+    background-color: $bg-secondary;
     padding: 1rem 1.5rem;
-    border-top: 1px solid #444444;
+    border-top: 1px solid $border-primary;
     flex-shrink: 0;
 
     .bottom-left {
       .back-btn {
-        background-color: #666666;
-        color: #ffffff;
+        background-color: $text-tertiary;
+        color: $text-primary;
         border: none;
         border-radius: 8px;
         padding: 0.75rem 1.5rem;
@@ -391,7 +394,7 @@
         font-weight: 500;
 
         &:hover {
-          background-color: #777777;
+          background-color: $text-disabled;
           transform: translateY(-1px);
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
@@ -418,21 +421,21 @@
         }
 
         &.save-btn {
-          background-color: #4CAF50;
-          color: #ffffff;
+          background-color: $success;
+          color: $text-primary;
 
           &:hover {
-            background-color: #45a049;
+            background-color: $success-hover;
             box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
           }
         }
 
         &.exit-btn {
-          background-color: #666666;
-          color: #ffffff;
+          background-color: $text-tertiary;
+          color: $text-primary;
 
           &:hover {
-            background-color: #777777;
+            background-color: $text-disabled;
           }
         }
       }
@@ -442,8 +445,8 @@
 
 // 載入中樣式
 .loading-container {
-  background-color: #2a2a2a;
-  color: #ffffff;
+  background-color: $bg-primary;
+  color: $text-primary;
   height: 100vh;
   display: flex;
   align-items: center;

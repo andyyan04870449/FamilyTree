@@ -1,45 +1,31 @@
-// 視覺化分析頁面樣式：深色主題，匹配案件管理頁面設計
-// 主要特色：深色背景、表格式布局、彩色功能按鈕
+// 視覺化分析頁面樣式：使用統一設計系統
+@import '../../../styles/foundation/tokens';
+@import '../../../styles/foundation/mixins';
 
 .visual-analysis-page {
-  background: #1a1a2e;
+  background: $bg-primary;
   min-height: 100vh;
-  padding: 1.5rem;
-  color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  padding: $spacing-xl;
+  color: $text-primary;
+  font-family: $font-family-base;
 }
 
 // 頁面標題區域
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding: 1rem 0;
+  @include flex-between;
+  margin-bottom: $spacing-xl;
+  padding: $spacing-lg 0;
 
   .header-left {
     h1 {
+      @include text-heading-2;
       margin: 0;
-      font-size: 1.5rem;
-      font-weight: 500;
-      color: #ffffff;
     }
   }
 
   .header-right {
     .btn-new-case {
-      background: #4a90e2;
-      color: white;
-      border: none;
-      padding: 0.5rem 1.2rem;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: background 0.2s;
-
-      &:hover {
-        background: #357abd;
-      }
+      @include button-primary;
     }
   }
 }
@@ -53,22 +39,22 @@
 
   .list-title {
     font-size: 1rem;
-    color: #ffffff;
+    color: $text-primary;
     font-weight: 500;
   }
 
   .btn-clear-filters {
-    background: #e74c3c;
-    color: white;
+    background: $error;
+    color: $text-inverse;
     border: none;
     padding: 0.4rem 0.8rem;
     border-radius: 4px;
     font-size: 0.8rem;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background $duration-normal;
 
     &:hover {
-      background: #c0392b;
+      background: $error-hover;
     }
   }
 }
@@ -79,13 +65,13 @@
   align-items: center;
   justify-content: center;
   padding: 3rem;
-  color: #ffffff;
+  color: $text-primary;
 
   .loading-spinner {
     width: 20px;
     height: 20px;
-    border: 2px solid #3a3a5c;
-    border-top: 2px solid #4a90e2;
+    border: 2px solid $bg-secondary;
+    border-top: 2px solid $primary;
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-right: 0.75rem;
@@ -100,7 +86,7 @@
 
 // 表格區域
 .table-section {
-  background: #2a2a3e;
+  background: $bg-surface;
   border-radius: 4px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -112,16 +98,16 @@
     min-width: 1100px;
 
     thead {
-      background: #3a3a5c;
+      background: $bg-secondary;
 
       th {
         padding: 1rem;
         text-align: left;
         font-weight: 500;
         font-size: 0.9rem;
-        color: #ffffff;
-        border-bottom: 1px solid #4a4a6c;
-        white-space: nowrap;
+        color: $text-primary;
+        border-bottom: 1px solid $bg-tertiary;
+        $text-inverse-space: nowrap;
 
         &.col-index { 
           width: 60px; 
@@ -151,30 +137,30 @@
         }
 
         &:hover {
-          background: #4a4a6c;
+          background: $bg-tertiary;
           cursor: pointer;
         }
       }
 
              // 搜尋列樣式
        .search-row {
-         background: #2a2a3e;
+         background: $bg-surface;
 
          th {
-           background: #2a2a3e;
+           background: $bg-surface;
            padding: 0.75rem 1rem;
-           border-bottom: 1px solid #3a3a5c;
-           white-space: nowrap;
+           border-bottom: 1px solid $bg-secondary;
+           $text-inverse-space: nowrap;
 
            &:hover {
-             background: #2a2a3e;
+             background: $bg-surface;
              cursor: default;
            }
 
           .search-input {
-            background: #1a1a2e;
-            color: #ffffff;
-            border: 1px solid #3a3a5c;
+            background: $bg-primary;
+            color: $text-primary;
+            border: 1px solid $bg-secondary;
             border-radius: 4px;
             padding: 0.5rem 0.75rem;
             width: 100%;
@@ -187,8 +173,8 @@
 
             &:focus {
               outline: none;
-              border-color: #4a90e2;
-              background: #353548;
+              border-color: $primary;
+              background: $border-primary;
             }
           }
         }
@@ -197,17 +183,17 @@
 
     tbody {
       .case-row {
-        border-bottom: 1px solid #3a3a5c;
-        transition: background-color 0.2s ease;
+        border-bottom: 1px solid $bg-secondary;
+        transition: background-color $duration-normal ease;
 
         &:hover {
-          background: #353548;
+          background: $border-primary;
         }
 
         td {
           padding: 1rem;
           font-size: 0.9rem;
-          color: #ffffff;
+          color: $text-primary;
 
           &.col-index {
             text-align: center;
@@ -220,10 +206,10 @@
               cursor: pointer;
 
               .case-title {
-                color: #ffffff;
+                color: $text-primary;
                 
                 &:hover {
-                  color: #4a90e2;
+                  color: $primary;
                 }
               }
             }
@@ -233,7 +219,7 @@
             .case-list {
               .case-item {
                 margin-bottom: 0.3rem;
-                color: #ffffff;
+                color: $text-primary;
                 
                 &:last-child {
                   margin-bottom: 0;
@@ -245,11 +231,11 @@
           &.col-count {
             text-align: center;
             font-weight: 500;
-            color: #ffffff;
+            color: $text-primary;
           }
 
           &.col-user {
-            color: #ffffff;
+            color: $text-primary;
           }
 
           &.col-date {
@@ -271,33 +257,33 @@
                 font-size: 0.75rem;
                 font-weight: 500;
                 cursor: pointer;
-                transition: all 0.2s ease;
-                color: white;
-                white-space: nowrap;
+                transition: all $duration-normal ease;
+                color: $text-inverse;
+                $text-inverse-space: nowrap;
                 min-width: 52px;
                 text-align: center;
 
                 &.btn-edit {
-                  background: #f39c12;
+                  background: $warning;
 
                   &:hover {
-                    background: #e67e22;
+                    background: $warning-hover;
                   }
                 }
 
                 &.btn-upload {
-                  background: #27ae60;
+                  background: $success;
 
                   &:hover {
-                    background: #229954;
+                    background: $success-hover;
                   }
                 }
 
                 &.btn-delete {
-                  background: #e74c3c;
+                  background: $error;
 
                   &:hover {
-                    background: #c0392b;
+                    background: $error-hover;
                   }
                 }
               }
@@ -314,7 +300,7 @@
   text-align: center;
   padding: 4rem 2rem;
   color: #8a8a9a;
-  background: #2a2a3e;
+  background: $bg-surface;
   border-radius: 4px;
 
   .empty-icon {
@@ -324,7 +310,7 @@
 
   h3 {
     margin: 0 0 0.5rem 0;
-    color: #ffffff;
+    color: $text-primary;
     font-weight: 500;
   }
 
@@ -340,7 +326,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: #2a2a3e;
+  background: $bg-surface;
   border-radius: 4px;
 
   .pagination-info {
@@ -355,16 +341,16 @@
 
     .pagination-btn {
       padding: 0.5rem 0.75rem;
-      border: 1px solid #3a3a5c;
-      background: #2a2a3e;
-      color: #ffffff;
+      border: 1px solid $bg-secondary;
+      background: $bg-surface;
+      color: $text-primary;
       border-radius: 4px;
       cursor: pointer;
       font-size: 0.9rem;
-      transition: all 0.2s ease;
+      transition: all $duration-normal ease;
 
       &:hover:not(:disabled) {
-        background: #353548;
+        background: $border-primary;
       }
 
       &:disabled {
@@ -373,9 +359,9 @@
       }
 
       &.page-number.active {
-        background: #f39c12;
-        color: white;
-        border-color: #f39c12;
+        background: $warning;
+        color: $text-inverse;
+        border-color: $warning;
       }
     }
 
@@ -386,16 +372,16 @@
 
     .page-selector {
       padding: 0.5rem;
-      border: 1px solid #3a3a5c;
+      border: 1px solid $bg-secondary;
       border-radius: 4px;
-      background: #2a2a3e;
-      color: #ffffff;
+      background: $bg-surface;
+      color: $text-primary;
       font-size: 0.9rem;
       margin-left: 0.5rem;
 
       &:focus {
         outline: none;
-        border-color: #4a90e2;
+        border-color: $primary;
       }
     }
   }
@@ -415,7 +401,7 @@
   z-index: 1000;
 
   .dialog {
-    background: #2a2a3e;
+    background: $bg-surface;
     border-radius: 8px;
     width: 90%;
     max-width: 500px;
@@ -428,13 +414,13 @@
       justify-content: space-between;
       align-items: center;
       padding: 1.5rem;
-      border-bottom: 1px solid #3a3a5c;
+      border-bottom: 1px solid $bg-secondary;
 
       h2 {
         margin: 0;
         font-size: 1.25rem;
         font-weight: 600;
-        color: #ffffff;
+        color: $text-primary;
       }
 
       .close-button {
@@ -451,7 +437,7 @@
         justify-content: center;
 
         &:hover {
-          color: #ffffff;
+          color: $text-primary;
         }
       }
     }
@@ -466,7 +452,7 @@
           display: block;
           margin-bottom: 0.5rem;
           font-weight: 500;
-          color: #ffffff;
+          color: $text-primary;
           font-size: 0.9rem;
         }
 
@@ -474,16 +460,16 @@
         .form-select {
           width: 100%;
           padding: 0.75rem;
-          border: 1px solid #3a3a5c;
+          border: 1px solid $bg-secondary;
           border-radius: 4px;
           font-size: 0.9rem;
-          background: #1a1a2e;
-          color: #ffffff;
+          background: $bg-primary;
+          color: $text-primary;
           box-sizing: border-box;
 
           &:focus {
             outline: none;
-            border-color: #4a90e2;
+            border-color: $primary;
           }
 
           &::placeholder {
@@ -503,8 +489,8 @@
             }
 
             .btn-remove-project {
-              background: #e74c3c;
-              color: white;
+              background: $error;
+              color: $text-inverse;
               border: none;
               border-radius: 4px;
               width: 30px;
@@ -514,10 +500,10 @@
               justify-content: center;
               cursor: pointer;
               font-size: 1.2rem;
-              transition: background 0.2s;
+              transition: background $duration-normal;
 
               &:hover:not(:disabled) {
-                background: #c0392b;
+                background: $error-hover;
               }
 
               &:disabled {
@@ -528,17 +514,17 @@
           }
 
           .btn-add-project {
-            background: #4a90e2;
-            color: white;
+            background: $primary;
+            color: $text-inverse;
             border: none;
             padding: 0.5rem 1rem;
             border-radius: 4px;
             font-size: 0.85rem;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background $duration-normal;
 
             &:hover:not(:disabled) {
-              background: #357abd;
+              background: $primary-hover;
             }
 
             &:disabled {
@@ -555,25 +541,25 @@
       justify-content: flex-end;
       gap: 0.75rem;
       padding: 1.5rem;
-      border-top: 1px solid #3a3a5c;
+      border-top: 1px solid $bg-secondary;
 
       .btn-cancel {
-        background: #3a3a5c;
-        color: #ffffff;
-        border: 1px solid #3a3a5c;
+        background: $bg-secondary;
+        color: $text-primary;
+        border: 1px solid $bg-secondary;
         padding: 0.75rem 1.5rem;
         border-radius: 4px;
         cursor: pointer;
         font-weight: 500;
 
         &:hover {
-          background: #4a4a6c;
+          background: $bg-tertiary;
         }
       }
 
       .btn-confirm {
-        background: #4a90e2;
-        color: white;
+        background: $primary;
+        color: $text-inverse;
         border: none;
         padding: 0.75rem 1.5rem;
         border-radius: 4px;
@@ -581,7 +567,7 @@
         font-weight: 500;
 
         &:hover:not(:disabled) {
-          background: #357abd;
+          background: $primary-hover;
         }
 
         &:disabled {

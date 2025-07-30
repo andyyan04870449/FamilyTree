@@ -1,10 +1,13 @@
+@import '../../../styles/foundation/tokens';
+@import '../../../styles/foundation/mixins';
+
 .file-upload-page {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 20px;
-  background: #1a1a2e;
+  padding: $spacing-xl;
+  background: $bg-primary;
   min-height: 100vh;
-  color: #ffffff;
+  color: $text-primary;
 }
 
 .page-header {
@@ -13,13 +16,13 @@
   
   h1 {
     font-size: 2.5rem;
-    color: #ffffff;
+    color: $text-primary;
     margin-bottom: 10px;
   }
   
   p {
     font-size: 1.1rem;
-    color: #8a8a9a;
+    color: $text-tertiary;
     margin-bottom: 20px;
   }
 
@@ -27,7 +30,7 @@
   .current-project-info {
     margin-top: 20px;
     padding: 12px 20px;
-    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+    background: linear-gradient(135deg, $primary 0%, $primary-hover 100%);
     border-radius: 8px;
     display: inline-block;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
@@ -53,10 +56,10 @@
   .no-project-warning {
     margin-top: 20px;
     padding: 12px 20px;
-    background: #3a2a1a;
-    border: 1px solid #e74c3c;
+    background: $bg-surface;
+    border: 1px solid $error;
     border-radius: 8px;
-    color: #ffffff;
+    color: $text-primary;
     display: inline-block;
     font-weight: 500;
 
@@ -75,11 +78,11 @@
 }
 
 .upload-area {
-  border: 3px dashed #3a3a5c;
+  border: 3px dashed $bg-secondary;
   border-radius: 12px;
   padding: 60px 20px;
   text-align: center;
-  background: #2a2a3e;
+  background: $bg-surface;
   transition: all 0.3s ease;
   min-height: 200px;
   display: flex;
@@ -87,13 +90,13 @@
   justify-content: center;
   
   &:hover {
-    border-color: #4a90e2;
-    background: #353548;
+    border-color: $primary;
+    background: $border-primary;
   }
   
   &.drag-over {
-    border-color: #4a90e2;
-    background: #404055;
+    border-color: $primary;
+    background: $bg-tertiary;
     transform: scale(1.02);
   }
 }
@@ -101,19 +104,19 @@
 .upload-placeholder {
   .upload-icon {
     font-size: 4rem;
-    color: #4a90e2;
+    color: $primary;
     margin-bottom: 20px;
     display: block;
   }
   
   h3 {
     font-size: 1.5rem;
-    color: #ffffff;
+    color: $text-primary;
     margin-bottom: 10px;
   }
   
   p {
-    color: #8a8a9a;
+    color: $text-tertiary;
     margin-bottom: 20px;
   }
 
@@ -129,9 +132,9 @@
       align-items: center;
       gap: 8px;
       padding: 10px 16px;
-      background: #3a3a5c;
+      background: $bg-secondary;
       border-radius: 8px;
-      border: 1px solid #4a4a6c;
+      border: 1px solid $bg-tertiary;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 
       .format-icon {
@@ -140,7 +143,7 @@
 
       .format-text {
         font-size: 0.9rem;
-        color: #ffffff;
+        color: $text-primary;
         font-weight: 500;
       }
     }
@@ -158,7 +161,7 @@
     
     .file-icon {
       font-size: 2rem;
-      color: #4a90e2;
+      color: $primary;
       margin-right: 16px;
     }
     
@@ -167,18 +170,18 @@
       
       h4 {
         margin: 0 0 4px 0;
-        color: #ffffff;
+        color: $text-primary;
         font-size: 1.1rem;
       }
       
       p {
         margin: 0 0 4px 0;
-        color: #8a8a9a;
+        color: $text-tertiary;
         font-size: 0.9rem;
       }
 
       .file-type-hint {
-        color: #27ae60;
+        color: $success;
         font-weight: 500;
         font-size: 0.85rem;
 
@@ -206,17 +209,17 @@
   font-weight: 500;
   
   &.primary {
-    background: #4a90e2;
+    background: $primary;
     color: white;
     
     &:hover:not(:disabled) {
-      background: #357abd;
+      background: $primary-hover;
       transform: translateY(-2px);
       box-shadow: 0 4px 8px rgba(74, 144, 226, 0.4);
     }
     
     &:disabled {
-      background: #555555;
+      background: $border-primary;
       cursor: not-allowed;
       transform: none;
     }
@@ -224,19 +227,19 @@
   
   &.secondary {
     background: transparent;
-    color: #4a90e2;
-    border: 2px solid #4a90e2;
+    color: $primary;
+    border: 2px solid $primary;
     
     &:hover:not(:disabled) {
-      background: #4a90e2;
+      background: $primary;
       color: white;
       transform: translateY(-2px);
       box-shadow: 0 4px 8px rgba(74, 144, 226, 0.4);
     }
     
     &:disabled {
-      border-color: #555555;
-      color: #555555;
+      border-color: $border-primary;
+      color: $border-primary;
       cursor: not-allowed;
       transform: none;
     }
@@ -249,14 +252,14 @@
   .progress-bar {
     width: 100%;
     height: 8px;
-    background: #3a3a5c;
+    background: $bg-secondary;
     border-radius: 4px;
     overflow: hidden;
     margin-bottom: 8px;
     
     .progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, #4a90e2, #357abd);
+      background: linear-gradient(90deg, $primary, $primary-hover);
       transition: width 0.3s ease;
     }
   }
@@ -264,7 +267,7 @@
   .progress-text {
     text-align: center;
     font-size: 0.9rem;
-    color: #8a8a9a;
+    color: $text-tertiary;
     margin: 0;
   }
 }
@@ -280,21 +283,21 @@
     font-weight: 500;
     
     &.success {
-      background: #2a4a2e;
-      color: #27ae60;
-      border: 1px solid #27ae60;
+      background: $bg-secondary;
+      color: $success;
+      border: 1px solid $success;
     }
     
     &.error {
-      background: #4a2a2e;
-      color: #e74c3c;
-      border: 1px solid #e74c3c;
+      background: $bg-secondary;
+      color: $error;
+      border: 1px solid $error;
     }
     
     &.info {
-      background: #2a3a4a;
-      color: #4a90e2;
-      border: 1px solid #4a90e2;
+      background: $bg-secondary;
+      color: $primary;
+      border: 1px solid $primary;
     }
   }
 }
@@ -307,7 +310,7 @@
 .unified-file-list {
   h3 {
     margin-bottom: 1.5rem;
-    color: #ffffff;
+    color: $text-primary;
     font-size: 1.3rem;
     font-weight: 600;
     display: flex;
@@ -321,24 +324,24 @@
   }
 
   .file-item {
-    border: 1px solid #3a3a5c;
+    border: 1px solid $bg-secondary;
     border-radius: 8px;
     padding: 1rem;
-    background: #2a2a3e;
+    background: $bg-surface;
     transition: all 0.2s ease;
 
     &:hover {
-      border-color: #4a90e2;
+      border-color: $primary;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       transform: translateY(-2px);
     }
 
     &.file-type-excel {
-      border-left: 4px solid #f39c12;
+      border-left: 4px solid $warning;
     }
 
     &.file-type-photo {
-      border-left: 4px solid #27ae60;
+      border-left: 4px solid $success;
     }
   }
 
@@ -359,20 +362,20 @@
         margin: 0 0 0.5rem 0;
         font-size: 1rem;
         font-weight: 600;
-        color: #ffffff;
+        color: $text-primary;
       }
 
       .file-meta {
         margin: 0.25rem 0;
         font-size: 0.85rem;
-        color: #8a8a9a;
+        color: $text-tertiary;
         line-height: 1.4;
       }
 
       .saved-name {
         margin: 0.25rem 0;
         font-size: 0.85rem;
-        color: #4a90e2;
+        color: $primary;
         font-weight: 500;
       }
 
@@ -392,28 +395,28 @@
         }
 
         .badge-excel {
-          background: #3a2e1a;
-          color: #f39c12;
+          background: $bg-secondary;
+          color: $warning;
         }
 
         .badge-photo {
-          background: #1a3a2e;
-          color: #27ae60;
+          background: $bg-secondary;
+          color: $success;
         }
 
         .status-uploaded {
-          background: #3a3a5c;
-          color: #ffffff;
+          background: $bg-secondary;
+          color: $text-primary;
         }
 
         .status-merged {
-          background: #1a2a3a;
-          color: #4a90e2;
+          background: $bg-secondary;
+          color: $primary;
         }
 
         .status-processing {
-          background: #3a2e1a;
-          color: #f39c12;
+          background: $bg-secondary;
+          color: $warning;
         }
       }
     }
@@ -445,26 +448,26 @@
         }
 
         &.delete-btn {
-          background: #4a2a2e;
-          color: #e74c3c;
-          border: 1px solid #e74c3c;
+          background: $bg-secondary;
+          color: $error;
+          border: 1px solid $error;
 
           &:hover:not(:disabled) {
-            background: #e74c3c;
-            color: #ffffff;
+            background: $error;
+            color: $text-primary;
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(231, 76, 60, 0.4);
           }
 
           &:disabled {
-            background: #3a3a5c;
-            color: #8a8a9a;
-            border-color: #555555;
+            background: $bg-secondary;
+            color: $text-tertiary;
+            border-color: $border-primary;
             cursor: not-allowed;
             transform: none;
             
             .btn-text {
-              color: #8a8a9a;
+              color: $text-tertiary;
             }
           }
         }
@@ -475,8 +478,8 @@
   .empty-state {
     text-align: center;
     padding: 3rem 2rem;
-    color: #8a8a9a;
-    background: #2a2a3e;
+    color: $text-tertiary;
+    background: $bg-surface;
     border-radius: 8px;
 
     .empty-icon {
@@ -489,7 +492,7 @@
     h4 {
       margin: 0 0 0.5rem 0;
       font-size: 1.1rem;
-      color: #ffffff;
+      color: $text-primary;
     }
 
     p {

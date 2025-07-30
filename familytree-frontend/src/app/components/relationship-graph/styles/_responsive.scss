@@ -1,0 +1,570 @@
+// 關係圖表組件 - 響應式設計
+@import '../../../../styles/variables';
+
+// 平板設計 (768px - 1024px)
+@media (max-width: 1024px) and (min-width: 769px) {
+  .graph-header {
+    .header-right {
+      .statistics {
+        gap: 12px;
+
+        .stat-item {
+          padding: 10px;
+
+          .stat-value {
+            font-size: 16px;
+          }
+        }
+      }
+    }
+  }
+
+  .legend {
+    min-width: 100px;
+    padding: 10px;
+  }
+
+  .graph-controls {
+    .control-btn {
+      width: 36px;
+      height: 36px;
+      font-size: 16px;
+    }
+  }
+
+  .dialog-container {
+    width: 85%;
+    max-width: 550px;
+  }
+
+  .merge-confirm-dialog {
+    width: 85%;
+    max-width: 650px;
+
+    .merge-content {
+      padding: 28px 24px;
+
+      .merge-preview {
+        padding: 24px;
+        gap: 20px;
+
+        .person-card {
+          padding: 18px;
+          gap: 16px;
+
+          .person-photo-container {
+            width: 64px;
+            height: 64px;
+          }
+
+          .person-details {
+            h4 {
+              font-size: 16px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 手機設計 (最大寬度 768px)
+@media (max-width: 768px) {
+  .relationship-graph-container {
+    font-size: 14px;
+  }
+
+  .graph-header {
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px;
+
+    .header-left {
+      text-align: center;
+
+      h2 {
+        font-size: 20px;
+      }
+
+      .graph-subtitle {
+        font-size: 11px;
+      }
+    }
+
+    .header-right {
+      width: 100%;
+
+      .statistics {
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+
+        .stat-item {
+          padding: 8px 12px;
+          min-width: 80px;
+
+          .stat-label {
+            font-size: 10px;
+          }
+
+          .stat-value {
+            font-size: 14px;
+          }
+        }
+      }
+    }
+  }
+
+  .graph-viewport {
+    height: calc(100vh - 200px);
+    min-height: 400px;
+  }
+
+  .legend {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin: 10px;
+    width: calc(100% - 20px);
+    min-width: auto;
+    padding: 10px;
+
+    .legend-item {
+      font-size: 11px;
+      margin-bottom: 6px;
+
+      .legend-color {
+        width: 12px;
+        height: 12px;
+        margin-right: 6px;
+      }
+
+      .legend-line {
+        width: 16px;
+        height: 2px;
+        margin-right: 6px;
+      }
+    }
+
+    .legend-search {
+      .search-toggle-btn {
+        font-size: 10px;
+        padding: 4px 6px;
+      }
+    }
+  }
+
+  .graph-controls {
+    position: relative;
+    top: auto;
+    right: auto;
+    flex-direction: row;
+    justify-content: center;
+    margin: 10px;
+    gap: 6px;
+
+    .control-btn {
+      width: 32px;
+      height: 32px;
+      font-size: 14px;
+    }
+  }
+
+  .dialog-container {
+    width: 95%;
+    max-width: none;
+    margin: 10px;
+    max-height: 85vh;
+
+    .dialog-header {
+      padding: 12px 16px;
+
+      h3 {
+        font-size: 16px;
+      }
+
+      .close-btn {
+        font-size: 20px;
+      }
+    }
+
+    .dialog-content {
+      padding: 16px;
+
+      .person-info {
+        flex-direction: column;
+        text-align: center;
+
+        .person-avatar {
+          width: 60px;
+          height: 60px;
+          margin-right: 0;
+          margin-bottom: 12px;
+
+          .avatar-text {
+            font-size: 1.5rem;
+          }
+        }
+
+        .person-details {
+          h4 {
+            font-size: 16px;
+          }
+
+          p {
+            font-size: 11px;
+          }
+        }
+      }
+
+      .person-relationships {
+        h5 {
+          font-size: 13px;
+        }
+
+        h6 {
+          font-size: 11px;
+        }
+
+        p {
+          font-size: 11px;
+          padding: 10px;
+        }
+      }
+    }
+  }
+
+  .relationship-dialog {
+    width: 95%;
+    max-width: none;
+    margin: 10px;
+
+    .relationship-dialog-content {
+      padding: 16px;
+
+      .relationship-info {
+        p {
+          font-size: 14px;
+        }
+      }
+
+      .relationship-form {
+        label {
+          font-size: 13px;
+        }
+
+        .relationship-input {
+          padding: 10px;
+          font-size: 13px;
+        }
+      }
+
+      .relationship-actions {
+        gap: 8px;
+
+        .btn {
+          padding: 8px 16px;
+          font-size: 13px;
+        }
+      }
+    }
+  }
+
+  .merge-confirm-dialog {
+    width: 95%;
+    max-width: none;
+    margin: 10px;
+
+    .dialog-header {
+      padding: 16px 20px;
+
+      h3 {
+        font-size: 18px;
+
+        &::before {
+          font-size: 20px;
+        }
+      }
+
+      .close-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 24px;
+      }
+    }
+
+    .merge-content {
+      padding: 20px 16px;
+
+      .merge-preview {
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+
+        .person-card {
+          padding: 16px;
+          gap: 12px;
+
+          .person-photo-container {
+            width: 48px;
+            height: 48px;
+
+            .person-fallback {
+              font-size: 20px;
+            }
+          }
+
+          .person-details {
+            h4 {
+              font-size: 14px;
+            }
+
+            .person-id {
+              font-size: 10px;
+            }
+
+            .person-info {
+              font-size: 12px;
+            }
+          }
+        }
+
+        .merge-direction {
+          order: 2;
+          gap: 8px;
+
+          .merge-arrow {
+            width: 40px;
+            height: 40px;
+            transform: rotate(90deg);
+          }
+
+          .merge-label {
+            font-size: 10px;
+          }
+        }
+
+        .person-card.person-a {
+          order: 1;
+        }
+
+        .person-card.person-b {
+          order: 3;
+        }
+      }
+
+      .merge-warning {
+        padding: 16px;
+        gap: 12px;
+
+        .warning-icon {
+          font-size: 24px;
+        }
+
+        .warning-content {
+          h5 {
+            font-size: 14px;
+          }
+
+          p {
+            font-size: 12px;
+          }
+        }
+      }
+    }
+
+    .dialog-actions {
+      padding: 16px 20px;
+      gap: 12px;
+
+      .btn {
+        padding: 12px 20px;
+        font-size: 13px;
+        min-width: 120px;
+
+        .btn-icon {
+          font-size: 14px;
+        }
+      }
+    }
+  }
+
+  .node-menu {
+    min-width: 120px;
+    max-width: 160px;
+
+    .node-menu-header {
+      padding: 6px 10px;
+
+      h4 {
+        font-size: 11px;
+      }
+
+      .close-btn {
+        font-size: 14px;
+      }
+    }
+
+    .node-menu-content {
+      padding: 6px;
+
+      .node-menu-actions {
+        gap: 3px;
+
+        .node-menu-btn {
+          padding: 5px 6px;
+          font-size: 10px;
+
+          .btn-icon {
+            font-size: 11px;
+            width: 12px;
+          }
+        }
+      }
+    }
+  }
+
+  .relationship-mode-indicator,
+  .comparison-mode-indicator {
+    top: 10px;
+    padding: 8px 16px;
+
+    .indicator-content {
+      gap: 8px;
+
+      .indicator-icon {
+        font-size: 16px;
+      }
+
+      .indicator-text {
+        font-size: 12px;
+      }
+
+      .cancel-btn {
+        padding: 3px 6px;
+        font-size: 10px;
+      }
+    }
+  }
+}
+
+// 小型手機設計 (最大寬度 480px)
+@media (max-width: 480px) {
+  .graph-header {
+    padding: 12px;
+
+    .header-left {
+      h2 {
+        font-size: 18px;
+      }
+    }
+
+    .header-right {
+      .statistics {
+        gap: 8px;
+
+        .stat-item {
+          padding: 6px 8px;
+          min-width: 70px;
+
+          .stat-label {
+            font-size: 9px;
+          }
+
+          .stat-value {
+            font-size: 12px;
+          }
+        }
+      }
+    }
+  }
+
+  .legend {
+    margin: 8px;
+    padding: 8px;
+
+    .legend-item {
+      font-size: 10px;
+    }
+  }
+
+  .graph-controls {
+    margin: 8px;
+
+    .control-btn {
+      width: 28px;
+      height: 28px;
+      font-size: 12px;
+    }
+  }
+
+  .dialog-container {
+    margin: 5px;
+
+    .dialog-header {
+      padding: 10px 12px;
+    }
+
+    .dialog-content {
+      padding: 12px;
+    }
+  }
+
+  .merge-confirm-dialog {
+    margin: 5px;
+
+    .dialog-header {
+      padding: 12px 16px;
+    }
+
+    .merge-content {
+      padding: 16px 12px;
+
+      .merge-preview {
+        padding: 12px;
+      }
+
+      .merge-warning {
+        padding: 12px;
+      }
+    }
+
+    .dialog-actions {
+      padding: 12px 16px;
+
+      .btn {
+        padding: 10px 16px;
+        min-width: 100px;
+      }
+    }
+  }
+}
+
+// 橫向模式調整
+@media (orientation: landscape) and (max-height: 500px) {
+  .graph-viewport {
+    height: calc(100vh - 150px);
+  }
+
+  .dialog-container,
+  .merge-confirm-dialog {
+    max-height: 80vh;
+  }
+
+  .legend,
+  .graph-controls {
+    position: absolute;
+    top: 10px;
+  }
+
+  .legend {
+    left: 10px;
+    width: auto;
+    min-width: 100px;
+  }
+
+  .graph-controls {
+    right: 10px;
+    flex-direction: column;
+  }
+}

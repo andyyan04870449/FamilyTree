@@ -1,244 +1,10 @@
-// 全文檢索頁面樣式 - 包含所有必要的變數和元件樣式
+// 全文檢索頁面樣式 - 使用統一設計系統
+@import '../../../styles/foundation/tokens';
+@import '../../../styles/foundation/mixins';
 
-// ============ 變數定義 ============
-$primary-blue: #3b82f6;
-$primary-blue-hover: #2563eb;
-$primary-blue-light: #4a90e2;
-$primary-blue-dark: #357abd;
+// 使用新設計系統的響應式 mixin 和按鈕樣式 (已在 foundation 中定義)
 
-$bg-dark: #1a1a1a;
-$bg-dark-secondary: #252525;
-$bg-dark-tertiary: #2a2a2a;
-$bg-dark-quaternary: #1f1f1f;
-
-$border-dark: #333;
-$border-dark-light: #444;
-
-$success-green: #28a745;
-$success-green-hover: #1e7e34;
-$warning-gray: #6c757d;
-$warning-gray-hover: #545b62;
-$error-red: #dc2626;
-$error-red-light: #ff6b6b;
-$loading-blue: #4a90e2;
-
-$text-primary: #e0e0e0;
-$text-secondary: #ccc;
-$text-quaternary: #777;
-$label-text: #999;
-
-$font-size-xs: 5px;
-$font-size-sm: 12px;
-$font-size-base: 14px;
-$font-size-md: 16px;
-$font-size-lg: 18px;
-$font-size-xl: 24px;
-
-$font-weight-medium: 500;
-$font-weight-semibold: 600;
-
-$spacing-xs: 5px;
-$spacing-sm: 8px;
-$spacing-md: 12px;
-$spacing-lg: 15px;
-$spacing-xl: 20px;
-$spacing-2xl: 25px;
-$spacing-4xl: 40px;
-$spacing-5xl: 60px;
-
-$section-padding: 25px;
-
-$border-radius-sm: 4px;
-$border-radius-md: 6px;
-$border-radius-lg: 8px;
-$border-radius-full: 50%;
-
-$shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
-
-// 響應式混入
-@mixin mobile {
-  @media (max-width: 768px) {
-    @content;
-  }
-}
-
-// 基礎按鈕樣式
-.btn {
-  padding: 8px 12px;
-  border: none;
-  border-radius: $border-radius-sm;
-  font-size: $font-size-base;
-  font-weight: $font-weight-medium;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-}
-
-// 主要按鈕
-.btn-primary {
-  @extend .btn;
-  background-color: $primary-blue;
-  color: white;
-  
-  &:hover:not(:disabled) {
-    background-color: $primary-blue-hover;
-  }
-}
-
-// 成功按鈕
-.btn-success {
-  @extend .btn;
-  background-color: $success-green;
-  color: white;
-  
-  &:hover:not(:disabled) {
-    background-color: $success-green-hover;
-  }
-}
-
-// 警告按鈕
-.btn-warning {
-  @extend .btn;
-  background-color: $warning-gray;
-  color: white;
-  
-  &:hover:not(:disabled) {
-    background-color: $warning-gray-hover;
-  }
-}
-
-// 圖示按鈕
-.btn-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: $border-radius-sm;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-}
-
-// 小按鈕
-.btn-sm {
-  padding: $spacing-xs $spacing-sm;
-  font-size: $font-size-sm;
-}
-
-// 基礎輸入框
-.input-base {
-  padding: 8px 12px;
-  background: $bg-dark-tertiary;
-  border: 1px solid $border-dark-light;
-  border-radius: $border-radius-sm;
-  color: $text-primary;
-  font-size: $font-size-md;
-  transition: all 0.2s ease;
-  
-  &:focus {
-    outline: none;
-    border-color: $primary-blue-light;
-    box-shadow: $shadow-focus;
-  }
-  
-  &::placeholder {
-    color: $text-quaternary;
-  }
-}
-
-// 基礎表格
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  background: $bg-dark-tertiary;
-  border-radius: $border-radius-md;
-  overflow: hidden;
-  
-  th, td {
-    padding: $spacing-md $spacing-lg;
-    text-align: left;
-    border-bottom: 1px solid $border-dark;
-  }
-  
-  th {
-    background: $bg-dark-tertiary;
-    color: $text-secondary;
-    font-weight: $font-weight-semibold;
-    font-size: $font-size-sm;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  
-  td {
-    color: $text-primary;
-    font-size: $font-size-sm;
-  }
-  
-  tr:hover {
-    background: $bg-dark-tertiary;
-  }
-  
-  tr:last-child td {
-    border-bottom: none;
-  }
-}
-
-// 載入容器
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: $spacing-5xl $spacing-xl;
-  color: $text-secondary;
-}
-
-// 載入動畫
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid $border-dark;
-  border-top: 3px solid $loading-blue;
-  border-radius: $border-radius-full;
-  animation: spin 1s linear infinite;
-  margin-bottom: $spacing-lg;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-// 分頁按鈕
-.page-btn {
-  padding: $spacing-sm $spacing-md;
-  border: 1px solid $border-dark-light;
-  background: $bg-dark-tertiary;
-  color: $text-primary;
-  border-radius: $border-radius-sm;
-  font-size: $font-size-sm;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover:not(:disabled) {
-    background: $bg-dark-quaternary;
-    border-color: $border-dark;
-  }
-  
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  &.active {
-    background: $primary-blue-light;
-    color: white;
-    border-color: $primary-blue-light;
-  }
-}
+// 所有基礎樣式（input、table、loading、page-btn）已在新設計系統中定義
 
 .keyword-search-page {
   max-width: 1400px;
@@ -344,7 +110,8 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
   }
   
   .search-input {
-    @extend .input-base;
+    // 使用新設計系統的表單控制樣式
+    @include form-control;
     width: calc(100% - 96px);
     font-size: 16px;
     margin-left: 16px;
@@ -516,7 +283,7 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
   
   .btn-secondary {
     background: transparent;
-    color: #A3B0C0;
+    color: white;
     border: 1px solid #A3B0C0;
     
     &:hover:not(:disabled) {
@@ -538,7 +305,7 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
 // 載入和錯誤狀態
 .loading-container {
   @extend .loading-container;
-  padding: $spacing-5xl $spacing-xl;
+  padding: $spacing-4xl $spacing-xl;
 }
 
 .error-message {
@@ -546,10 +313,10 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
   align-items: center;
   gap: $spacing-md;
   padding: $spacing-lg;
-  background-color: rgba($error-red, 0.1);
-  border: 1px solid rgba($error-red, 0.3);
-  border-radius: $border-radius-lg;
-  color: $error-red-light;
+  background-color: rgba($error, 0.1);
+  border: 1px solid rgba($error, 0.3);
+  border-radius: $radius-lg;
+  color: $error;
   
   .error-icon {
     font-size: 1.25rem;
@@ -615,7 +382,7 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
 // 空結果
 .empty-results {
   text-align: center;
-  padding: $spacing-5xl $spacing-xl;
+  padding: $spacing-4xl $spacing-xl;
   
   .empty-icon {
     font-size: 4rem;
@@ -990,9 +757,9 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
 
 // 分析清單區域
 .analysis-card {
-  background: $bg-dark-secondary;
-  border: 1px solid $border-dark;
-  border-radius: $border-radius-lg;
+  background: $bg-secondary;
+  border: 1px solid $border-primary;
+  border-radius: $radius-lg;
   padding: $section-padding;
   position: sticky;
   top: calc(2rem + 300px); // 在收藏夾下方
@@ -1043,7 +810,7 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
   }
   
   small {
-    color: $text-quaternary;
+    color: $text-disabled;
     font-size: $font-size-sm;
   }
 }
@@ -1059,14 +826,14 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
   justify-content: space-between;
   align-items: center;
   padding: $spacing-md;
-  background: $bg-dark-tertiary;
-  border: 1px solid $border-dark-light;
-  border-radius: $border-radius-sm;
+  background: $bg-tertiary;
+  border: 1px solid $border-primary;
+  border-radius: $radius-sm;
   transition: all 0.2s ease;
   
   &:hover {
-    background: $bg-dark-quaternary;
-    border-color: $border-dark;
+    background: $bg-primary;
+    border-color: $border-primary;
   }
   
   .analysis-name {
@@ -1076,16 +843,16 @@ $shadow-focus: 0 0 0 3px rgba(74, 144, 226, 0.1);
     flex: 1;
     
     &:hover {
-      color: $primary-blue-light;
+      color: $primary;
     }
   }
   
   .btn-delete {
-    background: rgba($error-red, 0.1);
-    color: $error-red-light;
+    background: rgba($error, 0.1);
+    color: $error;
     
     &:hover {
-      background: rgba($error-red, 0.2);
+      background: rgba($error, 0.2);
     }
   }
 }
