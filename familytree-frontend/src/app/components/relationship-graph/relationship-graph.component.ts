@@ -24,6 +24,7 @@ import * as d3 from 'd3';
           <h2>🔗 關聯圖譜</h2>
           <p class="graph-subtitle">{{ graphData?.metadata?.totalNodes || 0 }} 個節點，{{ graphData?.metadata?.totalLinks || 0 }} 個關係</p>
         </div>
+
         <div class="header-right">
           <div class="statistics">
             <div class="stat-item">
@@ -76,6 +77,18 @@ import * as d3 from 'd3';
           <div class="legend-item">
             <div class="legend-line friend"></div>
             <span>朋友關係</span>
+          </div>
+          
+          <!-- 搜尋功能 -->
+          <div class="legend-divider"></div>
+          <div class="legend-search">
+            <button 
+              class="search-toggle-btn" 
+              [class.active]="showSearchPanel"
+              (click)="toggleSearchPanel()"
+              title="搜尋">
+              🔍 搜尋
+            </button>
           </div>
         </div>
         
@@ -150,6 +163,10 @@ import * as d3 from 'd3';
               <button class="btn btn-success node-menu-btn" (click)="handleCreateRelationship()">
                 <span class="btn-icon">➕</span>
                 <span class="btn-text">建立關係</span>
+              </button>
+              <button class="btn btn-info node-menu-btn" (click)="handleOrgChart()">
+                <span class="btn-icon">🏢</span>
+                <span class="btn-text">組織圖</span>
               </button>
               <button class="btn btn-warning node-menu-btn" (click)="handleMerge()">
                 <span class="btn-icon">🔗</span>
@@ -306,6 +323,12 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
   @ViewChild('graphContainer', { static: false }) graphContainer!: ElementRef;
   @ViewChild('graphViewport', { static: false }) graphViewport!: ElementRef;
   @ViewChild('relationshipInput', { static: false }) relationshipInput!: ElementRef;
+
+  // 新增事件發射器
+  @Output() onShowAllNodes = new EventEmitter<void>();
+
+  // 搜尋面板狀態
+  showSearchPanel = false;
 
   @Input() graphData?: GraphData;
   @Input() autoAnalyze: boolean = false;
@@ -1014,6 +1037,10 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     }
   }
 
+  toggleSearchPanel(): void {
+    this.showSearchPanel = !this.showSearchPanel;
+  }
+
   /**
    * 處理節點點擊
    */
@@ -1137,6 +1164,22 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
       // 更新圖譜以顯示第一個節點為半透明
       this.updateNodeStates();
     }
+  }
+
+  /**
+   * 處理組織圖功能
+   */
+  handleOrgChart(): void {
+    if (!this.selectedNodeForMenu) return;
+
+    this.logService.info('RelationshipGraphComponent', '開啟組織圖', {
+      person: this.selectedNodeForMenu.name,
+      personId: this.selectedNodeForMenu.id
+    });
+
+    // TODO: 實現組織圖功能
+    alert('組織圖功能開發中...');
+    this.closeNodeMenu();
   }
 
   /**

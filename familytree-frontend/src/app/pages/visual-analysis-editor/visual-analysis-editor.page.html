@@ -1,66 +1,4 @@
 <div class="visual-analysis-editor" *ngIf="!loading">
-  <!-- 上方橫幅工具列 -->
-  <div class="toolbar">
-    <div class="toolbar-left">
-      <h1>視覺化關聯分析</h1>
-      <span class="graph-title" *ngIf="editorData?.graph">{{ editorData?.graph?.name }}</span>
-    </div>
-    
-    <div class="toolbar-center">
-      <!-- 搜尋按鈕 -->
-      <button 
-        class="tool-btn search-btn" 
-        [class.active]="showSearchPanel"
-        (click)="toggleSearchPanel()"
-        title="搜尋">
-        🔍
-      </button>
-      
-      <!-- 全部顯示按鈕 -->
-      <button 
-        class="tool-btn show-all-btn" 
-        (click)="showAllNodes()"
-        title="全部顯示">
-        👁️ 全部顯示
-      </button>
-      
-      <!-- 列出項目按鈕 -->
-      <button 
-        class="tool-btn list-btn" 
-        title="列出項目">
-        📋 列出項目
-      </button>
-      
-      <!-- 匯出按鈕 -->
-      <button 
-        class="tool-btn export-btn" 
-        (click)="exportGraph()"
-        title="匯出">
-        📥 匯出
-      </button>
-      
-      <!-- 恢復上一步按鈕 -->
-      <button 
-        class="tool-btn undo-btn" 
-        (click)="undo()"
-        title="恢復上一步">
-        ↶
-      </button>
-      
-      <!-- 恢復下一步按鈕 -->
-      <button 
-        class="tool-btn redo-btn" 
-        (click)="redo()"
-        title="恢復下一步">
-        ↷
-      </button>
-    </div>
-    
-    <div class="toolbar-right">
-      <!-- 可以添加其他工具按鈕 -->
-    </div>
-  </div>
-
   <!-- 主要內容區域 -->
   <div class="editor-content">
     <!-- 左側搜尋面板 -->
@@ -123,10 +61,6 @@
 
     <!-- 右側圖譜畫布 - 直接使用關係圖譜組件 -->
     <div class="graph-canvas-container">
-      <div class="analysis-result-header">
-        <h2>分析結果</h2>
-      </div>
-      
       <!-- 關係圖譜組件 -->
       <div class="canvas-wrapper">
         <app-relationship-graph
@@ -134,7 +68,8 @@
           [graphData]="graphData"
           [autoAnalyze]="false"
           [visualAnalysisGraphId]="graphId"
-          (relationshipCreated)="onRelationshipCreated()">
+          (relationshipCreated)="onRelationshipCreated()"
+          (onShowAllNodes)="showAllNodes()">
         </app-relationship-graph>
         
         <!-- 無資料狀態 -->
