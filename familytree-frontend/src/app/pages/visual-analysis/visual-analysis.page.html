@@ -1,35 +1,39 @@
 <div class="visual-analysis-page">
   <!-- 頁面標題 -->
   <div class="page-header">
-    <div class="header-left">
-      <h1>視覺化分析</h1>
+    <div class="header-top">
+      <div class="header-left">
+        <h1>視覺化分析</h1>
+        <div class="page-subtitle">管理所有關聯分析圖和視覺化資料</div>
+      </div>
+      <div class="header-right">
+        <button class="btn-main" (click)="openAddDialog()">新增</button>
+      </div>
     </div>
-    <div class="header-right">
-      <button class="btn-new-case" (click)="openAddDialog()">新增</button>
-    </div>
-  </div>
-
-  <!-- 分析圖列表標題 -->
-  <div class="list-header">
-    <span class="list-title">分析圖列表({{ getFilteredCount() }})</span>
-    <button 
-      *ngIf="hasActiveFilters()" 
-      class="btn-clear-filters" 
-      (click)="clearAllFilters()"
-      title="清除篩選">
-      清除篩選
-    </button>
   </div>
 
   <!-- 載入中指示器 -->
   <div *ngIf="loading" class="loading-section">
     <div class="loading-spinner"></div>
-    <span>載入中...</span>
+    <p>載入中...</p>
   </div>
 
-  <!-- 分析圖表格 -->
-  <div *ngIf="!loading" class="table-section">
-    <table class="case-table" *ngIf="filteredVisualAnalysisData.length > 0">
+  <!-- 分析圖列表 -->
+  <div *ngIf="!loading" class="content-section">
+    <div class="section-header">
+      <div class="section-title">分析圖列表({{ getFilteredCount() }})</div>
+      <div class="section-actions">
+        <button 
+          *ngIf="hasActiveFilters()" 
+          class="btn-action btn-delete" 
+          (click)="clearAllFilters()"
+          title="清除篩選">
+          清除篩選
+        </button>
+      </div>
+    </div>
+    
+    <table class="data-table" *ngIf="filteredVisualAnalysisData.length > 0">
       <thead>
         <tr>
           <th class="col-index">項次</th>
@@ -118,7 +122,7 @@
                 編輯
               </button>
               <button 
-                class="btn-action btn-upload" 
+                class="btn-action btn-name" 
                 (click)="renameGraph(item)"
                 title="重新命名">
                 命名
@@ -167,8 +171,8 @@
   <div *ngIf="showAddDialog" class="dialog-overlay" (click)="closeAddDialog()">
     <div class="dialog" (click)="$event.stopPropagation()">
       <div class="dialog-header">
-        <h2>新增視覺化分析圖</h2>
-        <button (click)="closeAddDialog()" class="close-button">×</button>
+        <h3>新增視覺化分析圖</h3>
+        <button (click)="closeAddDialog()" class="close-btn">×</button>
       </div>
       
       <div class="dialog-content">
@@ -225,7 +229,7 @@
         </div>
       </div>
       
-      <div class="dialog-footer">
+      <div class="dialog-actions">
         <button (click)="closeAddDialog()" class="btn-cancel">取消</button>
         <button 
           (click)="confirmAdd()" 

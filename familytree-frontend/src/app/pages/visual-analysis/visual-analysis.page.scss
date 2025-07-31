@@ -1,152 +1,178 @@
 // 視覺化分析頁面樣式：使用統一設計系統
+@use "sass:color";
 @import '../../../styles/foundation/tokens';
 @import '../../../styles/foundation/mixins';
 
 .visual-analysis-page {
+  width: 100%;
+  height: 100%;
   background: $bg-primary;
-  min-height: 100vh;
-  padding: $spacing-xl;
   color: $text-primary;
-  font-family: $font-family-base;
+  font-family: inherit;
+  padding: $spacing-xl;
 }
 
 // 頁面標題區域
 .page-header {
-  @include flex-between;
-  margin-bottom: $spacing-xl;
-  padding: $spacing-lg 0;
+  background: $bg-surface;
+  border-radius: 8px;
+  margin-bottom: $spacing-lg;
+  border: 1px solid $border-primary;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
-  .header-left {
-    h1 {
-      @include text-heading-2;
-      margin: 0;
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid $border-primary;
+
+    .header-left {
+      h1 {
+        margin: 0 0 4px 0;
+        font-size: 20px;
+        font-weight: 600;
+        color: $text-primary;
+      }
+
+      .page-subtitle {
+        margin: 0;
+        font-size: 12px;
+        color: $text-secondary;
+      }
     }
-  }
 
-  .header-right {
-    .btn-new-case {
-      @extend .btn !optional;
+    .header-right {
+      .btn-main {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: $primary;
+        color: white;
+
+        &:hover {
+          background: color.adjust($primary, $lightness: -10%);
+        }
+      }
     }
-  }
-}
-
-// 列表標題
-.list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-
-  .list-title {
-    font-size: 1rem;
-    color: $text-primary;
-    font-weight: 500;
-  }
-
-  .btn-clear-filters {
-    @extend .btn !optional;
-    @extend .btn-danger !optional;
-    @extend .btn-sm !optional;
   }
 }
 
 // 載入中
 .loading-section {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem;
-  color: $text-primary;
+  padding: 60px 20px;
+  color: $text-secondary;
 
   .loading-spinner {
-    width: 20px;
-    height: 20px;
+    width: 40px;
+    height: 40px;
     border: 2px solid $bg-secondary;
     border-top: 2px solid $primary;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin-right: 0.75rem;
+    margin-bottom: 15px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
   }
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-// 表格區域
-.table-section {
+// 內容區域
+.content-section {
   background: $bg-surface;
-  border-radius: 4px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: $spacing-lg;
+  border: 1px solid $border-primary;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
-  .case-table {
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid $border-primary;
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    .section-actions {
+      .btn-action {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: white;
+
+        &.btn-delete {
+          background: $error;
+
+          &:hover {
+            background: color.adjust($error, $lightness: -10%);
+          }
+        }
+      }
+    }
+  }
+
+  .data-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1100px;
 
     thead {
       background: $bg-secondary;
 
       th {
-        padding: 1rem;
+        padding: 12px 16px;
         text-align: left;
         font-weight: 500;
-        font-size: 0.9rem;
+        font-size: 13px;
         color: $text-primary;
-        border-bottom: 1px solid $bg-tertiary;
-        $text-inverse-space: nowrap;
+        border-bottom: 1px solid $border-secondary;
+        white-space: nowrap;
 
-        &.col-index { 
-          width: 60px; 
-          text-align: center; 
-        }
-        &.col-name { 
-          width: 18%; 
-          min-width: 160px; 
-        }
-        &.col-cases { 
-          width: 22%; 
-          min-width: 180px; 
-        }
-        &.col-count { 
-          width: 90px; 
-          text-align: center; 
-        }
-        &.col-user { 
-          width: 110px; 
-        }
-        &.col-date { 
-          width: 130px; 
-        }
-        &.col-actions { 
-          width: 240px; 
-          min-width: 240px;
-        }
-
-        &:hover {
-          background: $bg-tertiary;
-          cursor: pointer;
+        &.col-actions {
+          width: 180px;
+          text-align: center;
         }
       }
 
-             // 搜尋列樣式
-       .search-row {
-         background: $bg-surface;
+      // 搜尋列樣式
+      .search-row {
+        background: $bg-surface;
 
-         th {
-           background: $bg-surface;
-           padding: 0.75rem 1rem;
-           border-bottom: 1px solid $bg-secondary;
-           $text-inverse-space: nowrap;
+        th {
+          background: $bg-surface;
+          padding: 0.75rem 1rem;
+          border-bottom: 1px solid $bg-secondary;
 
-           &:hover {
-             background: $bg-surface;
-             cursor: default;
-           }
+          &:hover {
+            background: $bg-surface;
+            cursor: default;
+          }
 
           .search-input {
             background: $bg-primary;
@@ -159,13 +185,13 @@
             box-sizing: border-box;
 
             &::placeholder {
-              color: #8a8a9a;
+              color: $text-tertiary;
             }
 
             &:focus {
               outline: none;
               border-color: $primary;
-              background: $border-primary;
+              background: $bg-primary;
             }
           }
         }
@@ -173,23 +199,28 @@
     }
 
     tbody {
-      .case-row {
-        border-bottom: 1px solid $bg-secondary;
-        transition: background-color $duration-normal ease;
+      tr {
+        border-bottom: 1px solid $border-secondary;
+        transition: background-color 0.2s ease;
 
         &:hover {
-          background: $border-primary;
+          background: $bg-secondary;
+        }
+
+        &:last-child {
+          border-bottom: none;
         }
 
         td {
-          padding: 1rem;
-          font-size: 0.9rem;
+          padding: 12px 16px;
+          font-size: 13px;
           color: $text-primary;
+          vertical-align: middle;
 
           &.col-index {
             text-align: center;
             font-weight: 500;
-            color: #8a8a9a;
+            color: $text-secondary;
           }
 
           &.col-name {
@@ -230,43 +261,45 @@
           }
 
           &.col-date {
-            color: #8a8a9a;
-            font-size: 0.85rem;
+            color: $text-secondary;
+            font-size: 12px;
           }
 
           &.col-actions {
+            text-align: center;
+            
             .action-buttons {
               display: flex;
-              gap: 0.5rem;
+              gap: 6px;
               flex-wrap: nowrap;
-              justify-content: flex-start;
+              justify-content: center;
 
               .btn-action {
-                padding: 0.4rem 0.7rem;
+                padding: 6px 12px;
                 border: none;
                 border-radius: 4px;
-                font-size: 0.75rem;
+                font-size: 12px;
                 font-weight: 500;
                 cursor: pointer;
-                transition: all $duration-normal ease;
-                color: $text-inverse;
-                $text-inverse-space: nowrap;
-                min-width: 52px;
+                transition: all 0.2s ease;
+                color: white;
+                white-space: nowrap;
+                min-width: 50px;
                 text-align: center;
 
                 &.btn-edit {
                   background: $warning;
 
                   &:hover {
-                    background: $warning-hover;
+                    background: color.adjust($warning, $lightness: -10%);
                   }
                 }
 
-                &.btn-upload {
+                &.btn-name {
                   background: $success;
 
                   &:hover {
-                    background: $success-hover;
+                    background: color.adjust($success, $lightness: -10%);
                   }
                 }
 
@@ -274,7 +307,7 @@
                   background: $error;
 
                   &:hover {
-                    background: $error-hover;
+                    background: color.adjust($error, $lightness: -10%);
                   }
                 }
               }
@@ -289,25 +322,28 @@
 // 空狀態
 .empty-state {
   text-align: center;
-  padding: 4rem 2rem;
-  color: #8a8a9a;
+  padding: 60px 20px;
+  color: $text-secondary;
   background: $bg-surface;
-  border-radius: 4px;
+  border-radius: 8px;
+  border: 1px solid $border-secondary;
 
   .empty-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+    font-size: 48px;
+    margin-bottom: 16px;
   }
 
   h3 {
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 8px 0;
     color: $text-primary;
     font-weight: 500;
+    font-size: 16px;
   }
 
   p {
-    margin: 0 0 1.5rem 0;
+    margin: 0;
     line-height: 1.5;
+    font-size: 14px;
   }
 }
 
@@ -316,32 +352,34 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  padding: 16px 20px;
   background: $bg-surface;
-  border-radius: 4px;
+  border-radius: 8px;
+  border: 1px solid $border-secondary;
+  margin-top: 16px;
 
   .pagination-info {
-    font-size: 0.9rem;
-    color: #8a8a9a;
+    font-size: 14px;
+    color: $text-secondary;
   }
 
   .pagination-controls {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 4px;
 
     .pagination-btn {
-      padding: 0.5rem 0.75rem;
-      border: 1px solid $bg-secondary;
+      padding: 8px 12px;
+      border: 1px solid $border-secondary;
       background: $bg-surface;
       color: $text-primary;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 0.9rem;
-      transition: all $duration-normal ease;
+      font-size: 14px;
+      transition: all 0.2s ease;
 
       &:hover:not(:disabled) {
-        background: $border-primary;
+        background: $bg-secondary;
       }
 
       &:disabled {
@@ -350,25 +388,25 @@
       }
 
       &.page-number.active {
-        background: $warning;
-        color: $text-inverse;
-        border-color: $warning;
+        background: $primary;
+        color: white;
+        border-color: $primary;
       }
     }
 
     .page-numbers {
       display: flex;
-      gap: 0.25rem;
+      gap: 4px;
     }
 
     .page-selector {
-      padding: 0.5rem;
-      border: 1px solid $bg-secondary;
+      padding: 8px;
+      border: 1px solid $border-secondary;
       border-radius: 4px;
       background: $bg-surface;
       color: $text-primary;
-      font-size: 0.9rem;
-      margin-left: 0.5rem;
+      font-size: 14px;
+      margin-left: 8px;
 
       &:focus {
         outline: none;
@@ -404,75 +442,80 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1.5rem;
-      border-bottom: 1px solid $bg-secondary;
+      padding: 20px 24px;
+      border-bottom: 1px solid $border-secondary;
 
-      h2 {
+      h3 {
         margin: 0;
-        font-size: 1.25rem;
+        font-size: 18px;
         font-weight: 600;
         color: $text-primary;
       }
 
-      .close-button {
+      .close-btn {
         background: none;
         border: none;
-        font-size: 1.5rem;
+        font-size: 24px;
         cursor: pointer;
-        color: #8a8a9a;
+        color: $text-secondary;
         padding: 0;
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         display: flex;
         align-items: center;
         justify-content: center;
+        border-radius: 4px;
+        transition: all 0.2s ease;
 
         &:hover {
           color: $text-primary;
+          background: $bg-secondary;
         }
       }
     }
 
     .dialog-content {
-      padding: 1.5rem;
+      padding: 24px;
 
       .form-group {
-        margin-bottom: 1.5rem;
+        margin-bottom: 20px;
 
         label {
           display: block;
-          margin-bottom: 0.5rem;
+          margin-bottom: 8px;
           font-weight: 500;
           color: $text-primary;
-          font-size: 0.9rem;
+          font-size: 14px;
         }
 
         .form-input,
         .form-select {
           width: 100%;
-          padding: 0.75rem;
-          border: 1px solid $bg-secondary;
-          border-radius: 4px;
-          font-size: 0.9rem;
+          padding: 12px;
+          border: 1px solid $border-secondary;
+          border-radius: 6px;
+          font-size: 14px;
           background: $bg-primary;
           color: $text-primary;
           box-sizing: border-box;
+          transition: all 0.2s ease;
 
           &:focus {
             outline: none;
             border-color: $primary;
+            box-shadow: 0 0 0 3px rgba($primary, 0.1);
           }
 
           &::placeholder {
-            color: #8a8a9a;
+            color: $text-tertiary;
           }
         }
 
         .project-selection-list {
           .project-row {
             display: flex;
-            gap: 0.5rem;
-            margin-bottom: 0.75rem;
+            gap: 8px;
+            margin-bottom: 12px;
             align-items: center;
 
             .form-select {
@@ -481,20 +524,20 @@
 
             .btn-remove-project {
               background: $error;
-              color: $text-inverse;
+              color: white;
               border: none;
               border-radius: 4px;
-              width: 30px;
-              height: 30px;
+              width: 32px;
+              height: 32px;
               display: flex;
               align-items: center;
               justify-content: center;
               cursor: pointer;
-              font-size: 1.2rem;
-              transition: background $duration-normal;
+              font-size: 18px;
+              transition: all 0.2s ease;
 
               &:hover:not(:disabled) {
-                background: $error-hover;
+                background: color.adjust($error, $lightness: -10%);
               }
 
               &:disabled {
@@ -506,13 +549,13 @@
 
           .btn-add-project {
             background: $primary;
-            color: $text-inverse;
+            color: white;
             border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            font-size: 0.85rem;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
             cursor: pointer;
-            transition: background $duration-normal;
+            transition: all 0.2s ease;
 
             &:hover:not(:disabled) {
               background: $primary-hover;
