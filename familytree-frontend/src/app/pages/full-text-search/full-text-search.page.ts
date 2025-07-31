@@ -71,7 +71,8 @@ export class FullTextSearchPage implements OnInit {
   // 收藏相關
   favorites: Favorite[] = [];
 
-
+  // 數學函數
+  Math = Math;
 
   // 對話框控制
   showDetailDialog: boolean = false;

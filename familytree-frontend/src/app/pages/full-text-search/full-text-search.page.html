@@ -1,113 +1,83 @@
 <!-- 關鍵字檢索頁面 -->
 <div class="keyword-search-page">
-  <!-- 麵包屑導航 -->
-  <div class="breadcrumb">
-    <span class="breadcrumb-icon">🔍</span>
-    <span class="breadcrumb-text">關鍵字檢索</span>
+  <!-- 整合的頁面標題和搜尋區域 -->
+  <div class="page-header">
+    <div class="header-top">
+      <div class="header-left">
+        <h1>關鍵字檢索</h1>
+        <div class="page-subtitle">搜尋人員資料和管理收藏</div>
+      </div>
+      <div class="header-right">
+        <button 
+          *ngIf="searchResults.length > 0"
+          class="btn-export"
+          (click)="exportResults()"
+        >
+          匯出
+        </button>
+      </div>
+    </div>
+    
+    <div class="search-filter-section">
+      <div class="search-row">
+        <div class="search-group">
+          <label>關鍵字<span class="required">*</span></label>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="請輸入關鍵字"
+            [(ngModel)]="searchKeyword"
+            (keyup.enter)="performSearch()"
+          >
+        </div>
+        <div class="search-group">
+          <label>查詢方式</label>
+          <select class="search-input" [(ngModel)]="searchType">
+            <option value="exact">精準查詢</option>
+            <option value="fuzzy">模糊查詢</option>
+          </select>
+        </div>
+        <div class="search-actions">
+          <button class="btn-search" (click)="performSearch()" [disabled]="loading || !searchKeyword.trim()">搜尋</button>
+          <button class="btn-reset" (click)="resetSearch()" [disabled]="loading">重置</button>
+        </div>
+      </div>
+      
+      <!-- 歷史紀錄和熱門關鍵字 -->
+      <div class="keyword-suggestions">
+        <div class="history-section">
+          <label>歷史紀錄：</label>
+          <div class="history-tags">
+            <span class="history-tag" (click)="useHistoryKeyword('台科大')">台科大</span>
+            <span class="history-tag" (click)="useHistoryKeyword('上海市')">上海市</span>
+            <span class="history-tag" (click)="useHistoryKeyword('煙台大學')">煙台大學</span>
+            <span class="history-tag" (click)="useHistoryKeyword('東京華僑')">東京華僑</span>
+            <span class="history-tag" (click)="useHistoryKeyword('中國總商會')">中國總商會</span>
+          </div>
+        </div>
+        <div class="popular-keywords-section">
+          <label>熱門關鍵字：</label>
+          <div class="popular-tags">
+            <button class="popular-tag" (click)="usePopularKeyword('中華民國')">中華民國</button>
+            <button class="popular-tag" (click)="usePopularKeyword('台灣大學')">台灣大學</button>
+            <button class="popular-tag" (click)="usePopularKeyword('北大')">北大</button>
+            <button class="popular-tag" (click)="usePopularKeyword('上海浦東')">上海浦東</button>
+            <button class="popular-tag" (click)="usePopularKeyword('台北101')">台北101</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 主要內容區域 -->
   <div class="main-content">
     <!-- 左側搜索和結果區域 -->
     <div class="left-panel">
-      <!-- 查詢條件區域 -->
-      <div class="search-section">
-        <div class="search-card">
-          <h3>查詢條件</h3>
-          
-          <!-- 關鍵字輸入 -->
-          <div class="search-input-group">
-            <label for="keyword">關鍵字 <span class="required">*</span></label>
-            <input 
-              type="text" 
-              id="keyword"
-              [(ngModel)]="searchKeyword" 
-              placeholder="請輸入關鍵字"
-              (keyup.enter)="performSearch()"
-              class="search-input"
-            >
-          </div>
-
-          <!-- 歷史紀錄 -->
-          <div class="history-section">
-            <label>歷史紀錄：</label>
-            <div class="history-tags">
-              <span class="history-tag" (click)="useHistoryKeyword('台科大')">台科大</span>
-              <span class="history-tag" (click)="useHistoryKeyword('上海市')">上海市</span>
-              <span class="history-tag" (click)="useHistoryKeyword('煙台大學')">煙台大學</span>
-              <span class="history-tag" (click)="useHistoryKeyword('東京華僑')">東京華僑</span>
-              <span class="history-tag" (click)="useHistoryKeyword('中國總商會')">中國總商會</span>
-            </div>
-          </div>
-
-          <!-- 查詢方式選擇 -->
-          <div class="search-type-section">
-            <label>查詢方式</label>
-            <div class="radio-group">
-              <label class="radio-item">
-                <input 
-                  type="radio" 
-                  [(ngModel)]="searchType" 
-                  value="exact"
-                  name="searchType"
-                >
-                <span class="radio-label">精準查詢</span>
-              </label>
-              <label class="radio-item">
-                <input 
-                  type="radio" 
-                  [(ngModel)]="searchType" 
-                  value="fuzzy"
-                  name="searchType"
-                >
-                <span class="radio-label">模糊查詢</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- 熱門關鍵字 -->
-          <div class="popular-keywords-section">
-            <label>熱門關鍵字</label>
-            <div class="popular-tags">
-              <button class="popular-tag" (click)="usePopularKeyword('中華民國')">中華民國</button>
-              <button class="popular-tag" (click)="usePopularKeyword('台灣大學')">台灣大學</button>
-              <button class="popular-tag" (click)="usePopularKeyword('北大')">北大</button>
-              <button class="popular-tag" (click)="usePopularKeyword('上海浦東')">上海浦東</button>
-              <button class="popular-tag" (click)="usePopularKeyword('台北101')">台北101</button>
-            </div>
-          </div>
-
-          <!-- 操作按鈕 -->
-          <div class="search-actions">
-            <button 
-              class="btn btn-secondary" 
-              (click)="resetSearch()"
-              [disabled]="loading"
-            >
-              重置
-            </button>
-            <button 
-              class="btn btn-primary" 
-              (click)="performSearch()"
-              [disabled]="loading || !searchKeyword.trim()"
-            >
-              查詢
-            </button>
-          </div>
-        </div>
-      </div>
 
       <!-- 結果列表區域 -->
-      <div class="results-section">
-        <div class="results-header">
-          <h3>結果列表({{ totalResults }})</h3>
-          <button 
-            *ngIf="searchResults.length > 0"
-            class="btn btn-success"
-            (click)="exportResults()"
-          >
-            匯出
-          </button>
+      <div class="table-section">
+        <div class="table-header">
+          <span class="table-title">結果列表({{ totalResults }})</span>
         </div>
 
         <!-- 載入中 -->
@@ -123,42 +93,17 @@
         </div>
 
         <!-- 結果表格 -->
-        <div *ngIf="!loading && !error && searchResults.length > 0" class="results-table">
-          <table class="table">
+        <table class="case-table" *ngIf="!loading && !error && searchResults.length > 0">
             <thead>
               <tr>
                 <th class="checkbox-col">
                   <input type="checkbox" (change)="toggleSelectAll($event)">
                 </th>
                 <th class="index-col">項次</th>
-                <th class="name-col">
-                  姓名
-                  <div class="column-filter">
-                    <span class="sort-icon">⇅</span>
-                    <input type="text" placeholder="請輸入" class="filter-input">
-                  </div>
-                </th>
-                <th class="match-col">
-                  符合欄位
-                  <div class="column-filter">
-                    <span class="sort-icon">⇅</span>
-                    <input type="text" placeholder="請輸入" class="filter-input">
-                  </div>
-                </th>
-                <th class="source-col">
-                  資料來源
-                  <div class="column-filter">
-                    <span class="sort-icon">⇅</span>
-                    <input type="text" placeholder="請輸入" class="filter-input">
-                  </div>
-                </th>
-                <th class="date-col">
-                  建檔日期
-                  <div class="column-filter">
-                    <span class="sort-icon">⇅</span>
-                    <input type="text" placeholder="請輸入" class="filter-input">
-                  </div>
-                </th>
+                <th class="name-col">姓名</th>
+                <th class="match-col">符合欄位</th>
+                <th class="source-col">資料來源</th>
+                <th class="date-col">建檔日期</th>
                 <th class="action-col">功能</th>
               </tr>
             </thead>
@@ -172,61 +117,90 @@
                 <td class="match-cell">{{ result.matchCount }} 筆</td>
                 <td class="source-cell">{{ result.source }}</td>
                 <td class="date-cell">{{ formatDate(result.createdAt) }}</td>
-                <td class="action-buttons">
-                  <button 
-                    class="btn btn-primary btn-sm"
-                    (click)="viewDetails(result)"
-                    title="檢視詳情"
-                  >
-                    檢視
-                  </button>
-                  <button 
-                    class="btn btn-warning btn-sm"
-                    [class.favorited]="result.isFavorited"
-                    (click)="toggleFavorite(result)"
-                    [title]="result.isFavorited ? '取消收藏' : '加入收藏'"
-                  >
-                    收藏
-                  </button>
+                <td class="col-actions">
+                  <div class="action-buttons">
+                    <button 
+                      class="btn-action btn-view"
+                      (click)="viewDetails(result)"
+                      title="檢視"
+                    >
+                      檢視
+                    </button>
+                    <button 
+                      class="btn-action btn-favorite"
+                      [class.favorited]="result.isFavorited"
+                      (click)="toggleFavorite(result)"
+                      [title]="result.isFavorited ? '取消收藏' : '加入收藏'"
+                    >
+                      收藏
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
-        </div>
 
-        <!-- 分頁控制 -->
-        <div *ngIf="totalPages > 1" class="pagination">
-          <div class="pagination-info">
-            顯示1至10筆，共{{ totalResults }}筆資料
-          </div>
-          <div class="pagination-controls">
-            <button class="page-btn" [disabled]="currentPage === 1" (click)="goToPage(1)">
-              ⟪
-            </button>
-            <button class="page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
-              ‹
-            </button>
-            <button class="page-btn active">{{ currentPage }}</button>
-            <button class="page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
-              ›
-            </button>
-            <button class="page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(totalPages)">
-              ⟫
-            </button>
-            <select class="page-size-select" [(ngModel)]="pageSize" (change)="onPageSizeChange()">
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-            </select>
-          </div>
-        </div>
+      </div>
 
-        <!-- 空結果 -->
-        <div *ngIf="!loading && !error && hasSearched && searchResults.length === 0" class="empty-results">
-          <div class="empty-icon">🔍</div>
-          <h3>沒有找到相關結果</h3>
-          <p>請嘗試使用不同的關鍵字或查詢方式</p>
+      <!-- 分頁控制 -->
+      <div *ngIf="totalPages > 1" class="pagination-section">
+        <div class="pagination-info">
+          顯示 {{ (currentPage - 1) * pageSize + 1 }} 至 {{ Math.min(currentPage * pageSize, totalResults) }} 筆，共 {{ totalResults }} 筆資料
         </div>
+        
+        <div class="pagination-controls">
+          <button 
+            class="pagination-btn" 
+            [disabled]="currentPage === 1"
+            (click)="goToPage(1)">
+            ≪
+          </button>
+          <button 
+            class="pagination-btn" 
+            [disabled]="currentPage === 1"
+            (click)="goToPage(currentPage - 1)">
+            ‹
+          </button>
+          
+          <span class="page-numbers">
+            <button 
+              *ngFor="let page of getPageNumbers()" 
+              class="pagination-btn page-number"
+              [class.active]="page === currentPage"
+              (click)="goToPage(page)">
+              {{ page }}
+            </button>
+          </span>
+          
+          <button 
+            class="pagination-btn" 
+            [disabled]="currentPage === totalPages"
+            (click)="goToPage(currentPage + 1)">
+            ›
+          </button>
+          <button 
+            class="pagination-btn" 
+            [disabled]="currentPage === totalPages"
+            (click)="goToPage(totalPages)">
+            ≫
+          </button>
+          
+          <select 
+            class="page-selector" 
+            [(ngModel)]="pageSize" 
+            (change)="onPageSizeChange()">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 空結果 -->
+      <div *ngIf="!loading && !error && hasSearched && searchResults.length === 0" class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <h3>沒有找到相關結果</h3>
+        <p>請嘗試使用不同的關鍵字或查詢方式</p>
       </div>
 
     </div>
