@@ -1,351 +1,137 @@
 // ================================
-// 表單組件樣式
+// 表單組件 - 簡化版
 // ================================
+// 統一的表單樣式，減少客製化差異
 
-@import '../foundation/tokens';
-@import '../foundation/mixins';
+// 表單容器
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
 
-// ================================
-// 表單控制項
-// ================================
+// 表單行
+.form-row {
+  display: flex;
+  gap: $spacing-md;
+  align-items: flex-end;
+  
+  .form-group {
+    flex: 1;
+  }
+}
 
+// 表單組
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+// 標籤
+.form-label {
+  @include text-label;
+  color: $text-secondary;
+  margin-bottom: $spacing-xs;
+}
+
+// 基礎輸入控制項
 .form-control {
   @include form-control;
-
+  
   // 尺寸變體
-  &--small {
+  &.form-control-sm {
     padding: $spacing-xs $spacing-sm;
-    font-size: $font-size-xs;
-  }
-
-  &--large {
-    padding: $spacing-md $spacing-lg;
-    font-size: $font-size-base;
-  }
-
-  // 狀態變體
-  &--success {
-    border-color: $success;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
-  }
-
-  &--warning {
-    border-color: $warning;
-    box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
-  }
-}
-
-// ================================
-// 表單標籤
-// ================================
-
-.form-label {
-  @include form-label;
-
-  &--required::after {
-    content: ' *';
-    color: $error;
-  }
-}
-
-// ================================
-// 表單群組
-// ================================
-
-.form-group {
-  @include form-group;
-
-  &--inline {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    margin-bottom: $spacing-md;
-
-    .form-label {
-      margin-bottom: 0;
-      white-space: nowrap;
-    }
-
-    .form-control {
-      flex: 1;
-    }
-  }
-}
-
-// ================================
-// 輸入群組
-// ================================
-
-.input-group {
-  display: flex;
-  width: 100%;
-
-  .form-control {
-    position: relative;
-    flex: 1 1 auto;
-    margin: 0;
-
-    &:not(:first-child) {
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-      border-left: 0;
-    }
-
-    &:not(:last-child) {
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
-    }
-
-    &:focus {
-      z-index: 2;
-    }
-  }
-
-  &__prepend,
-  &__append {
-    display: flex;
-    align-items: center;
-    padding: $spacing-sm $spacing-md;
-    background: $bg-tertiary;
-    border: 1px solid $border-primary;
-    color: $text-secondary;
     font-size: $font-size-sm;
-    white-space: nowrap;
   }
-
-  &__prepend {
-    border-right: 0;
-    border-top-left-radius: $radius-md;
-    border-bottom-left-radius: $radius-md;
+  
+  &.form-control-lg {
+    padding: $spacing-md $spacing-lg;
+    font-size: $font-size-lg;
   }
-
-  &__append {
-    border-left: 0;
-    border-top-right-radius: $radius-md;
-    border-bottom-right-radius: $radius-md;
+  
+  // 狀態變體
+  &.is-invalid {
+    border-color: $error;
+    
+    &:focus {
+      border-color: $error;
+      box-shadow: 0 0 0 2px rgba($error, 0.2);
+    }
+  }
+  
+  &.is-valid {
+    border-color: $success;
+    
+    &:focus {
+      border-color: $success;
+      box-shadow: 0 0 0 2px rgba($success, 0.2);
+    }
   }
 }
 
-// ================================
-// 選擇框
-// ================================
+// 文本域
+.form-textarea {
+  @extend .form-control;
+  min-height: 100px;
+  resize: vertical;
+}
 
+// 選擇框
 .form-select {
-  @include form-control;
+  @extend .form-control;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
   background-position: right $spacing-sm center;
   background-repeat: no-repeat;
   background-size: 16px 12px;
-  padding-right: $spacing-3xl;
+  padding-right: $spacing-xl;
   appearance: none;
-
-  &:focus {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%233b82f6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-  }
 }
 
-// ================================
-// 複選框和單選框
-// ================================
-
-.form-check {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-sm;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-
-  &__input {
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    accent-color: $primary;
-    cursor: pointer;
-
-    &:disabled {
-      cursor: not-allowed;
-    }
-  }
-
-  &__label {
-    margin: 0;
-    cursor: pointer;
-    font-size: $font-size-sm;
-    color: $text-primary;
-
-    &:has(+ .form-check__input:disabled) {
-      color: $text-disabled;
-      cursor: not-allowed;
-    }
-  }
-
-  // 切換開關樣式
-  &--switch {
-    .form-check__input {
-      appearance: none;
-      width: 44px;
-      height: 24px;
-      background: $bg-tertiary;
-      border: 2px solid $border-primary;
-      border-radius: $radius-full;
-      position: relative;
-      transition: all $duration-normal $easing-ease-in-out;
-
-      &::before {
-        content: '';
-        position: absolute;
-        width: 16px;
-        height: 16px;
-        background: $border-primary;
-        border-radius: $radius-full;
-        top: 2px;
-        left: 2px;
-        transition: all $duration-normal $easing-ease-in-out;
-      }
-
-      &:checked {
-        background: $primary;
-        border-color: $primary;
-
-        &::before {
-          background: white;
-          transform: translateX(20px);
-        }
-      }
-
-      &:focus {
-        box-shadow: $shadow-focus;
-      }
-    }
-  }
+// 複選框
+.form-checkbox {
+  @include form-checkbox;
 }
 
-// ================================
-// 文字區域
-// ================================
-
-.form-textarea {
-  @include form-control;
-  min-height: 120px;
-  resize: vertical;
-  font-family: $font-family-base;
+// 單選框
+.form-radio {
+  @include form-radio;
 }
 
-// ================================
-// 檔案上傳
-// ================================
-
-.form-file {
-  position: relative;
-  display: inline-block;
-  width: 100%;
-
-  &__input {
-    position: absolute;
-    opacity: 0;
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
-  }
-
-  &__label {
-    @include form-control;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: $spacing-sm;
-    cursor: pointer;
-    border: 2px dashed $border-primary;
-    background: $bg-secondary;
-    color: $text-secondary;
-    text-align: center;
-    min-height: 120px;
-    transition: all $duration-normal $easing-ease-in-out;
-
-    &:hover {
-      border-color: $primary;
-      background: $bg-tertiary;
-    }
-
-    &--dragover {
-      border-color: $primary;
-      background: rgba($primary, 0.1);
-      color: $primary;
-    }
-  }
-
-  &__icon {
-    width: 24px;
-    height: 24px;
-    opacity: 0.6;
-  }
-
-  &__text {
-    font-size: $font-size-sm;
-  }
+// 開關
+.form-switch {
+  @include form-switch;
 }
 
-// ================================
-// 表單驗證
-// ================================
-
-.form-feedback {
+// 幫助文字
+.form-help {
+  @include text-caption;
+  color: $text-tertiary;
   margin-top: $spacing-xs;
-  font-size: $font-size-xs;
-  line-height: $line-height-normal;
-
-  &--error {
-    color: $error;
-  }
-
-  &--success {
-    color: $success;
-  }
-
-  &--warning {
-    color: $warning;
-  }
 }
 
-// ================================
-// 表單布局
-// ================================
-
-.form-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-md;
-  margin-bottom: $spacing-lg;
-
-  .form-group {
-    flex: 1;
-    margin-bottom: 0;
-  }
-
-  @include mobile {
-    flex-direction: column;
-    gap: 0;
-
-    .form-group {
-      margin-bottom: $spacing-lg;
-    }
-  }
+// 錯誤訊息
+.form-error {
+  @include text-caption;
+  color: $error;
+  margin-top: $spacing-xs;
 }
 
+// 成功訊息
+.form-success {
+  @include text-caption;
+  color: $success;
+  margin-top: $spacing-xs;
+}
+
+// 表單按鈕組
 .form-actions {
   display: flex;
   gap: $spacing-md;
-  padding-top: $spacing-lg;
-  border-top: 1px solid $border-primary;
-
-  @include mobile {
-    flex-direction: column;
-
-    .btn {
-      width: 100%;
-    }
+  justify-content: flex-end;
+  margin-top: $spacing-lg;
+  
+  .btn {
+    min-width: 80px;
   }
 }

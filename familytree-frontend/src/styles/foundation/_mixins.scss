@@ -81,12 +81,11 @@
 
 @mixin button-secondary {
   @include button-base;
-  background: $bg-secondary;
+  background: $primary;
   color: $text-inverse;
-  border: 1px solid $border-primary;
 
   &:hover:not(:disabled) {
-    background: $bg-tertiary;
+    background: $primary-hover;
   }
 
   &:focus-visible {
@@ -97,31 +96,76 @@
 
 @mixin button-danger {
   @include button-base;
-  background: $error;
+  background: $primary;
   color: $text-inverse;
 
   &:hover:not(:disabled) {
-    background: $error-hover;
+    background: $primary-hover;
   }
 
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    box-shadow: $shadow-focus;
   }
 }
 
 @mixin button-success {
   @include button-base;
-  background: $success;
+  background: $primary;
   color: $text-inverse;
 
   &:hover:not(:disabled) {
-    background: $success-hover;
+    background: $primary-hover;
   }
 
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+    box-shadow: $shadow-focus;
+  }
+}
+
+@mixin button-warning {
+  @include button-base;
+  background: $primary;
+  color: $text-inverse;
+
+  &:hover:not(:disabled) {
+    background: $primary-hover;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: $shadow-focus;
+  }
+}
+
+@mixin button-info {
+  @include button-base;
+  background: $primary;
+  color: $text-inverse;
+
+  &:hover:not(:disabled) {
+    background: $primary-hover;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: $shadow-focus;
+  }
+}
+
+@mixin button-outline {
+  @include button-base;
+  background: $primary;
+  color: $text-inverse;
+
+  &:hover:not(:disabled) {
+    background: $primary-hover;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: $shadow-focus;
   }
 }
 
@@ -188,6 +232,68 @@
 
   &:last-child {
     margin-bottom: 0;
+  }
+}
+
+@mixin form-checkbox {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: $primary;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@mixin form-radio {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: $primary;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@mixin form-switch {
+  appearance: none;
+  width: 44px;
+  height: 24px;
+  background: $bg-tertiary;
+  border: 2px solid $border-primary;
+  border-radius: $radius-full;
+  position: relative;
+  transition: all $duration-normal $easing-ease-in-out;
+  cursor: pointer;
+
+  &::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: $border-primary;
+    border-radius: $radius-full;
+    top: 2px;
+    left: 2px;
+    transition: all $duration-normal $easing-ease-in-out;
+  }
+
+  &:checked {
+    background: $primary;
+    border-color: $primary;
+
+    &::before {
+      background: white;
+      transform: translateX(20px);
+    }
+  }
+
+  &:focus {
+    box-shadow: $shadow-focus;
   }
 }
 
@@ -284,6 +390,13 @@
 @mixin text-caption {
   font-size: $font-size-sm;
   font-weight: $font-weight-normal;
+  line-height: $line-height-normal;
+  color: $text-secondary;
+}
+
+@mixin text-label {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
   line-height: $line-height-normal;
   color: $text-secondary;
 }

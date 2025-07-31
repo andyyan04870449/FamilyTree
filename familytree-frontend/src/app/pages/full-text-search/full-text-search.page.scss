@@ -267,38 +267,15 @@
   }
   
   .btn {
-    padding: 8px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    @extend .btn;
   }
   
   .btn-secondary {
-    background: transparent;
-    color: white;
-    border: 1px solid #A3B0C0;
-    
-    &:hover:not(:disabled) {
-      background: #A3B0C0;
-      color: white;
-    }
+    @extend .btn-secondary;
   }
   
   .btn-primary {
-    background: #60A5FA;
-    color: white;
-    
-    &:hover:not(:disabled) {
-      background: #3B82F6;
-    }
+    @extend .btn-primary;
   }
 }
 

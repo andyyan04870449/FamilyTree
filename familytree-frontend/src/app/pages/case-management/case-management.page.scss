@@ -1,258 +1,267 @@
-// 案件管理頁面樣式：使用統一設計系統
+// 案件管理頁面樣式：參考 relationship-graph 設計風格
+@use "sass:color";
 @import '../../../styles/foundation/tokens';
 @import '../../../styles/foundation/mixins';
 
 .case-management-page {
+  width: 100%;
+  height: 100%;
   background: $bg-primary;
-  min-height: 100vh;
+  color: $text-primary;
+  font-family: inherit;
   padding: $spacing-xl;
-  color: $text-primary;
-  font-family: $font-family-base;
 }
 
-// 頁面標題區域
+// 整合的頁面標題和搜尋區域
 .page-header {
-  @include flex-between;
-  margin-bottom: $spacing-xl;
-  padding: $spacing-lg 0;
-
-  .header-left {
-    h1 {
-      @include text-heading-2;
-      margin: 0;
-    }
-  }
-
-  .header-right {
-    .btn-new-case {
-      @include button-primary;
-    }
-  }
-}
-
-// 列表標題
-.list-header {
+  background: $bg-surface;
+  border-radius: 8px;
   margin-bottom: $spacing-lg;
+  border: 1px solid $border-primary;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
-  .list-title {
-    font-size: $font-size-base;
-    color: $text-primary;
-    font-weight: $font-weight-medium;
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid $border-primary;
+
+    .header-left {
+      h1 {
+        margin: 0 0 4px 0;
+        font-size: 20px;
+        font-weight: 600;
+        color: $text-primary;
+      }
+
+      .page-subtitle {
+        margin: 0;
+        font-size: 12px;
+        color: $text-secondary;
+      }
+    }
+
+    .header-right {
+      .btn-new-case {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: $primary;
+        color: white;
+
+        &:hover {
+          background: color.adjust($primary, $lightness: -10%);
+        }
+      }
+    }
+  }
+
+  .search-filter-section {
+    padding: 15px 20px;
+
+    .search-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+
+      .search-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        label {
+          font-size: 11px;
+          color: $text-secondary;
+          font-weight: 500;
+        }
+
+        .search-input {
+          height: 32px;
+          padding: 6px 10px;
+          border: 1px solid $border-secondary;
+          border-radius: 4px;
+          background: $bg-primary;
+          color: $text-primary;
+          font-size: 13px;
+          
+          &:focus {
+            border-color: $primary;
+            box-shadow: 0 0 0 2px rgba($primary, 0.1);
+            outline: none;
+          }
+
+          &::placeholder {
+            color: $text-tertiary;
+            font-size: 12px;
+          }
+        }
+      }
+
+      .search-actions {
+        display: flex;
+        gap: 8px;
+        align-items: end;
+
+        .btn-search {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          padding: 6px 12px;
+          border: none;
+          border-radius: 4px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          background: $primary;
+          color: white;
+          height: 32px;
+          min-width: 60px;
+
+          &:hover {
+            background: color.adjust($primary, $lightness: -10%);
+          }
+        }
+      }
+    }
   }
 }
 
-
-
-// 載入中
-.loading-section {
-  @include flex-center;
-  padding: $spacing-4xl;
-  color: $text-primary;
-
-  .loading-spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid $border-primary;
-    border-top: 2px solid $primary;
-    border-radius: $radius-full;
-    animation: spin 1s linear infinite;
-    margin-right: $spacing-md;
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-// 表格區域
+// 整合的表格區域（包含標題）
 .table-section {
   background: $bg-surface;
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 1.5rem;
+  margin-bottom: $spacing-xl;
+  border: 1px solid $border-primary;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: $bg-secondary;
+    border-bottom: 1px solid $border-primary;
+
+    .table-title {
+      font-size: 14px;
+      color: $text-primary;
+      font-weight: 600;
+    }
+
+    .table-actions {
+      display: flex;
+      gap: $spacing-sm;
+    }
+  }
 
   .case-table {
     width: 100%;
     border-collapse: collapse;
+    background: $bg-surface;
 
     thead {
       background: $bg-secondary;
 
       th {
-        padding: $spacing-lg;
+        padding: 12px 16px;
         text-align: left;
-        font-weight: $font-weight-medium;
-        font-size: $font-size-sm;
+        font-weight: 600;
+        font-size: 13px;
         color: $text-primary;
         border-bottom: 1px solid $border-primary;
 
-        &.col-index { 
-          width: 80px; 
-          text-align: center; 
-        }
-        &.col-name { 
-          width: auto; 
-          min-width: 200px; 
-        }
-        &.col-creator { 
-          width: 120px; 
-        }
-        &.col-members { 
-          width: 100px; 
-          text-align: center; 
-        }
-        &.col-date { 
-          width: 140px; 
-        }
-        &.col-actions { 
-          width: 280px; 
-        }
-
-        // 排序箭頭
-        &:hover {
-          background: $bg-tertiary;
-          cursor: pointer;
-        }
-      }
-
-      // 搜尋列樣式
-      .search-row {
-        background: $bg-surface;
-
-        th {
-          background: $bg-surface;
-          padding: 0.75rem 1rem;
-          border-bottom: 1px solid $bg-secondary;
-
-          &:hover {
-            background: $bg-surface;
-            cursor: default;
-          }
-
-          .search-input {
-            background: $bg-primary;
-            color: $text-primary;
-            border: 1px solid $bg-secondary;
-            border-radius: 4px;
-            padding: 0.5rem 0.75rem;
-            width: 100%;
-            font-size: 0.85rem;
-            box-sizing: border-box;
-
-            &::placeholder {
-              color: $text-tertiary;
-            }
-
-            &:focus {
-              outline: none;
-              border-color: $primary;
-              background: $border-primary;
-            }
-          }
+        &.col-actions {
+          width: 180px;
+          text-align: center;
         }
       }
     }
 
     tbody {
-      .case-row {
-        border-bottom: 1px solid $bg-secondary;
+      tr {
+        border-bottom: 1px solid $border-secondary;
         transition: background-color 0.2s ease;
 
         &:hover {
-          background: $border-primary;
+          background: $bg-secondary;
+        }
+
+        &:last-child {
+          border-bottom: none;
         }
 
         td {
-          padding: 1rem;
-          font-size: 0.9rem;
+          padding: 12px 16px;
+          font-size: 13px;
           color: $text-primary;
-
-          &.col-index {
-            text-align: center;
-            font-weight: 500;
-            color: $text-tertiary;
-          }
-
-          &.col-name {
-                          .case-name-cell {
-                cursor: pointer;
-
-                .case-title {
-                  color: $text-primary;
-                  
-                  &:hover {
-                    color: $primary;
-                  }
-                }
-              }
-          }
-
-          &.col-creator {
-            color: $text-primary;
-          }
-
-          &.col-members {
-            text-align: center;
-            font-weight: 500;
-            color: $text-primary;
-          }
-
-          &.col-date {
-            color: $text-tertiary;
-            font-size: 0.85rem;
-          }
+          vertical-align: middle;
 
           &.col-actions {
-            .action-buttons {
-              display: flex;
-              gap: 0.5rem;
-              flex-wrap: wrap;
+            text-align: center;
+          }
+        }
+      }
+    }
 
-              .btn-action {
-                padding: 0.4rem 0.8rem;
-                border: none;
-                border-radius: 4px;
-                font-size: 0.8rem;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                color: white;
+    .action-buttons {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+      flex-wrap: nowrap;
 
-                &.btn-edit {
-                  background: $warning;
+      .btn-action {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        padding: 4px 6px;
+        border: none;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: white;
+        min-width: 50px;
+        white-space: nowrap;
 
-                  &:hover {
-                    background: $warning-hover;
-                  }
-                }
+        &.btn-edit {
+          background: $warning;
+          &:hover {
+            background: color.adjust($warning, $lightness: -10%);
+          }
+        }
 
-                &.btn-upload {
-                  background: $success;
+        &.btn-upload {
+          background: $success;
+          &:hover {
+            background: color.adjust($success, $lightness: -10%);
+          }
+        }
 
-                  &:hover {
-                    background: $success-hover;
-                  }
-                }
+        &.btn-analysis {
+          background: $info;
+          &:hover {
+            background: color.adjust($info, $lightness: -10%);
+          }
+        }
 
-                &.btn-analysis {
-                  background: $info;
-
-                  &:hover {
-                    background: $info-hover;
-                  }
-                }
-
-                &.btn-delete {
-                  background: $error;
-
-                  &:hover {
-                    background: $error-hover;
-                  }
-                }
-              }
-            }
+        &.btn-delete {
+          background: $error;
+          &:hover {
+            background: color.adjust($error, $lightness: -10%);
           }
         }
       }
@@ -260,62 +269,100 @@
   }
 }
 
-// 空狀態
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: $text-tertiary;
-  background: $bg-surface;
-  border-radius: 4px;
+// 載入中 - 參考 relationship-graph 設計
+.loading-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: $text-secondary;
 
-  .empty-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-  }
-
-  h3 {
-    margin: 0 0 0.5rem 0;
-    color: $text-primary;
-    font-weight: 500;
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 2px solid $bg-secondary;
+    border-top: 2px solid $primary;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
   }
 
   p {
-    margin: 0 0 1.5rem 0;
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+// 空狀態 - 參考 relationship-graph 設計
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: $text-secondary;
+  background: $bg-surface;
+  border-radius: 8px;
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+  }
+
+  h3 {
+    margin: 0 0 15px 0;
+    color: $text-primary;
+    font-weight: 600;
+    font-size: 18px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    text-align: center;
     line-height: 1.5;
   }
 }
 
-// 分頁控制
+// 分頁控制 - 參考 relationship-graph 設計
 .pagination-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  padding: 15px 20px;
   background: $bg-surface;
-  border-radius: 4px;
+  border-radius: 8px;
+  border: 1px solid $border-primary;
 
   .pagination-info {
-    font-size: 0.9rem;
-    color: $text-tertiary;
+    font-size: 14px;
+    color: $text-secondary;
   }
 
   .pagination-controls {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 8px;
 
     .pagination-btn {
-      padding: 0.5rem 0.75rem;
-      border: 1px solid $bg-secondary;
-      background: $bg-surface;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px;
+      border: 1px solid $border-primary;
+      background: $bg-primary;
       color: $text-primary;
-      border-radius: 4px;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 14px;
+      font-weight: 500;
       transition: all 0.2s ease;
+      min-width: 40px;
 
       &:hover:not(:disabled) {
-        background: $border-primary;
+        background: $bg-secondary;
+        border-color: $primary;
       }
 
       &:disabled {
@@ -324,25 +371,25 @@
       }
 
       &.page-number.active {
-        background: $warning;
+        background: $primary;
         color: white;
-        border-color: $warning;
+        border-color: $primary;
       }
     }
 
     .page-numbers {
       display: flex;
-      gap: 0.25rem;
+      gap: 8px;
     }
 
     .page-selector {
-      padding: 0.5rem;
-      border: 1px solid $bg-secondary;
-      border-radius: 4px;
-      background: $bg-surface;
+      padding: 8px;
+      border: 1px solid $border-primary;
+      border-radius: 6px;
+      background: $bg-primary;
       color: $text-primary;
-      font-size: 0.9rem;
-      margin-left: 0.5rem;
+      font-size: 14px;
+      margin-left: 8px;
 
       &:focus {
         outline: none;
@@ -378,63 +425,60 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1.5rem;
-      border-bottom: 1px solid $bg-secondary;
+      padding: 20px;
+      border-bottom: 1px solid $border-primary;
 
-      h2 {
+      h3 {
         margin: 0;
-        font-size: 1.25rem;
+        font-size: 18px;
         font-weight: 600;
         color: $text-primary;
       }
 
-      .close-button {
+      .close-btn {
         background: none;
         border: none;
-        font-size: 1.5rem;
-        cursor: pointer;
+        font-size: 24px;
         color: $text-tertiary;
-        padding: 0;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
 
         &:hover {
           color: $text-primary;
+          background: $bg-secondary;
         }
       }
     }
 
     .dialog-content {
-      padding: 1.5rem;
+      padding: 20px;
 
       .form-group {
-        margin-bottom: 1.5rem;
+        margin-bottom: 16px;
 
         label {
           display: block;
-          margin-bottom: 0.5rem;
+          margin-bottom: 6px;
           font-weight: 500;
           color: $text-primary;
-          font-size: 0.9rem;
+          font-size: 14px;
         }
 
-        .form-input,
-        .form-textarea,
-        .form-select {
+        input, textarea, select {
           width: 100%;
-          padding: 0.75rem;
-          border: 1px solid $bg-secondary;
-          border-radius: 4px;
-          font-size: 0.9rem;
+          padding: 8px 12px;
+          border: 1px solid $border-secondary;
+          border-radius: 6px;
           background: $bg-primary;
           color: $text-primary;
+          font-size: 14px;
 
           &:focus {
             outline: none;
             border-color: $primary;
+            box-shadow: 0 0 0 2px rgba($primary, 0.1);
           }
 
           &::placeholder {
@@ -442,51 +486,55 @@
           }
         }
 
-        .form-textarea {
+        textarea {
           resize: vertical;
           min-height: 80px;
         }
       }
-
-      .warning-text {
-        color: $error;
-        font-size: 0.9rem;
-        margin-top: 0.5rem;
-      }
     }
 
-    .dialog-footer {
+    .dialog-actions {
       display: flex;
       justify-content: flex-end;
-      gap: 0.75rem;
-      padding: 1.5rem;
-      border-top: 1px solid $bg-secondary;
+      gap: 12px;
+      padding: 20px;
+      border-top: 1px solid $border-primary;
 
       .btn-cancel {
-        background: $bg-secondary;
-        color: $text-primary;
-        border: 1px solid $bg-secondary;
-        padding: 0.75rem 1.5rem;
-        border-radius: 4px;
-        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+        padding: $spacing-sm $spacing-lg;
+        border: 1px solid $border-primary;
+        border-radius: 6px;
+        font-size: 0.875rem;
         font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: $bg-primary;
+        color: $text-primary;
 
         &:hover {
-          background: $bg-tertiary;
+          background: $bg-secondary;
         }
       }
 
       .btn-confirm {
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+        padding: $spacing-sm $spacing-lg;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
         background: $primary;
         color: white;
-        border: none;
-        padding: 0.75rem 1.5rem;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: 500;
 
         &:hover:not(:disabled) {
-          background: $primary-hover;
+          background: color.adjust($primary, $lightness: -10%);
         }
 
         &:disabled {
@@ -496,16 +544,21 @@
       }
 
       .btn-danger {
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+        padding: $spacing-sm $spacing-lg;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
         background: $error;
         color: white;
-        border: none;
-        padding: 0.75rem 1.5rem;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: 500;
 
         &:hover:not(:disabled) {
-          background: $error-hover;
+          background: color.adjust($error, $lightness: -10%);
         }
 
         &:disabled {
@@ -517,6 +570,12 @@
   }
 }
 
+// 動畫
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 // 響應式設計
 @media (max-width: 768px) {
   .case-management-page {
@@ -524,38 +583,36 @@
   }
 
   .page-header {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
-  }
-
-
-
-  .case-table {
-    font-size: 0.8rem;
-
-    th, td {
-      padding: 0.75rem 0.5rem;
+    .header-top {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
     }
 
-    .search-row {
-      th {
-        padding: 0.5rem 0.25rem;
-
-        .search-input {
-          padding: 0.4rem 0.5rem;
-          font-size: 0.8rem;
-        }
+    .search-filter-section {
+      .search-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
       }
     }
+  }
 
-    .action-buttons {
-      flex-direction: column;
-      gap: 0.25rem;
+  .table-section {
+    .case-table {
+      font-size: 0.8rem;
 
-      .btn-action {
-        width: 100%;
-        text-align: center;
+      th, td {
+        padding: 8px;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+        gap: 4px;
+
+        .btn-action {
+          width: 100%;
+          text-align: center;
+        }
       }
     }
   }

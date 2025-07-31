@@ -148,47 +148,31 @@ input, textarea, select {
 .line-clamp-2 { @include line-clamp(2); }
 .line-clamp-3 { @include line-clamp(3); }
 
-// 間距工具類
+// 間距工具類 - 簡化版
 .m-0 { margin: 0; }
 .m-1 { margin: $space-1; }
 .m-2 { margin: $space-2; }
 .m-4 { margin: $space-4; }
-.m-8 { margin: $space-8; }
-.m-12 { margin: $space-12; }
-.m-16 { margin: $space-16; }
+.m-6 { margin: $space-6; }
 
 .p-0 { padding: 0; }
 .p-1 { padding: $space-1; }
 .p-2 { padding: $space-2; }
+.p-3 { padding: $space-3; }
 .p-4 { padding: $space-4; }
-.p-8 { padding: $space-8; }
-.p-12 { padding: $space-12; }
-.p-16 { padding: $space-16; }
+.p-5 { padding: $space-5; }
+.p-6 { padding: $space-6; }
 
-.mt-0 { margin-top: 0; }
-.mt-2 { margin-top: $space-2; }
-.mt-4 { margin-top: $space-4; }
-.mt-8 { margin-top: $space-8; }
+// 最常用的間距組合
+.p-sm-md { padding: $spacing-sm $spacing-md; }      // 8px 12px
+.p-md-lg { padding: $spacing-md $spacing-lg; }      // 12px 16px
+.p-lg-xl { padding: $spacing-lg $spacing-xl; }      // 16px 20px
 
-.mb-0 { margin-bottom: 0; }
-.mb-2 { margin-bottom: $space-2; }
-.mb-4 { margin-bottom: $space-4; }
-.mb-8 { margin-bottom: $space-8; }
-
-// 高頻組合工具類 (基於重複模式分析)
-.p-sm-md { padding: $spacing-sm $spacing-md; }      // 8px 12px - 最常用
-.p-md-lg { padding: $spacing-md $spacing-lg; }      // 12px 16px - 次常用
-.p-xs-md { padding: $spacing-xs $spacing-md; }      // 6px 12px
-.p-sm-lg { padding: $spacing-sm $spacing-lg; }      // 8px 16px
-.p-xl-2xl { padding: $spacing-xl $spacing-2xl; }    // 20px 24px - 卡片/對話框
-.p-4xl-xl { padding: $spacing-4xl $spacing-xl; }    // 60px 20px - 空狀態
-
-// 圓角工具類
-.rounded-sm { border-radius: $radius-sm; }          // 4px - 最常用
-.rounded-md { border-radius: $radius-md; }          // 6px - 次常用  
-.rounded-lg { border-radius: $radius-lg; }          // 8px
-.rounded-xl { border-radius: $radius-xl; }          // 12px
-.rounded-2xl { border-radius: $radius-2xl; }        // 16px
+// 圓角工具類 - 簡化版
+.rounded-none { border-radius: $radius-none; }
+.rounded-sm { border-radius: $radius-sm; }          // 4px
+.rounded-md { border-radius: $radius-md; }          // 8px
+.rounded-lg { border-radius: $radius-lg; }          // 12px
 .rounded-full { border-radius: $radius-full; }      // 圓形
 
 // 佈局工具類

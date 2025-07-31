@@ -65,7 +65,7 @@ $text-primary: $color-neutral-50;       // 主要文字
 $text-secondary: $color-neutral-300;    // 次要文字
 $text-tertiary: $color-neutral-500;     // 第三級文字
 $text-disabled: $color-neutral-600;     // 禁用文字
-$text-inverse: $color-neutral-900;      // 反向文字
+$text-inverse: $color-neutral-50;       // 反向文字 (白色)
 
 // 邊框色彩
 $border-primary: $color-neutral-700;    // 主要邊框
@@ -89,43 +89,36 @@ $info: $color-info-500;
 $info-hover: $color-info-600;
 
 // ================================
-// 間距系統 (Spacing System)
+// 間距系統 (Spacing System) - 簡化版
 // ================================
-// 基於 8px 網格系統
+// 基於 8px 網格系統，只保留最常用的標準間距
 
 $space-0: 0;
-$space-1: 0.125rem;  // 2px
-$space-2: 0.25rem;   // 4px
-$space-3: 0.375rem;  // 6px
-$space-4: 0.5rem;    // 8px
-$space-5: 0.625rem;  // 10px
-$space-6: 0.75rem;   // 12px
-$space-8: 1rem;      // 16px
-$space-10: 1.25rem;  // 20px
-$space-12: 1.5rem;   // 24px
-$space-16: 2rem;     // 32px
-$space-20: 2.5rem;   // 40px
-$space-24: 3rem;     // 48px
-$space-32: 4rem;     // 64px
-$space-40: 5rem;     // 80px
-$space-48: 6rem;     // 96px
-$space-64: 8rem;     // 128px
+$space-1: 0.25rem;   // 4px
+$space-2: 0.5rem;    // 8px
+$space-3: 0.75rem;   // 12px
+$space-4: 1rem;      // 16px
+$space-5: 1.25rem;   // 20px
+$space-6: 1.5rem;    // 24px
+$space-8: 2rem;      // 32px
+$space-10: 2.5rem;   // 40px
+$space-12: 3rem;     // 48px
 
-// 語義化間距
-$spacing-xs: $space-2;    // 4px
-$spacing-sm: $space-4;    // 8px
-$spacing-md: $space-6;    // 12px
-$spacing-lg: $space-8;    // 16px
-$spacing-xl: $space-12;   // 24px
-$spacing-2xl: $space-16;  // 32px
-$spacing-3xl: $space-24;  // 48px
-$spacing-4xl: $space-32;  // 64px
+// 語義化間距變數
+$spacing-xs: $space-1;    // 4px
+$spacing-sm: $space-2;    // 8px
+$spacing-md: $space-3;    // 12px
+$spacing-lg: $space-4;    // 16px
+$spacing-xl: $space-5;    // 20px
+$spacing-2xl: $space-6;   // 24px
+$spacing-3xl: $space-8;   // 32px
+$spacing-4xl: $space-10;  // 40px
 
-// 容器間距
-$container-padding: $space-8;    // 16px
-$section-padding: $space-12;     // 24px
-$card-padding: $space-8;         // 16px
-$dialog-padding: $space-12;      // 24px
+// 標準間距應用
+$container-padding: $spacing-lg;    // 16px
+$section-padding: $spacing-2xl;     // 24px
+$card-padding: $spacing-lg;         // 16px
+$dialog-padding: $spacing-2xl;      // 24px
 
 // ================================
 // 字體系統 (Typography System)
@@ -160,16 +153,16 @@ $font-family-base: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI'
 $font-family-mono: 'SF Mono', Monaco, Inconsolata, 'Roboto Mono', monospace;
 
 // ================================
-// 圓角系統 (Border Radius)
+// 圓角系統 (Border Radius) - 簡化版
 // ================================
+// 統一圓角值，減少客製化差異
 
 $radius-none: 0;
-$radius-sm: 0.25rem;   // 4px
-$radius-md: 0.375rem;  // 6px
-$radius-lg: 0.5rem;    // 8px
-$radius-xl: 0.75rem;   // 12px
-$radius-2xl: 1rem;     // 16px
-$radius-full: 9999px;
+$radius-sm: 0.25rem;    // 4px - 最常用
+$radius-md: 0.5rem;     // 8px - 次常用
+$radius-lg: 0.75rem;    // 12px
+$radius-xl: 1rem;       // 16px
+$radius-full: 9999px;   // 圓形
 
 // ================================
 // 陰影系統 (Shadow System)

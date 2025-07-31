@@ -14,19 +14,65 @@ import { Subscription } from 'rxjs';
   imports: [CommonModule, FormsModule],
   template: `
     <div class="case-management-page">
-      <!-- 頁面標題 -->
+      <!-- 整合的頁面標題和搜尋區域 -->
       <div class="page-header">
-        <div class="header-left">
-          <h1>案件管理</h1>
+        <div class="header-top">
+          <div class="header-left">
+            <h1>案件管理</h1>
+            <div class="page-subtitle">管理所有案件和相關資料</div>
+          </div>
+          <div class="header-right">
+            <button class="btn-new-case" (click)="showCreateDialog = true">新增</button>
+          </div>
         </div>
-        <div class="header-right">
-          <button class="btn-new-case" (click)="showCreateDialog = true">新增</button>
+        
+        <div class="search-filter-section">
+          <div class="search-row">
+            <div class="search-group">
+              <label>案件名稱</label>
+              <input 
+                type="text" 
+                class="search-input" 
+                placeholder="請輸入案件名稱"
+                [(ngModel)]="searchTerm"
+                (input)="onSearch()"
+              >
+            </div>
+            <div class="search-group">
+              <label>建立人</label>
+              <input 
+                type="text" 
+                class="search-input" 
+                placeholder="請輸入建立人"
+                [(ngModel)]="creatorFilter"
+                (input)="onSearch()"
+              >
+            </div>
+            <div class="search-group">
+              <label>相關人數</label>
+              <input 
+                type="text" 
+                class="search-input" 
+                placeholder="請輸入人數"
+                [(ngModel)]="memberCountFilter"
+                (input)="onSearch()"
+              >
+            </div>
+            <div class="search-group">
+              <label>建立時間</label>
+              <input 
+                type="text" 
+                class="search-input" 
+                placeholder="請輸入日期關鍵字"
+                [(ngModel)]="dateFilter"
+                (input)="onSearch()"
+              >
+            </div>
+            <div class="search-actions">
+              <button class="btn-search" (click)="onSearch()">搜尋</button>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <!-- 案件列表標題 -->
-      <div class="list-header">
-        <span class="list-title">案件列表({{ statistics?.totalProjects || 0 }})</span>
       </div>
 
       <!-- 載入中指示器 -->
@@ -37,6 +83,9 @@ import { Subscription } from 'rxjs';
 
       <!-- 案件列表 -->
       <div *ngIf="!loading" class="table-section">
+        <div class="table-header">
+          <span class="table-title">案件列表({{ statistics?.totalProjects || 0 }})</span>
+        </div>
         <table class="case-table" *ngIf="paginatedCases.length > 0">
           <thead>
             <tr>
@@ -46,47 +95,6 @@ import { Subscription } from 'rxjs';
               <th class="col-members">相關人數</th>
               <th class="col-date">建立時間</th>
               <th class="col-actions">功能</th>
-            </tr>
-            <!-- 搜尋欄位行 -->
-            <tr class="search-row">
-              <th></th>
-              <th>
-                <input 
-                  type="text" 
-                  class="search-input" 
-                  placeholder="請輸入案件名稱"
-                  [(ngModel)]="searchTerm"
-                  (input)="onSearch()"
-                >
-              </th>
-              <th>
-                <input 
-                  type="text" 
-                  class="search-input" 
-                  placeholder="請輸入建立人"
-                  [(ngModel)]="creatorFilter"
-                  (input)="onSearch()"
-                >
-              </th>
-              <th>
-                <input 
-                  type="text" 
-                  class="search-input" 
-                  placeholder="請輸入人數"
-                  [(ngModel)]="memberCountFilter"
-                  (input)="onSearch()"
-                >
-              </th>
-              <th>
-                <input 
-                  type="text" 
-                  class="search-input" 
-                  placeholder="請輸入日期關鍵字"
-                  [(ngModel)]="dateFilter"
-                  (input)="onSearch()"
-                >
-              </th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -117,8 +125,8 @@ import { Subscription } from 'rxjs';
                   <button 
                     class="btn-action btn-analysis" 
                     (click)="openAnalysis(case)"
-                    title="關聯分析圖">
-                    關聯分析圖
+                    title="分析">
+                    分析
                   </button>
                   <button 
                     class="btn-action btn-delete" 
@@ -196,8 +204,8 @@ import { Subscription } from 'rxjs';
       <div *ngIf="showCreateDialog" class="dialog-overlay" (click)="closeCreateDialog()">
         <div class="dialog" (click)="$event.stopPropagation()">
           <div class="dialog-header">
-            <h2>新增案件</h2>
-            <button (click)="closeCreateDialog()" class="close-button">×</button>
+            <h3>新增案件</h3>
+            <button (click)="closeCreateDialog()" class="close-btn">×</button>
           </div>
           
           <div class="dialog-content">
@@ -224,7 +232,7 @@ import { Subscription } from 'rxjs';
             </div>
           </div>
           
-          <div class="dialog-footer">
+          <div class="dialog-actions">
             <button (click)="closeCreateDialog()" class="btn-cancel">取消</button>
             <button 
               (click)="createCase()" 
@@ -240,8 +248,8 @@ import { Subscription } from 'rxjs';
       <div *ngIf="showEditDialog && editingCase" class="dialog-overlay" (click)="closeEditDialog()">
         <div class="dialog" (click)="$event.stopPropagation()">
           <div class="dialog-header">
-            <h2>編輯案件</h2>
-            <button (click)="closeEditDialog()" class="close-button">×</button>
+            <h3>編輯案件</h3>
+            <button (click)="closeEditDialog()" class="close-btn">×</button>
           </div>
           
           <div class="dialog-content">
@@ -267,20 +275,10 @@ import { Subscription } from 'rxjs';
                 maxlength="500"></textarea>
             </div>
 
-            <div class="form-group">
-              <label for="editCaseStatus">案件狀態</label>
-              <select 
-                id="editCaseStatus"
-                [(ngModel)]="caseForm_status" 
-                class="form-select">
-                <option value="active">進行中</option>
-                <option value="completed">已完成</option>
-                <option value="archived">已封存</option>
-              </select>
-            </div>
+
           </div>
           
-          <div class="dialog-footer">
+          <div class="dialog-actions">
             <button (click)="closeEditDialog()" class="btn-cancel">取消</button>
             <button 
               (click)="updateCase()" 
@@ -296,8 +294,8 @@ import { Subscription } from 'rxjs';
       <div *ngIf="showDeleteDialog && deletingCase" class="dialog-overlay" (click)="closeDeleteDialog()">
         <div class="dialog" (click)="$event.stopPropagation()">
           <div class="dialog-header">
-            <h2>確認刪除</h2>
-            <button (click)="closeDeleteDialog()" class="close-button">×</button>
+            <h3>確認刪除</h3>
+            <button (click)="closeDeleteDialog()" class="close-btn">×</button>
           </div>
           
           <div class="dialog-content">
@@ -305,7 +303,7 @@ import { Subscription } from 'rxjs';
             <p class="warning-text">⚠️ 此操作無法復原，案件中的所有資料將會被移除。</p>
           </div>
           
-          <div class="dialog-footer">
+          <div class="dialog-actions">
             <button (click)="closeDeleteDialog()" class="btn-cancel">取消</button>
             <button 
               (click)="confirmDelete()" 
@@ -356,7 +354,6 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
   // 表單資料
   caseForm_name = '';
   caseForm_description = '';
-  caseForm_status: 'active' | 'completed' | 'archived' = 'active';
   
   // 數學函數
   Math = Math;
@@ -466,7 +463,6 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
     this.editingCase = caseItem;
     this.caseForm_name = caseItem.projectName;
     this.caseForm_description = caseItem.projectDescription || '';
-    this.caseForm_status = caseItem.status as 'active' | 'completed' | 'archived';
     this.showEditDialog = true;
   }
 
@@ -480,8 +476,7 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
 
     const request = {
       projectName: this.caseForm_name.trim(),
-      projectDescription: this.caseForm_description.trim() || undefined,
-      status: this.caseForm_status
+      projectDescription: this.caseForm_description.trim() || undefined
     };
 
     console.log('💾 更新案件:', this.editingCase.id);
@@ -599,6 +594,19 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
     console.log('🔍 搜尋案件:', this.searchTerm);
     this.currentPage = 1; // 重置到第一頁
     this.applyFilters();
+  }
+
+  /**
+   * 清除篩選條件
+   */
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.creatorFilter = '';
+    this.memberCountFilter = '';
+    this.dateFilter = '';
+    this.currentPage = 1;
+    this.applyFilters();
+    console.log('🧹 清除篩選條件');
   }
 
   /**
@@ -740,7 +748,6 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
     this.editingCase = null;
     this.caseForm_name = '';
     this.caseForm_description = '';
-    this.caseForm_status = 'active';
   }
 
   /**
