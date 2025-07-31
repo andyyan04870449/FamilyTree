@@ -370,6 +370,7 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
     // 訂閱案件列表更新
     this.subscriptions.add(
       this.projectService.projects$.subscribe(projects => {
+        console.log('📋 接收到專案列表更新:', projects.length, '個專案');
         this.cases = projects;
         this.applyFilters();
       })
@@ -448,6 +449,7 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           console.error('❌ 建立案件失敗:', error);
+          alert(`建立案件失敗: ${error.message || '未知錯誤'}`);
         }
       })
     );
@@ -485,9 +487,12 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
           console.log('✅ 案件更新成功');
           this.closeEditDialog();
           this.loadStatistics(); // 重新載入統計
+          // 注意：專案列表會通過 ProjectService 的 refreshProjects 自動更新
+          console.log('📋 等待專案列表自動更新...');
         },
         error: (error) => {
           console.error('❌ 更新案件失敗:', error);
+          alert('更新案件失敗，請稍後再試');
         }
       })
     );
@@ -652,7 +657,7 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
     if (this.memberCountFilter.trim()) {
       const memberCount = parseInt(this.memberCountFilter);
       if (!isNaN(memberCount)) {
-        filtered = filtered.filter(c => c.memberCount === memberCount);
+        filtered = filtered.filter(c => c.memberCount !== undefined && c.memberCount === memberCount);
       }
     }
 
@@ -660,7 +665,7 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
     if (this.dateFilter.trim()) {
       const dateLower = this.dateFilter.toLowerCase();
       filtered = filtered.filter(c => 
-        this.formatDate(c.createdAt).toLowerCase().includes(dateLower)
+        c.createdAt && this.formatDate(c.createdAt).toLowerCase().includes(dateLower)
       );
     }
 
@@ -766,9 +771,15 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
   /**
    * 格式化日期
    */
-  formatDate(dateString: string): string {
+  formatDate(dateString: string | undefined): string {
+    if (!dateString) {
+      return '無日期';
+    }
     try {
       const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return '無效日期';
+      }
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');

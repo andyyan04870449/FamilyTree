@@ -577,7 +577,29 @@
   100% { transform: rotate(360deg); }
 }
 
-// 響應式設計
+// 響應式設計 - 平板
+@media (max-width: 1200px) {
+  .page-header {
+    .search-filter-section {
+      .search-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        
+        .search-group {
+          flex: 1 1 180px;
+          min-width: 150px;
+        }
+        
+        .search-actions {
+          flex: 0 0 auto;
+        }
+      }
+    }
+  }
+}
+
+// 響應式設計 - 手機
 @media (max-width: 768px) {
   .case-management-page {
     padding: 1rem;
@@ -594,6 +616,14 @@
       .search-row {
         grid-template-columns: 1fr;
         gap: 8px;
+        
+        .search-actions {
+          width: 100%;
+          
+          .btn-search {
+            width: 100%;
+          }
+        }
       }
     }
   }

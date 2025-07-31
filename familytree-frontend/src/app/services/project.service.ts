@@ -106,12 +106,14 @@ export class ProjectService {
     return this.http.get<ProjectListResponse>(fullUrl, { params }).pipe(
       retry(2),
       tap(response => {
-        // API 回應
+        console.log('📡 API 回應:', response);
         if (response && response.success) {
-          this.projectsSubject.next(response.projects || []);
-          // 專案列表載入成功
+          const projects = response.projects || [];
+          console.log('✅ 載入專案列表:', projects.length, '個專案');
+          this.projectsSubject.next(projects);
         } else {
-          // API 回應表示失敗
+          console.error('❌ API 回應表示失敗:', response);
+          this.projectsSubject.next([]);
         }
       }),
       catchError(error => {
@@ -191,19 +193,26 @@ export class ProjectService {
    * 更新專案
    */
   updateProject(id: string, request: UpdateProjectRequest): Observable<void> {
-    // 更新專案
+    console.log('🔄 更新專案:', id, request);
     this.setLoading(true);
 
     return this.http.put<{ success: boolean; message: string }>(`${this.baseUrl}/${id}`, request).pipe(
       map(response => {
         if (response.success) {
-          // 專案更新成功
-          // 重新載入專案列表
+          console.log('✅ 專案更新成功，準備重新載入專案列表');
+          // 重新載入專案列表以獲取完整資料
           this.refreshProjects();
           // 如果是當前專案，重新載入詳情
           if (this.currentProjectSubject.value?.id === id) {
-            this.getProject(id).subscribe(project => {
-              this.setCurrentProject(project);
+            this.getProject(id).subscribe({
+              next: (project) => {
+                this.setCurrentProject(project);
+              },
+              error: (error) => {
+                console.error('❌ 無法重新載入專案詳情:', error);
+                // 如果無法載入詳情，清除當前專案
+                this.setCurrentProject(null);
+              }
             });
           }
           return;
@@ -211,10 +220,14 @@ export class ProjectService {
         throw new Error(response.message || '更新專案失敗');
       }),
       catchError(error => {
-        // 更新專案失敗
+        console.error('❌ 更新專案失敗:', error);
+        this.setLoading(false);
         return throwError(() => error);
       }),
-      tap(() => this.setLoading(false))
+      tap(() => {
+        // 延遲一點設置 loading 為 false，確保資料重新載入完成
+        setTimeout(() => this.setLoading(false), 500);
+      })
     );
   }
 

@@ -174,11 +174,11 @@ namespace familytree_backend.Controllers
 
                 Logger.LogInformation("成功建立專案：ID {Id}，名稱 {Name}", newId, project.ProjectName);
 
-                var response = new ProjectResponse
+                var response = new
                 {
-                    Success = true,
-                    Message = "專案建立成功",
-                    Project = project
+                    success = true,
+                    message = "專案建立成功",
+                    projectId = newId
                 };
 
                 LogRequestComplete("建立專案");
