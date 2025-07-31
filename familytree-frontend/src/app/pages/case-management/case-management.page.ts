@@ -204,8 +204,8 @@ import { Subscription } from 'rxjs';
       <div *ngIf="showCreateDialog" class="dialog-overlay" (click)="closeCreateDialog()">
         <div class="dialog" (click)="$event.stopPropagation()">
           <div class="dialog-header">
-            <h2>新增案件</h2>
-            <button (click)="closeCreateDialog()" class="close-button">×</button>
+            <h3>新增案件</h3>
+            <button (click)="closeCreateDialog()" class="close-btn">×</button>
           </div>
           
           <div class="dialog-content">
@@ -232,7 +232,7 @@ import { Subscription } from 'rxjs';
             </div>
           </div>
           
-          <div class="dialog-footer">
+          <div class="dialog-actions">
             <button (click)="closeCreateDialog()" class="btn-cancel">取消</button>
             <button 
               (click)="createCase()" 
@@ -274,21 +274,9 @@ import { Subscription } from 'rxjs';
                 rows="3"
                 maxlength="500"></textarea>
             </div>
-
-            <div class="form-group">
-              <label for="editCaseStatus">案件狀態</label>
-              <select 
-                id="editCaseStatus"
-                [(ngModel)]="caseForm_status" 
-                class="form-select">
-                <option value="active">進行中</option>
-                <option value="completed">已完成</option>
-                <option value="archived">已封存</option>
-              </select>
-            </div>
           </div>
           
-          <div class="dialog-footer">
+          <div class="dialog-actions">
             <button (click)="closeEditDialog()" class="btn-cancel">取消</button>
             <button 
               (click)="updateCase()" 
@@ -304,8 +292,8 @@ import { Subscription } from 'rxjs';
       <div *ngIf="showDeleteDialog && deletingCase" class="dialog-overlay" (click)="closeDeleteDialog()">
         <div class="dialog" (click)="$event.stopPropagation()">
           <div class="dialog-header">
-            <h2>確認刪除</h2>
-            <button (click)="closeDeleteDialog()" class="close-button">×</button>
+            <h3>確認刪除</h3>
+            <button (click)="closeDeleteDialog()" class="close-btn">×</button>
           </div>
           
           <div class="dialog-content">
@@ -313,7 +301,7 @@ import { Subscription } from 'rxjs';
             <p class="warning-text">⚠️ 此操作無法復原，案件中的所有資料將會被移除。</p>
           </div>
           
-          <div class="dialog-footer">
+          <div class="dialog-actions">
             <button (click)="closeDeleteDialog()" class="btn-cancel">取消</button>
             <button 
               (click)="confirmDelete()" 
@@ -364,7 +352,6 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
   // 表單資料
   caseForm_name = '';
   caseForm_description = '';
-  caseForm_status: 'active' | 'completed' | 'archived' = 'active';
   
   // 數學函數
   Math = Math;
@@ -474,7 +461,6 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
     this.editingCase = caseItem;
     this.caseForm_name = caseItem.projectName;
     this.caseForm_description = caseItem.projectDescription || '';
-    this.caseForm_status = caseItem.status as 'active' | 'completed' | 'archived';
     this.showEditDialog = true;
   }
 
@@ -488,8 +474,7 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
 
     const request = {
       projectName: this.caseForm_name.trim(),
-      projectDescription: this.caseForm_description.trim() || undefined,
-      status: this.caseForm_status
+      projectDescription: this.caseForm_description.trim() || undefined
     };
 
     console.log('💾 更新案件:', this.editingCase.id);
@@ -761,7 +746,6 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
     this.editingCase = null;
     this.caseForm_name = '';
     this.caseForm_description = '';
-    this.caseForm_status = 'active';
   }
 
   /**
