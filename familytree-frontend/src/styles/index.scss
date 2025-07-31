@@ -256,18 +256,11 @@ input, textarea, select {
 @import 'utilities/index';
 
 // ================================
-// 組件樣式（使用 BEM 版本）
+// 組件樣式（BEM 版本）
 // ================================
-// 舊版組件已經整合到 BEM 版本中
-// @import 'components/buttons';     // → 使用 buttons-bem
-// @import 'components/forms';       // → 使用 forms-bem
-// @import 'components/tables';      // → 使用 tables-bem
-// @import 'components/cards';       // → 使用 cards-bem
-
 @import 'components/buttons-bem';
 @import 'components/forms-bem';
 @import 'components/cards-bem';
 @import 'components/tables-bem';
 @import 'components/navigation-bem';
-@import 'components/select';         // TODO: 考慮整合到 forms-bem
-// @import 'components/unified-design'; // 評估是否需要保留
+@import 'components/select';  // 保留：包含特殊的下拉選單樣式
