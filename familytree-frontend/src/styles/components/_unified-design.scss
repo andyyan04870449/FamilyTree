@@ -1,0 +1,697 @@
+// ================================
+// 統一設計系統 - 基於案件管理頁面風格
+// ================================
+// 提取案件管理頁面的優秀設計元素，建立全站統一的設計語言
+
+@use "sass:color";
+
+// ================================
+// 頁面容器
+// ================================
+
+.page-container {
+  width: 100%;
+  height: 100%;
+  background: $bg-primary;
+  color: $text-primary;
+  font-family: inherit;
+  padding: $spacing-xl;
+}
+
+// ================================
+// 頁面標題區域
+// ================================
+
+.page-header {
+  background: $bg-surface;
+  border-radius: 8px;
+  margin-bottom: $spacing-lg;
+  border: 1px solid $border-primary;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid $border-primary;
+
+    .header-left {
+      h1 {
+        margin: 0 0 4px 0;
+        font-size: 20px;
+        font-weight: 600;
+        color: $text-primary;
+      }
+
+      .page-subtitle {
+        margin: 0;
+        font-size: 12px;
+        color: $text-secondary;
+      }
+    }
+
+    .header-right {
+      .btn-main {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: $primary;
+        color: white;
+
+        &:hover {
+          background: color.adjust($primary, $lightness: -10%);
+        }
+      }
+    }
+  }
+}
+
+// ================================
+// 搜尋區域
+// ================================
+
+.search-section {
+  padding: 15px 20px;
+
+  .search-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto;
+    gap: 12px;
+    align-items: end;
+
+    .search-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      label {
+        font-size: 11px;
+        color: $text-secondary;
+        font-weight: 500;
+      }
+
+      .search-input {
+        height: 32px;
+        padding: 6px 10px;
+        border: 1px solid $border-secondary;
+        border-radius: 4px;
+        background: $bg-primary;
+        color: $text-primary;
+        font-size: 13px;
+        
+        &:focus {
+          border-color: $primary;
+          box-shadow: 0 0 0 2px rgba($primary, 0.1);
+          outline: none;
+        }
+
+        &::placeholder {
+          color: $text-tertiary;
+          font-size: 12px;
+        }
+      }
+    }
+
+    .search-actions {
+      display: flex;
+      gap: 8px;
+      align-items: end;
+
+      .btn-search {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: $primary;
+        color: white;
+        height: 32px;
+        min-width: 60px;
+
+        &:hover {
+          background: color.adjust($primary, $lightness: -10%);
+        }
+      }
+    }
+  }
+}
+
+// ================================
+// 內容區塊
+// ================================
+
+.content-section {
+  background: $bg-surface;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: $spacing-xl;
+  border: 1px solid $border-primary;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: $bg-secondary;
+    border-bottom: 1px solid $border-primary;
+
+    .section-title {
+      font-size: 14px;
+      color: $text-primary;
+      font-weight: 600;
+    }
+
+    .section-actions {
+      display: flex;
+      gap: $spacing-sm;
+    }
+  }
+}
+
+// ================================
+// 表格樣式
+// ================================
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: $bg-surface;
+
+  thead {
+    background: $bg-secondary;
+
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      color: $text-primary;
+      border-bottom: 1px solid $border-primary;
+
+      &.col-actions {
+        width: 180px;
+        text-align: center;
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid $border-secondary;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background: $bg-secondary;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      td {
+        padding: 12px 16px;
+        font-size: 13px;
+        color: $text-primary;
+        vertical-align: middle;
+
+        &.col-actions {
+          text-align: center;
+        }
+      }
+    }
+  }
+}
+
+// ================================
+// 操作按鈕組
+// ================================
+
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  flex-wrap: nowrap;
+
+  .btn-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 4px 6px;
+    border: none;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: white;
+    min-width: 50px;
+    white-space: nowrap;
+
+    &.btn-edit {
+      background: $warning;
+      &:hover {
+        background: color.adjust($warning, $lightness: -10%);
+      }
+    }
+
+    &.btn-upload {
+      background: $success;
+      &:hover {
+        background: color.adjust($success, $lightness: -10%);
+      }
+    }
+
+    &.btn-analysis {
+      background: $info;
+      &:hover {
+        background: color.adjust($info, $lightness: -10%);
+      }
+    }
+
+    &.btn-delete {
+      background: $error;
+      &:hover {
+        background: color.adjust($error, $lightness: -10%);
+      }
+    }
+
+    &.btn-name {
+      background: $success;
+      &:hover {
+        background: color.adjust($success, $lightness: -10%);
+      }
+    }
+  }
+}
+
+// ================================
+// 狀態組件
+// ================================
+
+.loading-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: $text-secondary;
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 2px solid $bg-secondary;
+    border-top: 2px solid $primary;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: $text-secondary;
+  background: $bg-surface;
+  border-radius: 8px;
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+  }
+
+  h3 {
+    margin: 0 0 15px 0;
+    color: $text-primary;
+    font-weight: 600;
+    font-size: 18px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    text-align: center;
+    line-height: 1.5;
+  }
+}
+
+// ================================
+// 分頁控制
+// ================================
+
+.pagination-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: $bg-surface;
+  border-radius: 8px;
+  border: 1px solid $border-primary;
+
+  .pagination-info {
+    font-size: 14px;
+    color: $text-secondary;
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .pagination-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px;
+      border: 1px solid $border-primary;
+      background: $bg-primary;
+      color: $text-primary;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      min-width: 40px;
+
+      &:hover:not(:disabled) {
+        background: $bg-secondary;
+        border-color: $primary;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      &.page-number.active {
+        background: $primary;
+        color: white;
+        border-color: $primary;
+      }
+    }
+
+    .page-numbers {
+      display: flex;
+      gap: 8px;
+    }
+
+    .page-selector {
+      padding: 8px;
+      border: 1px solid $border-primary;
+      border-radius: 6px;
+      background: $bg-primary;
+      color: $text-primary;
+      font-size: 14px;
+      margin-left: 8px;
+
+      &:focus {
+        outline: none;
+        border-color: $primary;
+      }
+    }
+  }
+}
+
+// ================================
+// 對話框樣式
+// ================================
+
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+
+  .dialog {
+    background: $bg-surface;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+
+    .dialog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid $border-primary;
+
+      h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: $text-primary;
+      }
+
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: $text-tertiary;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          color: $text-primary;
+          background: $bg-secondary;
+        }
+      }
+    }
+
+    .dialog-content {
+      padding: 20px;
+
+      .form-group {
+        margin-bottom: 16px;
+
+        label {
+          display: block;
+          margin-bottom: 6px;
+          font-weight: 500;
+          color: $text-primary;
+          font-size: 14px;
+        }
+
+        input, textarea, select {
+          width: 100%;
+          padding: 8px 12px;
+          border: 1px solid $border-secondary;
+          border-radius: 6px;
+          background: $bg-primary;
+          color: $text-primary;
+          font-size: 14px;
+
+          &:focus {
+            outline: none;
+            border-color: $primary;
+            box-shadow: 0 0 0 2px rgba($primary, 0.1);
+          }
+
+          &::placeholder {
+            color: $text-tertiary;
+          }
+        }
+
+        textarea {
+          resize: vertical;
+          min-height: 80px;
+        }
+      }
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 20px;
+      border-top: 1px solid $border-primary;
+
+      .btn-cancel {
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+        padding: $spacing-sm $spacing-lg;
+        border: 1px solid $border-primary;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: $bg-primary;
+        color: $text-primary;
+
+        &:hover {
+          background: $bg-secondary;
+        }
+      }
+
+      .btn-confirm {
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+        padding: $spacing-sm $spacing-lg;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: $primary;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background: color.adjust($primary, $lightness: -10%);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+
+      .btn-danger {
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+        padding: $spacing-sm $spacing-lg;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: $error;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background: color.adjust($error, $lightness: -10%);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+}
+
+// ================================
+// 動畫
+// ================================
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// ================================
+// 響應式設計
+// ================================
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1rem;
+  }
+
+  .page-header {
+    .header-top {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+  }
+
+  .search-section {
+    .search-row {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+  }
+
+  .data-table {
+    font-size: 0.8rem;
+
+    th, td {
+      padding: 8px;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+      gap: 4px;
+
+      .btn-action {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  }
+
+  .pagination-section {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .dialog-overlay {
+    .dialog {
+      width: 95%;
+      max-width: none;
+      margin: 20px;
+
+      .dialog-header {
+        padding: 15px 20px;
+
+        h3 {
+          font-size: 16px;
+        }
+      }
+
+      .dialog-content {
+        padding: 15px 20px;
+      }
+
+      .dialog-actions {
+        padding: 15px 20px;
+        flex-direction: column;
+
+        button {
+          width: 100%;
+        }
+      }
+    }
+  }
+} 

@@ -1,92 +1,98 @@
+@use "sass:color";
 @import '../../../styles/foundation/tokens';
 @import '../../../styles/foundation/mixins';
 
 .person-list-page {
+  width: 100%;
+  height: 100%;
+  background: $bg-primary;
+  color: $text-primary;
+  font-family: inherit;
+  padding: $spacing-xl;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
-  background-color: $bg-primary;
-  min-height: 100vh;
 }
 
 .page-header {
+  background: $bg-surface;
+  border-radius: 8px;
+  margin-bottom: $spacing-lg;
+  border: 1px solid $border-primary;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   text-align: center;
-  margin-bottom: 2rem;
   
-  h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: $text-primary;
-    margin-bottom: 0.5rem;
-  }
-  
-  p {
-    font-size: 1.1rem;
-    color: $text-secondary;
-    margin: 0;
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid $border-primary;
+    
+    .header-left {
+      h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        margin: 0 0 4px 0;
+        color: $text-primary;
+      }
+      
+      .page-subtitle {
+        font-size: 1.1rem;
+        margin: 0;
+        color: $text-secondary;
+      }
+    }
   }
 }
 
 .search-section {
+  padding: 15px 20px;
   margin-bottom: 2rem;
   
-  .search-box {
-    display: flex;
-    gap: 1rem;
+  .search-row {
     max-width: 600px;
     margin: 0 auto;
+    grid-template-columns: 1fr auto auto;
     
-    .search-input {
-      flex: 1;
-      padding: 0.75rem 1rem;
-      border: 2px solid $border-primary;
-      border-radius: $radius-md;
-      font-size: 1rem;
-      background-color: $bg-secondary;
-      color: $text-primary;
-      transition: border-color 0.2s;
-      
-      &:focus {
-        outline: none;
-        border-color: $primary;
-        box-shadow: 0 0 0 3px rgba($primary, 0.1);
-      }
-      
-      &::placeholder {
-        color: $text-tertiary;
+    .search-group {
+      .search-input {
+        padding: 0.75rem 1rem;
+        border: 2px solid $border-primary;
+        border-radius: $radius-md;
+        font-size: 1rem;
+        background-color: $bg-secondary;
+        height: auto;
       }
     }
     
-    .search-btn, .clear-btn {
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: $radius-md;
-      font-size: 1rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+    .search-actions {
+      .btn-search {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        height: auto;
+        min-width: auto;
       }
-    }
-    
-    .search-btn {
-      background-color: $primary;
-      color: white;
       
-      &:hover:not(:disabled) {
-        background-color: darken($primary, 10%);
-      }
-    }
-    
-    .clear-btn {
-      background-color: $color-neutral-300;
-      color: white;
-      
-      &:hover:not(:disabled) {
-        background-color: darken($color-neutral-300, 10%);
+      .clear-btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: $radius-md;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        background-color: $color-neutral-300;
+        color: white;
+        
+        &:hover:not(:disabled) {
+          background-color: color.adjust($color-neutral-300, $lightness: -10%);
+        }
+        
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
       }
     }
   }
@@ -123,28 +129,28 @@
 }
 
 .loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: $text-secondary;
   text-align: center;
-  padding: 3rem;
   
   .loading-spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid $border-primary;
-    border-top: 4px solid $primary;
+    border: 2px solid $bg-secondary;
+    border-top: 2px solid $primary;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin: 0 auto 1rem;
+    margin-bottom: 15px;
   }
   
   p {
-    color: $text-secondary;
-    font-size: 1.1rem;
+    margin: 0;
+    font-size: 14px;
   }
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 .error-message {
@@ -169,8 +175,15 @@
 
 .person-table-container {
   .empty-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: $text-secondary;
+    background: $bg-surface;
+    border-radius: 8px;
     text-align: center;
-    padding: 4rem 2rem;
     
     .placeholder-icon {
       font-size: 4rem;
@@ -182,11 +195,15 @@
       font-size: 1.5rem;
       color: $text-primary;
       margin-bottom: 0.5rem;
+      margin: 0 0 15px 0;
+      font-weight: 600;
     }
     
     p {
       color: $text-secondary;
       margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
     }
   }
 }
@@ -194,24 +211,20 @@
 .person-table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--card-background);
+  background: $bg-surface;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
   thead {
-    background: var(--primary-color);
+    background: $bg-secondary;
     
     th {
-      color: white;
+      color: $text-primary;
       font-weight: 600;
       padding: 1rem;
       text-align: left;
       font-size: 0.9rem;
-      
-      &:first-child {
-        border-radius: 8px 0 0 0;
-      }
       
       &:last-child {
         border-radius: 0 8px 0 0;
