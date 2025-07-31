@@ -1,0 +1,532 @@
+// ================================
+// 佈局工具類別 (Layout Utilities)
+// ================================
+
+@import '../foundation/tokens';
+@import '../foundation/responsive-mobile-first';
+
+// ================================
+// Display
+// ================================
+
+$displays: (
+  'none': none,
+  'block': block,
+  'inline-block': inline-block,
+  'inline': inline,
+  'flex': flex,
+  'inline-flex': inline-flex,
+  'grid': grid,
+  'inline-grid': inline-grid,
+  'table': table,
+  'table-row': table-row,
+  'table-cell': table-cell
+);
+
+@each $name, $value in $displays {
+  .d-#{$name} {
+    display: $value;
+  }
+  
+  // 響應式變體
+  @include from-sm {
+    .sm\:d-#{$name} {
+      display: $value;
+    }
+  }
+  
+  @include from-md {
+    .md\:d-#{$name} {
+      display: $value;
+    }
+  }
+  
+  @include from-lg {
+    .lg\:d-#{$name} {
+      display: $value;
+    }
+  }
+}
+
+// ================================
+// Flexbox - 方向
+// ================================
+
+.flex-row {
+  flex-direction: row;
+}
+
+.flex-row-reverse {
+  flex-direction: row-reverse;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-col-reverse {
+  flex-direction: column-reverse;
+}
+
+// 響應式 flex 方向
+@include from-sm {
+  .sm\:flex-row { flex-direction: row; }
+  .sm\:flex-col { flex-direction: column; }
+}
+
+@include from-md {
+  .md\:flex-row { flex-direction: row; }
+  .md\:flex-col { flex-direction: column; }
+}
+
+@include from-lg {
+  .lg\:flex-row { flex-direction: row; }
+  .lg\:flex-col { flex-direction: column; }
+}
+
+// ================================
+// Flexbox - Wrap
+// ================================
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.flex-wrap-reverse {
+  flex-wrap: wrap-reverse;
+}
+
+.flex-nowrap {
+  flex-wrap: nowrap;
+}
+
+// ================================
+// Flexbox - Justify Content
+// ================================
+
+$justify-contents: (
+  'start': flex-start,
+  'end': flex-end,
+  'center': center,
+  'between': space-between,
+  'around': space-around,
+  'evenly': space-evenly
+);
+
+@each $name, $value in $justify-contents {
+  .justify-#{$name} {
+    justify-content: $value;
+  }
+  
+  // 響應式變體
+  @include from-sm {
+    .sm\:justify-#{$name} {
+      justify-content: $value;
+    }
+  }
+  
+  @include from-md {
+    .md\:justify-#{$name} {
+      justify-content: $value;
+    }
+  }
+  
+  @include from-lg {
+    .lg\:justify-#{$name} {
+      justify-content: $value;
+    }
+  }
+}
+
+// ================================
+// Flexbox - Align Items
+// ================================
+
+$align-items: (
+  'start': flex-start,
+  'end': flex-end,
+  'center': center,
+  'baseline': baseline,
+  'stretch': stretch
+);
+
+@each $name, $value in $align-items {
+  .items-#{$name} {
+    align-items: $value;
+  }
+  
+  // 響應式變體
+  @include from-sm {
+    .sm\:items-#{$name} {
+      align-items: $value;
+    }
+  }
+  
+  @include from-md {
+    .md\:items-#{$name} {
+      align-items: $value;
+    }
+  }
+  
+  @include from-lg {
+    .lg\:items-#{$name} {
+      align-items: $value;
+    }
+  }
+}
+
+// ================================
+// Flexbox - Align Self
+// ================================
+
+$align-selfs: (
+  'auto': auto,
+  'start': flex-start,
+  'end': flex-end,
+  'center': center,
+  'stretch': stretch,
+  'baseline': baseline
+);
+
+@each $name, $value in $align-selfs {
+  .self-#{$name} {
+    align-self: $value;
+  }
+}
+
+// ================================
+// Flexbox - Align Content
+// ================================
+
+$align-contents: (
+  'start': flex-start,
+  'end': flex-end,
+  'center': center,
+  'between': space-between,
+  'around': space-around,
+  'evenly': space-evenly,
+  'stretch': stretch
+);
+
+@each $name, $value in $align-contents {
+  .content-#{$name} {
+    align-content: $value;
+  }
+}
+
+// ================================
+// Flexbox - Flex
+// ================================
+
+.flex-1 {
+  flex: 1 1 0%;
+}
+
+.flex-auto {
+  flex: 1 1 auto;
+}
+
+.flex-initial {
+  flex: 0 1 auto;
+}
+
+.flex-none {
+  flex: none;
+}
+
+// Flex Grow
+.flex-grow-0 {
+  flex-grow: 0;
+}
+
+.flex-grow-1 {
+  flex-grow: 1;
+}
+
+// Flex Shrink
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+.flex-shrink-1 {
+  flex-shrink: 1;
+}
+
+// ================================
+// Grid - Template Columns
+// ================================
+
+@for $i from 1 through 12 {
+  .grid-cols-#{$i} {
+    grid-template-columns: repeat($i, minmax(0, 1fr));
+  }
+  
+  // 響應式變體
+  @include from-sm {
+    .sm\:grid-cols-#{$i} {
+      grid-template-columns: repeat($i, minmax(0, 1fr));
+    }
+  }
+  
+  @include from-md {
+    .md\:grid-cols-#{$i} {
+      grid-template-columns: repeat($i, minmax(0, 1fr));
+    }
+  }
+  
+  @include from-lg {
+    .lg\:grid-cols-#{$i} {
+      grid-template-columns: repeat($i, minmax(0, 1fr));
+    }
+  }
+}
+
+// 特殊網格
+.grid-cols-none {
+  grid-template-columns: none;
+}
+
+// ================================
+// Grid - Template Rows
+// ================================
+
+@for $i from 1 through 6 {
+  .grid-rows-#{$i} {
+    grid-template-rows: repeat($i, minmax(0, 1fr));
+  }
+}
+
+.grid-rows-none {
+  grid-template-rows: none;
+}
+
+// ================================
+// Grid - Column Span
+// ================================
+
+@for $i from 1 through 12 {
+  .col-span-#{$i} {
+    grid-column: span $i / span $i;
+  }
+}
+
+.col-span-full {
+  grid-column: 1 / -1;
+}
+
+.col-auto {
+  grid-column: auto;
+}
+
+// ================================
+// Grid - Row Span
+// ================================
+
+@for $i from 1 through 6 {
+  .row-span-#{$i} {
+    grid-row: span $i / span $i;
+  }
+}
+
+.row-span-full {
+  grid-row: 1 / -1;
+}
+
+.row-auto {
+  grid-row: auto;
+}
+
+// ================================
+// Grid - Auto Flow
+// ================================
+
+.grid-flow-row {
+  grid-auto-flow: row;
+}
+
+.grid-flow-col {
+  grid-auto-flow: column;
+}
+
+.grid-flow-row-dense {
+  grid-auto-flow: row dense;
+}
+
+.grid-flow-col-dense {
+  grid-auto-flow: column dense;
+}
+
+// ================================
+// Position
+// ================================
+
+$positions: (static, relative, absolute, fixed, sticky);
+
+@each $position in $positions {
+  .position-#{$position} {
+    position: $position;
+  }
+}
+
+// 簡寫
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+.sticky { position: sticky; }
+
+// ================================
+// Position Values
+// ================================
+
+$position-values: (
+  '0': 0,
+  'px': 1px,
+  'xs': var(--spacing-xs),
+  'sm': var(--spacing-sm),
+  'md': var(--spacing-md),
+  'lg': var(--spacing-lg),
+  'xl': var(--spacing-xl),
+  'auto': auto,
+  'full': 100%
+);
+
+@each $name, $value in $position-values {
+  .top-#{$name} { top: $value; }
+  .right-#{$name} { right: $value; }
+  .bottom-#{$name} { bottom: $value; }
+  .left-#{$name} { left: $value; }
+  
+  .inset-#{$name} {
+    top: $value;
+    right: $value;
+    bottom: $value;
+    left: $value;
+  }
+  
+  .inset-x-#{$name} {
+    left: $value;
+    right: $value;
+  }
+  
+  .inset-y-#{$name} {
+    top: $value;
+    bottom: $value;
+  }
+}
+
+// ================================
+// Z-Index
+// ================================
+
+$z-indexes: (
+  '0': 0,
+  '10': 10,
+  '20': 20,
+  '30': 30,
+  '40': 40,
+  '50': 50,
+  'auto': auto,
+  'dropdown': var(--z-dropdown),
+  'sticky': var(--z-sticky),
+  'fixed': var(--z-fixed),
+  'overlay': var(--z-overlay),
+  'modal': var(--z-modal),
+  'popover': var(--z-popover),
+  'tooltip': var(--z-tooltip)
+);
+
+@each $name, $value in $z-indexes {
+  .z-#{$name} {
+    z-index: $value;
+  }
+}
+
+// ================================
+// Overflow
+// ================================
+
+$overflows: (auto, hidden, visible, scroll);
+
+@each $overflow in $overflows {
+  .overflow-#{$overflow} {
+    overflow: $overflow;
+  }
+  
+  .overflow-x-#{$overflow} {
+    overflow-x: $overflow;
+  }
+  
+  .overflow-y-#{$overflow} {
+    overflow-y: $overflow;
+  }
+}
+
+// ================================
+// Object Fit
+// ================================
+
+$object-fits: (contain, cover, fill, none, scale-down);
+
+@each $fit in $object-fits {
+  .object-#{$fit} {
+    object-fit: $fit;
+  }
+}
+
+// ================================
+// Object Position
+// ================================
+
+$object-positions: (
+  'bottom': bottom,
+  'center': center,
+  'left': left,
+  'left-bottom': left bottom,
+  'left-top': left top,
+  'right': right,
+  'right-bottom': right bottom,
+  'right-top': right top,
+  'top': top
+);
+
+@each $name, $value in $object-positions {
+  .object-#{$name} {
+    object-position: $value;
+  }
+}
+
+// ================================
+// Visibility
+// ================================
+
+.visible {
+  visibility: visible;
+}
+
+.invisible {
+  visibility: hidden;
+}
+
+// ================================
+// Float
+// ================================
+
+.float-left {
+  float: left;
+}
+
+.float-right {
+  float: right;
+}
+
+.float-none {
+  float: none;
+}
+
+.clearfix {
+  &::after {
+    content: '';
+    display: table;
+    clear: both;
+  }
+}

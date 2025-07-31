@@ -1,0 +1,382 @@
+// ================================
+// 卡片組件 - 移動優先響應式設計
+// ================================
+// 展示如何使用移動優先方式重構組件
+
+@import '../foundation/tokens';
+@import '../foundation/responsive-mobile-first';
+
+// ================================
+// 卡片容器
+// ================================
+.card-mf {
+  // 移動裝置基礎樣式
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: var(--spacing-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-normal) var(--easing-ease-in-out);
+  
+  // 平板優化
+  @include from-md {
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+  }
+  
+  // 桌面優化
+  @include from-lg {
+    padding: var(--spacing-xl);
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+  
+  // 變體：緊湊型
+  &--compact {
+    padding: var(--spacing-sm);
+    
+    @include from-md {
+      padding: var(--spacing-md);
+    }
+  }
+  
+  // 變體：可點擊
+  &--clickable {
+    cursor: pointer;
+    
+    &:active {
+      transform: scale(0.98);
+    }
+    
+    @include from-lg {
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+      }
+    }
+  }
+}
+
+// ================================
+// 卡片頭部
+// ================================
+.card-mf__header {
+  // 移動裝置
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-secondary);
+  
+  // 平板以上：水平佈局
+  @include from-md {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+  }
+  
+  // 桌面
+  @include from-lg {
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-lg);
+  }
+}
+
+// ================================
+// 卡片標題
+// ================================
+.card-mf__title {
+  // 移動裝置
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--text-primary);
+  
+  // 平板
+  @include from-md {
+    font-size: var(--font-size-xl);
+  }
+  
+  // 桌面
+  @include from-lg {
+    font-size: var(--font-size-2xl);
+  }
+}
+
+// ================================
+// 卡片副標題
+// ================================
+.card-mf__subtitle {
+  // 移動裝置
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  
+  // 平板以上
+  @include from-md {
+    font-size: var(--font-size-base);
+  }
+}
+
+// ================================
+// 卡片主體
+// ================================
+.card-mf__body {
+  // 移動裝置
+  flex: 1;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--text-primary);
+  
+  // 平板以上
+  @include from-md {
+    font-size: var(--font-size-base);
+  }
+  
+  // 內容段落
+  p {
+    margin-bottom: var(--spacing-md);
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// ================================
+// 卡片媒體區域
+// ================================
+.card-mf__media {
+  // 移動裝置：全寬度
+  width: calc(100% + var(--spacing-md) * 2);
+  margin: calc(var(--spacing-md) * -1);
+  margin-bottom: var(--spacing-md);
+  overflow: hidden;
+  
+  // 平板
+  @include from-md {
+    width: calc(100% + var(--spacing-lg) * 2);
+    margin: calc(var(--spacing-lg) * -1);
+    margin-bottom: var(--spacing-lg);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+  
+  // 桌面
+  @include from-lg {
+    width: calc(100% + var(--spacing-xl) * 2);
+    margin: calc(var(--spacing-xl) * -1);
+    margin-bottom: var(--spacing-xl);
+  }
+  
+  // 圖片
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  
+  // 位置變體：底部
+  &--bottom {
+    margin-bottom: calc(var(--spacing-md) * -1);
+    margin-top: var(--spacing-md);
+    
+    @include from-md {
+      margin-bottom: calc(var(--spacing-lg) * -1);
+      margin-top: var(--spacing-lg);
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    }
+    
+    @include from-lg {
+      margin-bottom: calc(var(--spacing-xl) * -1);
+      margin-top: var(--spacing-xl);
+    }
+  }
+}
+
+// ================================
+// 卡片頁腳
+// ================================
+.card-mf__footer {
+  // 移動裝置：垂直按鈕組
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-secondary);
+  
+  // 平板以上：水平按鈕組
+  @include from-md {
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+  }
+  
+  // 按鈕在移動裝置上全寬度
+  .btn {
+    width: 100%;
+    
+    @include from-md {
+      width: auto;
+    }
+  }
+}
+
+// ================================
+// 卡片網格佈局
+// ================================
+.card-grid-mf {
+  // 移動裝置：單欄
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-md);
+  
+  // 小型手機：仍然單欄但間距增加
+  @include from-sm {
+    gap: var(--spacing-lg);
+  }
+  
+  // 平板：雙欄
+  @include from-md {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-xl);
+  }
+  
+  // 桌面：三欄
+  @include from-lg {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  // 大型桌面：四欄
+  @include from-xl {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-2xl);
+  }
+  
+  // 變體：自動填充
+  &--auto-fill {
+    @include from-md {
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+  }
+  
+  // 變體：緊湊間距
+  &--compact {
+    gap: var(--spacing-sm);
+    
+    @include from-md {
+      gap: var(--spacing-md);
+    }
+  }
+}
+
+// ================================
+// 卡片列表佈局
+// ================================
+.card-list-mf {
+  // 移動裝置基礎
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  
+  // 平板以上
+  @include from-md {
+    gap: var(--spacing-lg);
+  }
+  
+  // 水平滾動變體
+  &--horizontal {
+    flex-direction: row;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--spacing-md);
+    
+    // 卡片最小寬度
+    > .card-mf {
+      flex: 0 0 280px;
+      scroll-snap-align: start;
+      
+      @include from-md {
+        flex: 0 0 320px;
+      }
+    }
+    
+    // 隱藏滾動條樣式
+    &::-webkit-scrollbar {
+      height: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-full);
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-secondary);
+      border-radius: var(--radius-full);
+    }
+  }
+}
+
+// ================================
+// 響應式卡片範例
+// ================================
+.example-card-mf {
+  @extend .card-mf;
+  
+  // 移動裝置特定樣式
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+    
+    @include from-md {
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--spacing-md);
+    }
+  }
+  
+  .stat-item {
+    text-align: center;
+    padding: var(--spacing-sm);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    
+    @include from-md {
+      padding: var(--spacing-md);
+    }
+    
+    &__value {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      color: var(--primary);
+      
+      @include from-md {
+        font-size: var(--font-size-xl);
+      }
+    }
+    
+    &__label {
+      font-size: var(--font-size-xs);
+      color: var(--text-secondary);
+      margin-top: var(--spacing-xs);
+      
+      @include from-md {
+        font-size: var(--font-size-sm);
+      }
+    }
+  }
+}

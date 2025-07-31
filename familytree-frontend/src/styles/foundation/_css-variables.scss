@@ -1,0 +1,254 @@
+// ================================
+// CSS 變數系統 - CSS Custom Properties
+// ================================
+// 完整的 CSS 變數定義，支援主題切換
+// 基於 _tokens.scss 的設計系統
+
+:root {
+  // ================================
+  // 顏色系統 - Color System
+  // ================================
+  
+  // 主色調 - Primary Colors
+  --color-primary-50: #{$color-primary-50};
+  --color-primary-100: #{$color-primary-100};
+  --color-primary-200: #{$color-primary-200};
+  --color-primary-300: #{$color-primary-300};
+  --color-primary-400: #{$color-primary-400};
+  --color-primary-500: #{$color-primary-500};
+  --color-primary-600: #{$color-primary-600};
+  --color-primary-700: #{$color-primary-700};
+  --color-primary-800: #{$color-primary-800};
+  --color-primary-900: #{$color-primary-900};
+  
+  // 中性色系 - Neutral Colors
+  --color-neutral-50: #{$color-neutral-50};
+  --color-neutral-100: #{$color-neutral-100};
+  --color-neutral-200: #{$color-neutral-200};
+  --color-neutral-300: #{$color-neutral-300};
+  --color-neutral-400: #{$color-neutral-400};
+  --color-neutral-500: #{$color-neutral-500};
+  --color-neutral-600: #{$color-neutral-600};
+  --color-neutral-700: #{$color-neutral-700};
+  --color-neutral-800: #{$color-neutral-800};
+  --color-neutral-900: #{$color-neutral-900};
+  
+  // 功能色系 - Semantic Colors
+  --color-success-400: #{$color-success-400};
+  --color-success-500: #{$color-success-500};
+  --color-success-600: #{$color-success-600};
+  
+  --color-warning-400: #{$color-warning-400};
+  --color-warning-500: #{$color-warning-500};
+  --color-warning-600: #{$color-warning-600};
+  
+  --color-error-400: #{$color-error-400};
+  --color-error-500: #{$color-error-500};
+  --color-error-600: #{$color-error-600};
+  
+  --color-info-400: #{$color-info-400};
+  --color-info-500: #{$color-info-500};
+  --color-info-600: #{$color-info-600};
+  
+  // ================================
+  // 語義化顏色 - Semantic Colors
+  // ================================
+  
+  // 背景色
+  --bg-primary: #{$bg-primary};
+  --bg-secondary: #{$bg-secondary};
+  --bg-tertiary: #{$bg-tertiary};
+  --bg-surface: #{$bg-surface};
+  --bg-overlay: #{$bg-overlay};
+  
+  // 文字色彩
+  --text-primary: #{$text-primary};
+  --text-secondary: #{$text-secondary};
+  --text-tertiary: #{$text-tertiary};
+  --text-disabled: #{$text-disabled};
+  --text-inverse: #{$text-inverse};
+  
+  // 邊框色彩
+  --border-primary: #{$border-primary};
+  --border-secondary: #{$border-secondary};
+  --border-focus: #{$border-focus};
+  
+  // 主題色彩
+  --primary: #{$primary};
+  --primary-hover: #{$primary-hover};
+  --primary-active: #{$primary-active};
+  --primary-disabled: #{$primary-disabled};
+  
+  // 功能色彩
+  --success: #{$success};
+  --success-hover: #{$success-hover};
+  --warning: #{$warning};
+  --warning-hover: #{$warning-hover};
+  --error: #{$error};
+  --error-hover: #{$error-hover};
+  --info: #{$info};
+  --info-hover: #{$info-hover};
+  
+  // ================================
+  // 間距系統 - Spacing System
+  // ================================
+  
+  --space-0: #{$space-0};
+  --space-1: #{$space-1};
+  --space-2: #{$space-2};
+  --space-3: #{$space-3};
+  --space-4: #{$space-4};
+  --space-5: #{$space-5};
+  --space-6: #{$space-6};
+  --space-8: #{$space-8};
+  --space-10: #{$space-10};
+  --space-12: #{$space-12};
+  
+  // 語義化間距
+  --spacing-xs: #{$spacing-xs};
+  --spacing-sm: #{$spacing-sm};
+  --spacing-md: #{$spacing-md};
+  --spacing-lg: #{$spacing-lg};
+  --spacing-xl: #{$spacing-xl};
+  --spacing-2xl: #{$spacing-2xl};
+  --spacing-3xl: #{$spacing-3xl};
+  --spacing-4xl: #{$spacing-4xl};
+  
+  // ================================
+  // 字體系統 - Typography System
+  // ================================
+  
+  // 字體大小
+  --font-size-xs: #{$font-size-xs};
+  --font-size-sm: #{$font-size-sm};
+  --font-size-base: #{$font-size-base};
+  --font-size-lg: #{$font-size-lg};
+  --font-size-xl: #{$font-size-xl};
+  --font-size-2xl: #{$font-size-2xl};
+  --font-size-3xl: #{$font-size-3xl};
+  --font-size-4xl: #{$font-size-4xl};
+  --font-size-5xl: #{$font-size-5xl};
+  
+  // 行高
+  --line-height-tight: #{$line-height-tight};
+  --line-height-normal: #{$line-height-normal};
+  --line-height-relaxed: #{$line-height-relaxed};
+  
+  // 字體粗細
+  --font-weight-light: #{$font-weight-light};
+  --font-weight-normal: #{$font-weight-normal};
+  --font-weight-medium: #{$font-weight-medium};
+  --font-weight-semibold: #{$font-weight-semibold};
+  --font-weight-bold: #{$font-weight-bold};
+  --font-weight-extrabold: #{$font-weight-extrabold};
+  
+  // 字體家族
+  --font-family-base: #{$font-family-base};
+  --font-family-mono: #{$font-family-mono};
+  
+  // ================================
+  // 圓角系統 - Border Radius
+  // ================================
+  
+  --radius-none: #{$radius-none};
+  --radius-sm: #{$radius-sm};
+  --radius-md: #{$radius-md};
+  --radius-lg: #{$radius-lg};
+  --radius-xl: #{$radius-xl};
+  --radius-full: #{$radius-full};
+  
+  // ================================
+  // 陰影系統 - Shadow System
+  // ================================
+  
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+  --shadow-xl: #{$shadow-xl};
+  --shadow-2xl: #{$shadow-2xl};
+  --shadow-focus: #{$shadow-focus};
+  
+  // ================================
+  // Z-Index 系統
+  // ================================
+  
+  --z-dropdown: #{$z-dropdown};
+  --z-sticky: #{$z-sticky};
+  --z-fixed: #{$z-fixed};
+  --z-modal-backdrop: #{$z-modal-backdrop};
+  --z-modal: #{$z-modal};
+  --z-popover: #{$z-popover};
+  --z-tooltip: #{$z-tooltip};
+  
+  // ================================
+  // 動畫系統 - Animation
+  // ================================
+  
+  --duration-fast: #{$duration-fast};
+  --duration-normal: #{$duration-normal};
+  --duration-slow: #{$duration-slow};
+  --duration-slower: #{$duration-slower};
+  
+  --easing-ease-in: #{$easing-ease-in};
+  --easing-ease-out: #{$easing-ease-out};
+  --easing-ease-in-out: #{$easing-ease-in-out};
+  
+  // ================================
+  // 組件專用變數 - Component Variables
+  // ================================
+  
+  // 按鈕
+  --btn-padding-x: var(--spacing-lg);
+  --btn-padding-y: var(--spacing-sm);
+  --btn-border-radius: var(--radius-md);
+  --btn-font-weight: var(--font-weight-medium);
+  
+  // 輸入框
+  --input-padding-x: var(--spacing-md);
+  --input-padding-y: var(--spacing-sm);
+  --input-border-radius: var(--radius-sm);
+  --input-border-color: var(--border-primary);
+  --input-focus-border-color: var(--border-focus);
+  
+  // 卡片
+  --card-padding: var(--spacing-lg);
+  --card-border-radius: var(--radius-md);
+  --card-shadow: var(--shadow-md);
+  
+  // 對話框
+  --dialog-padding: var(--spacing-2xl);
+  --dialog-border-radius: var(--radius-lg);
+  --dialog-shadow: var(--shadow-xl);
+}
+
+// ================================
+// 淺色主題 - Light Theme
+// ================================
+[data-theme="light"] {
+  // 背景色
+  --bg-primary: #{$color-neutral-50};
+  --bg-secondary: #{$color-neutral-100};
+  --bg-tertiary: #{$color-neutral-200};
+  --bg-surface: #{$color-neutral-100};
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  
+  // 文字色彩
+  --text-primary: #{$color-neutral-900};
+  --text-secondary: #{$color-neutral-700};
+  --text-tertiary: #{$color-neutral-500};
+  --text-disabled: #{$color-neutral-400};
+  --text-inverse: #{$color-neutral-50};
+  
+  // 邊框色彩
+  --border-primary: #{$color-neutral-300};
+  --border-secondary: #{$color-neutral-200};
+  --border-focus: #{$color-primary-500};
+  
+  // 陰影系統（淺色主題）
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}

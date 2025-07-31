@@ -77,11 +77,11 @@
     }
 
     &.btn-warning {
-      background: #f59e0b;
+      background: var(--warning);
       color: white;
 
       &:hover {
-        background: color.adjust(#f59e0b, $lightness: -10%);
+        background: var(--warning-hover);
       }
     }
 

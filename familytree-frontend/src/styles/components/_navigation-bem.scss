@@ -1,0 +1,416 @@
+// ================================
+// 導航組件 - BEM 版本
+// ================================
+
+// 側邊欄導航
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 256px;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--duration-normal) var(--easing-ease-in-out);
+  z-index: var(--z-fixed);
+  
+  // 側邊欄頭部
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-primary);
+    
+    &--with-logo {
+      padding: var(--spacing-xl) var(--spacing-lg);
+    }
+  }
+  
+  // Logo區域
+  &__logo {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    text-decoration: none;
+    color: var(--text-primary);
+    
+    &-image {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+    }
+    
+    &-text {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      line-height: 1;
+    }
+  }
+  
+  // 控制按鈕
+  &__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--duration-fast);
+    
+    &:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+  }
+  
+  // 關閉按鈕（移動端）
+  &__close {
+    display: none;
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 30px;
+    height: 30px;
+    background: var(--error);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: var(--radius-full);
+    font-size: 18px;
+    cursor: pointer;
+    transition: all var(--duration-fast);
+    
+    &:hover {
+      background: var(--error-hover);
+      transform: scale(1.1);
+    }
+    
+    @include mobile {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+  
+  // 導航選單
+  &__nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-md) var(--spacing-sm);
+  }
+  
+  // 導航項目
+  &__item {
+    margin-bottom: var(--spacing-xs);
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  // 導航連結
+  &__link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-md);
+    color: var(--text-inverse);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-normal);
+    transition: all var(--duration-fast);
+    
+    &:hover {
+      background: var(--warning);
+      color: var(--text-inverse);
+    }
+    
+    &--active {
+      background: var(--primary);
+      font-weight: var(--font-weight-bold);
+      
+      &:hover {
+        background: var(--primary);
+      }
+    }
+  }
+  
+  // 導航圖標
+  &__icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  
+  // 導航文字
+  &__text {
+    flex: 1;
+    line-height: 1.2;
+  }
+  
+  // 導航徽章
+  &__badge {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--error);
+    color: var(--text-inverse);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--radius-full);
+    line-height: 1;
+  }
+  
+  // 側邊欄底部
+  &__footer {
+    padding: var(--spacing-lg);
+    border-top: 1px solid var(--border-primary);
+  }
+  
+  // ================================
+  // 側邊欄狀態
+  // ================================
+  
+  // 折疊狀態
+  &--collapsed {
+    width: 64px;
+    
+    .sidebar__header {
+      justify-content: center;
+    }
+    
+    .sidebar__logo-text,
+    .sidebar__text,
+    .sidebar__badge {
+      display: none;
+    }
+    
+    .sidebar__link {
+      justify-content: center;
+    }
+  }
+  
+  // 隱藏狀態（移動端）
+  &--hidden {
+    transform: translateX(-100%);
+  }
+  
+  // 覆蓋模式（移動端）
+  &--overlay {
+    @include mobile {
+      box-shadow: var(--shadow-xl);
+    }
+  }
+}
+
+// ================================
+// 頂部導航
+// ================================
+
+.navbar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-lg);
+  height: 64px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-primary);
+  z-index: var(--z-sticky);
+  
+  // 導航左側
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+  }
+  
+  // 導航品牌
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    text-decoration: none;
+    color: var(--text-primary);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+  }
+  
+  // 導航選單
+  &__menu {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    
+    @include mobile {
+      display: none;
+    }
+  }
+  
+  // 導航項目
+  &__item {
+    position: relative;
+  }
+  
+  // 導航連結
+  &__link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    transition: all var(--duration-fast);
+    
+    &:hover {
+      background: var(--bg-secondary);
+      color: var(--primary);
+    }
+    
+    &--active {
+      color: var(--primary);
+      font-weight: var(--font-weight-medium);
+    }
+  }
+  
+  // 導航右側
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+  }
+  
+  // 導航動作
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+  
+  // 移動端選單按鈕
+  &__mobile-toggle {
+    display: none;
+    
+    @include mobile {
+      display: flex;
+    }
+  }
+}
+
+// ================================
+// 麵包屑導航
+// ================================
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) 0;
+  font-size: var(--font-size-sm);
+  
+  // 項目
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--text-secondary);
+    
+    &:last-child {
+      color: var(--text-primary);
+      font-weight: var(--font-weight-medium);
+    }
+  }
+  
+  // 連結
+  &__link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color var(--duration-fast);
+    
+    &:hover {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+  }
+  
+  // 分隔符
+  &__separator {
+    color: var(--text-tertiary);
+    user-select: none;
+  }
+}
+
+// ================================
+// 分頁導航
+// ================================
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  
+  // 頁碼項目
+  &__item {
+    // 結構性元素
+  }
+  
+  // 頁碼連結
+  &__link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 var(--spacing-sm);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: var(--font-size-sm);
+    transition: all var(--duration-fast);
+    
+    &:hover {
+      background: var(--bg-secondary);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    
+    &--active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--text-inverse);
+      
+      &:hover {
+        background: var(--primary-hover);
+        border-color: var(--primary-hover);
+      }
+    }
+    
+    &--disabled {
+      background: var(--bg-tertiary);
+      border-color: var(--border-primary);
+      color: var(--text-disabled);
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+  
+  // 省略符號
+  &__ellipsis {
+    color: var(--text-tertiary);
+    user-select: none;
+  }
+}

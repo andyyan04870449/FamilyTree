@@ -1,0 +1,581 @@
+// ================================
+// 工具類別索引文件
+// ================================
+// 匯出所有工具類別
+
+// 基礎
+@import 'spacing';
+@import 'typography';
+@import 'layout';
+@import 'sizing';
+@import 'effects';
+@import 'transitions';
+
+// ================================
+// 額外的通用工具類別
+// ================================
+
+// 屏幕閱讀器專用
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.not-sr-only {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+// 強制顏色調整
+.forced-color-adjust-none {
+  forced-color-adjust: none;
+}
+
+.forced-color-adjust-auto {
+  forced-color-adjust: auto;
+}
+
+// 外觀
+.appearance-none {
+  appearance: none;
+}
+
+// 輪廓
+.outline-none {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.outline {
+  outline-style: solid;
+}
+
+.outline-dashed {
+  outline-style: dashed;
+}
+
+.outline-dotted {
+  outline-style: dotted;
+}
+
+.outline-double {
+  outline-style: double;
+}
+
+// 輪廓寬度
+.outline-0 {
+  outline-width: 0px;
+}
+
+.outline-1 {
+  outline-width: 1px;
+}
+
+.outline-2 {
+  outline-width: 2px;
+}
+
+.outline-4 {
+  outline-width: 4px;
+}
+
+.outline-8 {
+  outline-width: 8px;
+}
+
+// 輪廓顏色
+.outline-primary {
+  outline-color: var(--primary);
+}
+
+.outline-transparent {
+  outline-color: transparent;
+}
+
+.outline-current {
+  outline-color: currentColor;
+}
+
+// 輪廓偏移
+.outline-offset-0 {
+  outline-offset: 0px;
+}
+
+.outline-offset-1 {
+  outline-offset: 1px;
+}
+
+.outline-offset-2 {
+  outline-offset: 2px;
+}
+
+.outline-offset-4 {
+  outline-offset: 4px;
+}
+
+.outline-offset-8 {
+  outline-offset: 8px;
+}
+
+// 內容
+.content-none {
+  content: none;
+}
+
+// 斷字
+.hyphens-none {
+  hyphens: none;
+}
+
+.hyphens-manual {
+  hyphens: manual;
+}
+
+.hyphens-auto {
+  hyphens: auto;
+}
+
+// 捲動行為
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+.scroll-auto {
+  scroll-behavior: auto;
+}
+
+// 捲動邊距
+.scroll-m-0 {
+  scroll-margin: 0px;
+}
+
+.scroll-m-px {
+  scroll-margin: 1px;
+}
+
+@each $size-key, $size-value in $spacing-sizes {
+  @if $size-key != 'auto' {
+    .scroll-m-#{$size-key} {
+      scroll-margin: $size-value;
+    }
+  }
+}
+
+// 捲動內邊距
+.scroll-p-0 {
+  scroll-padding: 0px;
+}
+
+.scroll-p-px {
+  scroll-padding: 1px;
+}
+
+@each $size-key, $size-value in $spacing-sizes {
+  @if $size-key != 'auto' {
+    .scroll-p-#{$size-key} {
+      scroll-padding: $size-value;
+    }
+  }
+}
+
+// 觸控操作
+.touch-auto {
+  touch-action: auto;
+}
+
+.touch-none {
+  touch-action: none;
+}
+
+.touch-pan-x {
+  touch-action: pan-x;
+}
+
+.touch-pan-left {
+  touch-action: pan-left;
+}
+
+.touch-pan-right {
+  touch-action: pan-right;
+}
+
+.touch-pan-y {
+  touch-action: pan-y;
+}
+
+.touch-pan-up {
+  touch-action: pan-up;
+}
+
+.touch-pan-down {
+  touch-action: pan-down;
+}
+
+.touch-pinch-zoom {
+  touch-action: pinch-zoom;
+}
+
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+// Will Change
+.will-change-auto {
+  will-change: auto;
+}
+
+.will-change-scroll {
+  will-change: scroll-position;
+}
+
+.will-change-contents {
+  will-change: contents;
+}
+
+.will-change-transform {
+  will-change: transform;
+}
+
+// 混合模式
+.mix-blend-normal {
+  mix-blend-mode: normal;
+}
+
+.mix-blend-multiply {
+  mix-blend-mode: multiply;
+}
+
+.mix-blend-screen {
+  mix-blend-mode: screen;
+}
+
+.mix-blend-overlay {
+  mix-blend-mode: overlay;
+}
+
+.mix-blend-darken {
+  mix-blend-mode: darken;
+}
+
+.mix-blend-lighten {
+  mix-blend-mode: lighten;
+}
+
+.mix-blend-color-dodge {
+  mix-blend-mode: color-dodge;
+}
+
+.mix-blend-color-burn {
+  mix-blend-mode: color-burn;
+}
+
+.mix-blend-hard-light {
+  mix-blend-mode: hard-light;
+}
+
+.mix-blend-soft-light {
+  mix-blend-mode: soft-light;
+}
+
+.mix-blend-difference {
+  mix-blend-mode: difference;
+}
+
+.mix-blend-exclusion {
+  mix-blend-mode: exclusion;
+}
+
+.mix-blend-hue {
+  mix-blend-mode: hue;
+}
+
+.mix-blend-saturation {
+  mix-blend-mode: saturation;
+}
+
+.mix-blend-color {
+  mix-blend-mode: color;
+}
+
+.mix-blend-luminosity {
+  mix-blend-mode: luminosity;
+}
+
+// 背景混合模式
+.bg-blend-normal {
+  background-blend-mode: normal;
+}
+
+.bg-blend-multiply {
+  background-blend-mode: multiply;
+}
+
+.bg-blend-screen {
+  background-blend-mode: screen;
+}
+
+.bg-blend-overlay {
+  background-blend-mode: overlay;
+}
+
+.bg-blend-darken {
+  background-blend-mode: darken;
+}
+
+.bg-blend-lighten {
+  background-blend-mode: lighten;
+}
+
+.bg-blend-color-dodge {
+  background-blend-mode: color-dodge;
+}
+
+.bg-blend-color-burn {
+  background-blend-mode: color-burn;
+}
+
+.bg-blend-hard-light {
+  background-blend-mode: hard-light;
+}
+
+.bg-blend-soft-light {
+  background-blend-mode: soft-light;
+}
+
+.bg-blend-difference {
+  background-blend-mode: difference;
+}
+
+.bg-blend-exclusion {
+  background-blend-mode: exclusion;
+}
+
+.bg-blend-hue {
+  background-blend-mode: hue;
+}
+
+.bg-blend-saturation {
+  background-blend-mode: saturation;
+}
+
+.bg-blend-color {
+  background-blend-mode: color;
+}
+
+.bg-blend-luminosity {
+  background-blend-mode: luminosity;
+}
+
+// 隔離
+.isolate {
+  isolation: isolate;
+}
+
+.isolation-auto {
+  isolation: auto;
+}
+
+// 表格佈局
+.table-auto {
+  table-layout: auto;
+}
+
+.table-fixed {
+  table-layout: fixed;
+}
+
+// 邊框摺疊
+.border-collapse {
+  border-collapse: collapse;
+}
+
+.border-separate {
+  border-collapse: separate;
+}
+
+// 列表樣式位置
+.list-inside {
+  list-style-position: inside;
+}
+
+.list-outside {
+  list-style-position: outside;
+}
+
+// 分欄
+.columns-1 {
+  columns: 1;
+}
+
+.columns-2 {
+  columns: 2;
+}
+
+.columns-3 {
+  columns: 3;
+}
+
+.columns-4 {
+  columns: 4;
+}
+
+.columns-5 {
+  columns: 5;
+}
+
+.columns-6 {
+  columns: 6;
+}
+
+.columns-7 {
+  columns: 7;
+}
+
+.columns-8 {
+  columns: 8;
+}
+
+.columns-9 {
+  columns: 9;
+}
+
+.columns-10 {
+  columns: 10;
+}
+
+.columns-11 {
+  columns: 11;
+}
+
+.columns-12 {
+  columns: 12;
+}
+
+.columns-auto {
+  columns: auto;
+}
+
+// 分頁符
+.break-before-auto {
+  break-before: auto;
+}
+
+.break-before-avoid {
+  break-before: avoid;
+}
+
+.break-before-all {
+  break-before: all;
+}
+
+.break-before-avoid-page {
+  break-before: avoid-page;
+}
+
+.break-before-page {
+  break-before: page;
+}
+
+.break-before-left {
+  break-before: left;
+}
+
+.break-before-right {
+  break-before: right;
+}
+
+.break-before-column {
+  break-before: column;
+}
+
+.break-inside-auto {
+  break-inside: auto;
+}
+
+.break-inside-avoid {
+  break-inside: avoid;
+}
+
+.break-inside-avoid-page {
+  break-inside: avoid-page;
+}
+
+.break-inside-avoid-column {
+  break-inside: avoid-column;
+}
+
+.break-after-auto {
+  break-after: auto;
+}
+
+.break-after-avoid {
+  break-after: avoid;
+}
+
+.break-after-all {
+  break-after: all;
+}
+
+.break-after-avoid-page {
+  break-after: avoid-page;
+}
+
+.break-after-page {
+  break-after: page;
+}
+
+.break-after-left {
+  break-after: left;
+}
+
+.break-after-right {
+  break-after: right;
+}
+
+.break-after-column {
+  break-after: column;
+}
+
+// 盒子裝飾分割
+.box-decoration-clone {
+  box-decoration-break: clone;
+}
+
+.box-decoration-slice {
+  box-decoration-break: slice;
+}
+
+// 盒子大小
+.box-border {
+  box-sizing: border-box;
+}
+
+.box-content {
+  box-sizing: content-box;
+}
+
+// 圖片渲染
+.image-render-auto {
+  image-rendering: auto;
+}
+
+.image-render-crisp {
+  image-rendering: crisp-edges;
+}
+
+.image-render-pixel {
+  image-rendering: pixelated;
+}

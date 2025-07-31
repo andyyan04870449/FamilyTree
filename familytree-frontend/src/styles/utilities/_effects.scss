@@ -1,0 +1,549 @@
+// ================================
+// 效果工具類別 (Effects Utilities)
+// ================================
+
+@import '../foundation/tokens';
+@import '../foundation/responsive-mobile-first';
+@import '../foundation/advanced-mixins';
+
+// ================================
+// 邊框寬度
+// ================================
+
+$border-widths: (
+  '0': 0,
+  '': 1px,
+  '2': 2px,
+  '4': 4px,
+  '8': 8px
+);
+
+@each $name, $width in $border-widths {
+  @if $name == '' {
+    .border {
+      border-width: $width;
+    }
+  } @else {
+    .border-#{$name} {
+      border-width: $width;
+    }
+  }
+  
+  .border-t-#{$name} {
+    border-top-width: $width;
+  }
+  
+  .border-r-#{$name} {
+    border-right-width: $width;
+  }
+  
+  .border-b-#{$name} {
+    border-bottom-width: $width;
+  }
+  
+  .border-l-#{$name} {
+    border-left-width: $width;
+  }
+  
+  .border-x-#{$name} {
+    border-left-width: $width;
+    border-right-width: $width;
+  }
+  
+  .border-y-#{$name} {
+    border-top-width: $width;
+    border-bottom-width: $width;
+  }
+}
+
+// ================================
+// 邊框樣式
+// ================================
+
+$border-styles: (solid, dashed, dotted, double, none);
+
+@each $style in $border-styles {
+  .border-#{$style} {
+    border-style: $style;
+  }
+}
+
+// ================================
+// 邊框顏色
+// ================================
+
+$border-colors: (
+  'primary': var(--border-primary),
+  'secondary': var(--border-secondary),
+  'tertiary': var(--border-tertiary),
+  'transparent': transparent,
+  'current': currentColor,
+  'brand': var(--primary),
+  'success': var(--success),
+  'warning': var(--warning),
+  'error': var(--error),
+  'info': var(--info),
+  'focus': var(--border-focus)
+);
+
+@each $name, $color in $border-colors {
+  .border-#{$name} {
+    border-color: $color;
+  }
+}
+
+// ================================
+// 圓角
+// ================================
+
+$border-radiuses: (
+  'none': 0,
+  'sm': var(--radius-sm),
+  '': var(--radius-md),
+  'md': var(--radius-md),
+  'lg': var(--radius-lg),
+  'xl': var(--radius-xl),
+  '2xl': 1rem,
+  '3xl': 1.5rem,
+  'full': var(--radius-full)
+);
+
+@each $name, $radius in $border-radiuses {
+  @if $name == '' {
+    .rounded {
+      border-radius: $radius;
+    }
+  } @else {
+    .rounded-#{$name} {
+      border-radius: $radius;
+    }
+  }
+}
+
+// 特定角落圓角
+@each $name, $radius in $border-radiuses {
+  @if $name != '' {
+    .rounded-t-#{$name} {
+      border-top-left-radius: $radius;
+      border-top-right-radius: $radius;
+    }
+    
+    .rounded-r-#{$name} {
+      border-top-right-radius: $radius;
+      border-bottom-right-radius: $radius;
+    }
+    
+    .rounded-b-#{$name} {
+      border-bottom-left-radius: $radius;
+      border-bottom-right-radius: $radius;
+    }
+    
+    .rounded-l-#{$name} {
+      border-top-left-radius: $radius;
+      border-bottom-left-radius: $radius;
+    }
+    
+    .rounded-tl-#{$name} {
+      border-top-left-radius: $radius;
+    }
+    
+    .rounded-tr-#{$name} {
+      border-top-right-radius: $radius;
+    }
+    
+    .rounded-br-#{$name} {
+      border-bottom-right-radius: $radius;
+    }
+    
+    .rounded-bl-#{$name} {
+      border-bottom-left-radius: $radius;
+    }
+  }
+}
+
+// ================================
+// 陰影
+// ================================
+
+$shadows: (
+  'none': none,
+  'sm': var(--shadow-sm),
+  '': var(--shadow-md),
+  'md': var(--shadow-md),
+  'lg': var(--shadow-lg),
+  'xl': var(--shadow-xl),
+  '2xl': var(--shadow-2xl),
+  'inner': var(--shadow-inner),
+  'focus': var(--shadow-focus)
+);
+
+@each $name, $shadow in $shadows {
+  @if $name == '' {
+    .shadow {
+      box-shadow: $shadow;
+    }
+  } @else {
+    .shadow-#{$name} {
+      box-shadow: $shadow;
+    }
+  }
+}
+
+// ================================
+// 透明度
+// ================================
+
+$opacities: (
+  '0': 0,
+  '5': 0.05,
+  '10': 0.1,
+  '20': 0.2,
+  '25': 0.25,
+  '30': 0.3,
+  '40': 0.4,
+  '50': 0.5,
+  '60': 0.6,
+  '70': 0.7,
+  '75': 0.75,
+  '80': 0.8,
+  '90': 0.9,
+  '95': 0.95,
+  '100': 1
+);
+
+@each $name, $opacity in $opacities {
+  .opacity-#{$name} {
+    opacity: $opacity;
+  }
+}
+
+// ================================
+// 背景顏色
+// ================================
+
+$bg-colors: (
+  'transparent': transparent,
+  'current': currentColor,
+  'primary': var(--bg-primary),
+  'secondary': var(--bg-secondary),
+  'tertiary': var(--bg-tertiary),
+  'surface': var(--bg-surface),
+  'overlay': var(--bg-overlay),
+  'brand': var(--primary),
+  'brand-light': var(--primary-light),
+  'brand-dark': var(--primary-dark),
+  'success': var(--success),
+  'success-light': var(--success-light),
+  'warning': var(--warning),
+  'warning-light': var(--warning-light),
+  'error': var(--error),
+  'error-light': var(--error-light),
+  'info': var(--info),
+  'info-light': var(--info-light)
+);
+
+@each $name, $color in $bg-colors {
+  .bg-#{$name} {
+    background-color: $color;
+  }
+  
+  // hover 變體
+  .hover\:bg-#{$name}:hover {
+    background-color: $color;
+  }
+}
+
+// ================================
+// 背景漸變
+// ================================
+
+.bg-gradient-to-t {
+  background-image: linear-gradient(to top, var(--tw-gradient-stops));
+}
+
+.bg-gradient-to-tr {
+  background-image: linear-gradient(to top right, var(--tw-gradient-stops));
+}
+
+.bg-gradient-to-r {
+  background-image: linear-gradient(to right, var(--tw-gradient-stops));
+}
+
+.bg-gradient-to-br {
+  background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}
+
+.bg-gradient-to-b {
+  background-image: linear-gradient(to bottom, var(--tw-gradient-stops));
+}
+
+.bg-gradient-to-bl {
+  background-image: linear-gradient(to bottom left, var(--tw-gradient-stops));
+}
+
+.bg-gradient-to-l {
+  background-image: linear-gradient(to left, var(--tw-gradient-stops));
+}
+
+.bg-gradient-to-tl {
+  background-image: linear-gradient(to top left, var(--tw-gradient-stops));
+}
+
+// ================================
+// 濾鏡
+// ================================
+
+.blur-sm {
+  filter: blur(4px);
+}
+
+.blur {
+  filter: blur(8px);
+}
+
+.blur-md {
+  filter: blur(12px);
+}
+
+.blur-lg {
+  filter: blur(16px);
+}
+
+.blur-xl {
+  filter: blur(24px);
+}
+
+.blur-2xl {
+  filter: blur(40px);
+}
+
+.blur-3xl {
+  filter: blur(64px);
+}
+
+.blur-none {
+  filter: blur(0);
+}
+
+// ================================
+// 亮度
+// ================================
+
+$brightnesses: (
+  '0': 0,
+  '50': 0.5,
+  '75': 0.75,
+  '90': 0.9,
+  '95': 0.95,
+  '100': 1,
+  '105': 1.05,
+  '110': 1.1,
+  '125': 1.25,
+  '150': 1.5,
+  '200': 2
+);
+
+@each $name, $brightness in $brightnesses {
+  .brightness-#{$name} {
+    filter: brightness($brightness);
+  }
+}
+
+// ================================
+// 對比度
+// ================================
+
+$contrasts: (
+  '0': 0,
+  '50': 0.5,
+  '75': 0.75,
+  '100': 1,
+  '125': 1.25,
+  '150': 1.5,
+  '200': 2
+);
+
+@each $name, $contrast in $contrasts {
+  .contrast-#{$name} {
+    filter: contrast($contrast);
+  }
+}
+
+// ================================
+// 灰階
+// ================================
+
+.grayscale-0 {
+  filter: grayscale(0);
+}
+
+.grayscale {
+  filter: grayscale(100%);
+}
+
+// ================================
+// 反轉
+// ================================
+
+.invert-0 {
+  filter: invert(0);
+}
+
+.invert {
+  filter: invert(100%);
+}
+
+// ================================
+// 飽和度
+// ================================
+
+$saturations: (
+  '0': 0,
+  '50': 0.5,
+  '100': 1,
+  '150': 1.5,
+  '200': 2
+);
+
+@each $name, $saturation in $saturations {
+  .saturate-#{$name} {
+    filter: saturate($saturation);
+  }
+}
+
+// ================================
+// 深褐色
+// ================================
+
+.sepia-0 {
+  filter: sepia(0);
+}
+
+.sepia {
+  filter: sepia(100%);
+}
+
+// ================================
+// 特殊效果
+// ================================
+
+// 玻璃擬態
+.glass {
+  @include glassmorphism();
+}
+
+.glass-dark {
+  @include glassmorphism(15px, 0.2);
+}
+
+// 新擬態
+.neumorphism {
+  @include neumorphism();
+}
+
+// 環形
+.ring-0 {
+  box-shadow: 0 0 0 0px rgba(var(--primary-rgb), 0.5);
+}
+
+.ring-1 {
+  box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.5);
+}
+
+.ring-2 {
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.5);
+}
+
+.ring-4 {
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.5);
+}
+
+.ring-8 {
+  box-shadow: 0 0 0 8px rgba(var(--primary-rgb), 0.5);
+}
+
+// ================================
+// 游標
+// ================================
+
+$cursors: (
+  'auto': auto,
+  'default': default,
+  'pointer': pointer,
+  'wait': wait,
+  'text': text,
+  'move': move,
+  'help': help,
+  'not-allowed': not-allowed,
+  'none': none,
+  'progress': progress,
+  'cell': cell,
+  'crosshair': crosshair,
+  'vertical-text': vertical-text,
+  'alias': alias,
+  'copy': copy,
+  'no-drop': no-drop,
+  'grab': grab,
+  'grabbing': grabbing,
+  'all-scroll': all-scroll,
+  'zoom-in': zoom-in,
+  'zoom-out': zoom-out
+);
+
+@each $name, $cursor in $cursors {
+  .cursor-#{$name} {
+    cursor: $cursor;
+  }
+}
+
+// ================================
+// 指標事件
+// ================================
+
+.pointer-events-none {
+  pointer-events: none;
+}
+
+.pointer-events-auto {
+  pointer-events: auto;
+}
+
+// ================================
+// 調整大小
+// ================================
+
+.resize-none {
+  resize: none;
+}
+
+.resize-y {
+  resize: vertical;
+}
+
+.resize-x {
+  resize: horizontal;
+}
+
+.resize {
+  resize: both;
+}
+
+// ================================
+// 用戶選擇
+// ================================
+
+.select-none {
+  user-select: none;
+}
+
+.select-text {
+  user-select: text;
+}
+
+.select-all {
+  user-select: all;
+}
+
+.select-auto {
+  user-select: auto;
+}

@@ -1,0 +1,278 @@
+// ================================
+// 按鈕組件 - BEM 版本
+// ================================
+
+// 按鈕基礎樣式
+.btn {
+  // 基礎樣式
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--btn-padding-y) var(--btn-padding-x);
+  border: none;
+  border-radius: var(--btn-border-radius);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  font-weight: var(--btn-font-weight);
+  line-height: var(--line-height-tight);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--easing-ease-in-out);
+  user-select: none;
+  white-space: nowrap;
+  
+  // 焦點狀態
+  &:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+  
+  // 禁用狀態
+  &:disabled,
+  &--disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  
+  // ================================
+  // 按鈕變體
+  // ================================
+  
+  // 主要按鈕
+  &--primary {
+    background: var(--primary);
+    color: var(--text-inverse);
+    
+    &:hover:not(:disabled) {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+    
+    &:active:not(:disabled) {
+      background: var(--primary-active);
+      transform: translateY(0);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+  
+  // 次要按鈕
+  &--secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+    
+    &:hover:not(:disabled) {
+      background: var(--bg-tertiary);
+      border-color: var(--border-secondary);
+    }
+    
+    &:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+  }
+  
+  // 成功按鈕
+  &--success {
+    background: var(--success);
+    color: var(--text-inverse);
+    
+    &:hover:not(:disabled) {
+      background: var(--success-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+  
+  // 危險按鈕
+  &--danger {
+    background: var(--error);
+    color: var(--text-inverse);
+    
+    &:hover:not(:disabled) {
+      background: var(--error-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+  
+  // 警告按鈕
+  &--warning {
+    background: var(--warning);
+    color: var(--text-inverse);
+    
+    &:hover:not(:disabled) {
+      background: var(--warning-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+  
+  // 資訊按鈕
+  &--info {
+    background: var(--info);
+    color: var(--text-inverse);
+    
+    &:hover:not(:disabled) {
+      background: var(--info-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+  
+  // 文字按鈕
+  &--text {
+    background: transparent;
+    color: var(--primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    
+    &:hover:not(:disabled) {
+      background: rgba(var(--primary-rgb), 0.1);
+      color: var(--primary-hover);
+    }
+    
+    &:active:not(:disabled) {
+      background: rgba(var(--primary-rgb), 0.2);
+    }
+  }
+  
+  // ================================
+  // 按鈕尺寸
+  // ================================
+  
+  // 小尺寸
+  &--small {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    gap: var(--spacing-xs);
+  }
+  
+  // 大尺寸
+  &--large {
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: var(--font-size-lg);
+    gap: var(--spacing-md);
+  }
+  
+  // ================================
+  // 按鈕狀態
+  // ================================
+  
+  // 全寬按鈕
+  &--full-width {
+    width: 100%;
+  }
+  
+  // 載入中狀態
+  &--loading {
+    position: relative;
+    color: transparent;
+    pointer-events: none;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      top: 50%;
+      left: 50%;
+      margin-left: -8px;
+      margin-top: -8px;
+      border: 2px solid var(--text-inverse);
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: btn-loading-spinner 0.8s linear infinite;
+    }
+  }
+  
+  // ================================
+  // 按鈕元素
+  // ================================
+  
+  // 圖標
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+    font-size: 1.2em;
+    
+    &--left {
+      margin-right: calc(var(--spacing-sm) / 2);
+    }
+    
+    &--right {
+      margin-left: calc(var(--spacing-sm) / 2);
+    }
+  }
+  
+  // 文字
+  &__text {
+    display: inline-block;
+  }
+}
+
+// ================================
+// 按鈕群組
+// ================================
+
+.btn-group {
+  display: inline-flex;
+  gap: 0;
+  
+  // 群組中的按鈕
+  .btn {
+    border-radius: 0;
+    
+    &:first-child {
+      border-top-left-radius: var(--btn-border-radius);
+      border-bottom-left-radius: var(--btn-border-radius);
+    }
+    
+    &:last-child {
+      border-top-right-radius: var(--btn-border-radius);
+      border-bottom-right-radius: var(--btn-border-radius);
+    }
+    
+    &:not(:first-child) {
+      margin-left: -1px;
+    }
+  }
+  
+  // 垂直群組
+  &--vertical {
+    flex-direction: column;
+    
+    .btn {
+      &:first-child {
+        border-radius: 0;
+        border-top-left-radius: var(--btn-border-radius);
+        border-top-right-radius: var(--btn-border-radius);
+      }
+      
+      &:last-child {
+        border-radius: 0;
+        border-bottom-left-radius: var(--btn-border-radius);
+        border-bottom-right-radius: var(--btn-border-radius);
+      }
+      
+      &:not(:first-child) {
+        margin-left: 0;
+        margin-top: -1px;
+      }
+    }
+  }
+}
+
+// ================================
+// 動畫
+// ================================
+
+@keyframes btn-loading-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}

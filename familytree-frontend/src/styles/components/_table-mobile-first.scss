@@ -1,0 +1,456 @@
+// ================================
+// 表格組件 - 移動優先響應式設計
+// ================================
+
+@import '../foundation/tokens';
+@import '../foundation/responsive-mobile-first';
+
+// ================================
+// 響應式表格容器
+// ================================
+.table-container-mf {
+  // 移動裝置
+  width: 100%;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  
+  // 平板以上
+  @include from-md {
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+// ================================
+// 表格 - 移動優先設計
+// ================================
+.table-mf {
+  // 移動裝置：卡片式顯示
+  width: 100%;
+  
+  // 表頭（移動裝置隱藏）
+  &__head {
+    display: none;
+    
+    // 平板以上：顯示表頭
+    @include from-md {
+      display: table-header-group;
+      background: var(--bg-secondary);
+      border-bottom: 2px solid var(--border-primary);
+    }
+  }
+  
+  // 表頭行
+  &__head-row {
+    @include from-md {
+      display: table-row;
+    }
+  }
+  
+  // 表頭單元格
+  &__head-cell {
+    @include from-md {
+      display: table-cell;
+      padding: var(--spacing-md) var(--spacing-lg);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-secondary);
+      text-align: left;
+      white-space: nowrap;
+      
+      // 對齊變體
+      &--center {
+        text-align: center;
+      }
+      
+      &--right {
+        text-align: right;
+      }
+      
+      // 可排序
+      &--sortable {
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+        padding-right: var(--spacing-2xl);
+        
+        &:hover {
+          color: var(--text-primary);
+          background: var(--bg-tertiary);
+        }
+        
+        // 排序圖標
+        &::after {
+          content: '⇅';
+          position: absolute;
+          right: var(--spacing-md);
+          opacity: 0.3;
+        }
+        
+        &.is-sorted-asc::after {
+          content: '↑';
+          opacity: 1;
+          color: var(--primary);
+        }
+        
+        &.is-sorted-desc::after {
+          content: '↓';
+          opacity: 1;
+          color: var(--primary);
+        }
+      }
+    }
+  }
+  
+  // 表體
+  &__body {
+    display: block;
+    
+    @include from-md {
+      display: table-row-group;
+    }
+  }
+  
+  // 表格行
+  &__row {
+    // 移動裝置：卡片樣式
+    display: block;
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-md);
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    // 平板以上：傳統表格行
+    @include from-md {
+      display: table-row;
+      margin-bottom: 0;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      border-bottom: 1px solid var(--border-secondary);
+      transition: background-color var(--duration-fast);
+      
+      &:hover {
+        background: var(--bg-secondary);
+      }
+      
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+    
+    // 狀態變體
+    &--selected {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      
+      @include from-md {
+        background: var(--primary-light);
+      }
+    }
+    
+    &--disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  }
+  
+  // 表格單元格
+  &__cell {
+    // 移動裝置：標籤+值配對
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    font-size: var(--font-size-sm);
+    
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--border-tertiary);
+    }
+    
+    // 移動裝置標籤
+    &::before {
+      content: attr(data-label);
+      flex: 0 0 40%;
+      font-weight: var(--font-weight-medium);
+      color: var(--text-secondary);
+      padding-right: var(--spacing-md);
+    }
+    
+    // 平板以上：傳統單元格
+    @include from-md {
+      display: table-cell;
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-bottom: none;
+      font-size: var(--font-size-base);
+      vertical-align: middle;
+      
+      &::before {
+        display: none;
+      }
+      
+      &:not(:last-child) {
+        border-bottom: none;
+      }
+      
+      // 對齊變體
+      &--center {
+        text-align: center;
+      }
+      
+      &--right {
+        text-align: right;
+      }
+      
+      // 強調變體
+      &--primary {
+        font-weight: var(--font-weight-semibold);
+        color: var(--text-primary);
+      }
+      
+      &--secondary {
+        color: var(--text-secondary);
+      }
+    }
+  }
+}
+
+// ================================
+// 表格操作區域
+// ================================
+.table-actions-mf {
+  // 移動裝置：垂直堆疊
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-primary);
+  
+  // 平板以上：水平佈局
+  @include from-md {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg);
+  }
+  
+  // 左側操作組
+  &__left {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    
+    @include from-md {
+      flex-direction: row;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+  }
+  
+  // 右側操作組
+  &__right {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    
+    @include from-md {
+      flex-direction: row;
+      align-items: center;
+      gap: var(--spacing-md);
+    }
+  }
+  
+  // 搜尋框
+  &__search {
+    width: 100%;
+    
+    @include from-md {
+      width: 300px;
+    }
+  }
+  
+  // 按鈕在移動裝置全寬
+  .btn {
+    width: 100%;
+    justify-content: center;
+    
+    @include from-md {
+      width: auto;
+    }
+  }
+}
+
+// ================================
+// 表格分頁
+// ================================
+.table-pagination-mf {
+  // 移動裝置
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  
+  // 平板以上
+  @include from-md {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: var(--spacing-lg);
+  }
+  
+  // 分頁資訊
+  &__info {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    text-align: center;
+    
+    @include from-md {
+      text-align: left;
+    }
+  }
+  
+  // 分頁控制
+  &__controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+  
+  // 分頁按鈕
+  &__button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--duration-fast);
+    
+    &:hover:not(:disabled) {
+      background: var(--bg-tertiary);
+      border-color: var(--primary);
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    &--active {
+      background: var(--primary);
+      color: var(--text-inverse);
+      border-color: var(--primary);
+    }
+  }
+  
+  // 頁碼省略
+  &__ellipsis {
+    width: 36px;
+    text-align: center;
+    color: var(--text-tertiary);
+  }
+}
+
+// ================================
+// 空狀態
+// ================================
+.table-empty-mf {
+  padding: var(--spacing-3xl) var(--spacing-xl);
+  text-align: center;
+  
+  &__icon {
+    font-size: 48px;
+    color: var(--text-tertiary);
+    margin-bottom: var(--spacing-md);
+  }
+  
+  &__title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  &__message {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    
+    @include from-md {
+      font-size: var(--font-size-base);
+    }
+  }
+}
+
+// ================================
+// 載入狀態
+// ================================
+.table-loading-mf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-3xl);
+  
+  &__spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--bg-tertiary);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+// ================================
+// 表格變體
+// ================================
+
+// 緊湊型表格
+.table-mf--compact {
+  .table-mf__cell {
+    padding: var(--spacing-xs) 0;
+    
+    @include from-md {
+      padding: var(--spacing-sm) var(--spacing-md);
+    }
+  }
+}
+
+// 條紋表格
+.table-mf--striped {
+  .table-mf__row {
+    @include from-md {
+      &:nth-child(even) {
+        background: var(--bg-tertiary);
+      }
+    }
+  }
+}
+
+// 無邊框表格
+.table-mf--borderless {
+  .table-mf__row {
+    border: none;
+    box-shadow: var(--shadow-sm);
+    
+    @include from-md {
+      box-shadow: none;
+      border-bottom: none;
+    }
+  }
+}

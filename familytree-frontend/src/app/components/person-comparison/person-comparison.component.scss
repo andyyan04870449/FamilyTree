@@ -1,5 +1,5 @@
 // 資料比較表組件樣式 - 完全基於Figma設計
-// 顏色規格：背景#333333, 標題#42413D, 偶數行#2E2D2A, 選中#3B82F6
+// 顏色規格：背景var(--bg-tertiary), 標題var(--bg-secondary), 偶數行var(--bg-secondary), 選中#3B82F6
 
 .comparison-overlay {
   position: fixed;
@@ -16,8 +16,8 @@
 }
 
 .comparison-dialog {
-  background-color: #333333;
-  border: 1px solid #4F565E;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
   border-radius: 10px;
   width: 95vw;
   max-width: 1200px;
@@ -25,7 +25,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-  color: #FFFFFF;
+  color: var(--text-inverse);
   font-family: 'Noto Sans CJK TC', sans-serif;
   overflow: hidden;
 }
@@ -36,15 +36,15 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #4F565E;
-  background-color: #42413D;
+  border-bottom: 1px solid var(--border-secondary);
+  background-color: var(--bg-secondary);
   border-radius: 10px 10px 0 0;
 
   .comparison-title {
     margin: 0;
     font-size: 20px;
     font-weight: 600;
-    color: #FFFFFF;
+    color: var(--text-inverse);
   }
 
   .header-actions {
@@ -55,7 +55,7 @@
     .quick-select-btn {
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #ffffff;
+      color: var(--text-inverse);
       padding: 6px 12px;
       border-radius: 6px;
       font-size: 12px;
@@ -72,7 +72,7 @@
     .close-button {
       background: none;
       border: none;
-      color: #ffffff;
+      color: var(--text-inverse);
       font-size: 20px;
       cursor: pointer;
       padding: 6px 10px;
@@ -93,13 +93,13 @@
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  color: #A3A3A3;
+  color: var(--text-tertiary);
 
   .loading-spinner {
     width: 40px;
     height: 40px;
     border: 3px solid rgba(255, 255, 255, 0.1);
-    border-top: 3px solid #ffffff;
+    border-top: 3px solid var(--text-inverse);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 16px;
@@ -117,7 +117,7 @@
 
   .retry-btn {
     background: #3B82F6;
-    color: #ffffff;
+    color: var(--text-inverse);
     border: none;
     padding: 8px 16px;
     border-radius: 6px;
@@ -152,8 +152,8 @@
 .table-header {
   display: grid;
   grid-template-columns: 60px 200px 1fr 1fr;
-  background-color: #42413D;
-  border-bottom: 1px solid #4F565E;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-secondary);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -163,9 +163,9 @@
   padding: 8px 16px;
   font-weight: 400;
   font-size: 16px;
-  color: #FFFFFF;
+  color: var(--text-inverse);
   text-align: center;
-  border-right: 1px solid #4F565E;
+  border-right: 1px solid var(--border-secondary);
   display: flex;
   align-items: center;
   min-height: 44px;
@@ -213,7 +213,7 @@
       span {
         font-size: 16px;
         font-weight: 400;
-        color: #FFFFFF;
+        color: var(--text-inverse);
       }
     }
   }
@@ -227,12 +227,12 @@
 .table-row {
   display: grid;
   grid-template-columns: 60px 200px 1fr 1fr;
-  border-bottom: 1px solid #4F565E;
-  background-color: #333333;
+  border-bottom: 1px solid var(--border-secondary);
+  background-color: var(--bg-tertiary);
   transition: background-color 0.2s;
 
   &.even-row {
-    background-color: #2E2D2A;
+    background-color: var(--bg-secondary);
   }
 
   &:hover {
@@ -255,8 +255,8 @@
 .body-cell {
   padding: 8px 16px;
   font-size: 16px;
-  color: #FFFFFF;
-  border-right: 1px solid #4F565E;
+  color: var(--text-inverse);
+  border-right: 1px solid var(--border-secondary);
   display: flex;
   align-items: center;
   min-height: 44px; // 恢復原始高度
@@ -268,13 +268,13 @@
   &.index-cell {
     justify-content: center;
     font-weight: 400;
-    color: #FFFFFF;
+    color: var(--text-inverse);
   }
 
   &.field-cell {
     justify-content: flex-start;
     font-weight: 400;
-    color: #FFFFFF;
+    color: var(--text-inverse);
   }
 
   &.person-cell {
@@ -298,7 +298,7 @@
       .selection-circle {
         width: 20px;
         height: 20px;
-        border: 2px solid #4F565E;
+        border: 2px solid var(--border-secondary);
         border-radius: 50%;
         background: transparent;
         transition: all 0.2s;
@@ -318,12 +318,12 @@
       .cell-text {
         font-size: 16px;
         font-weight: 400;
-        color: #FFFFFF;
+        color: var(--text-inverse);
         line-height: 1.45;
         word-break: break-word;
         
         &.empty {
-          color: #A3A3A3;
+          color: var(--text-tertiary);
         }
       }
 
@@ -343,7 +343,7 @@
           min-height: none; // 移除最小高度限制
           border-radius: 4px;
           object-fit: cover; // 保持比例並填滿容器
-          border: 1px solid #4F565E;
+          border: 1px solid var(--border-secondary);
           background: #2D2D2D;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); // 增加陰影效果
         }
@@ -358,7 +358,7 @@
   justify-content: flex-end;
   gap: 12px;
   padding: 20px 24px;
-  border-top: 1px solid #4F565E;
+  border-top: 1px solid var(--border-secondary);
   background-color: rgba(255, 255, 255, 0.02);
 
   .action-button {
@@ -377,11 +377,11 @@
     }
 
     &.primary {
-      background: #dc3545;
-      color: #ffffff;
+      background: var(--error);
+      color: var(--text-inverse);
 
       &:hover:not(:disabled) {
-        background: #c82333;
+        background: var(--error-hover);
         box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
       }
 
@@ -396,7 +396,7 @@
 
     &.secondary {
       background: #6c757d;
-      color: #ffffff;
+      color: var(--text-inverse);
 
       &:hover {
         background: #5c636a;
@@ -434,10 +434,10 @@
 
   // 中等螢幕照片大小調整 - 寬度減少30%，高度100%
   .photo-content .person-photo {
-    width: 70% !important; // 寬度減少30%
-    height: 100% !important; // 高度使用100%
-    max-height: none !important; // 移除高度限制
-    min-height: none !important; // 移除高度限制
+    width: 70%; // 寬度減少30%
+    height: 100%; // 高度使用100%
+    max-height: none; // 移除高度限制
+    min-height: none; // 移除高度限制
   }
 }
 
@@ -474,10 +474,10 @@
 
   // 小螢幕照片大小調整 - 寬度減少30%，高度100%
   .photo-content .person-photo {
-    width: 70% !important; // 寬度減少30%
-    height: 100% !important; // 高度使用100%
-    max-height: none !important; // 移除高度限制
-    min-height: none !important; // 移除高度限制
+    width: 70%; // 寬度減少30%
+    height: 100%; // 高度使用100%
+    max-height: none; // 移除高度限制
+    min-height: none; // 移除高度限制
   }
 
   .comparison-footer {

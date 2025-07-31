@@ -90,8 +90,8 @@
         }
 
         .search-input {
-          height: 42px;
-          padding: 12px;
+          height: 46px;
+          padding: 13px 12px;
           border: 1px solid $border-secondary;
           border-radius: 6px;
           background: $bg-primary;
@@ -118,7 +118,7 @@
             display: flex;
             gap: 16px;
             align-items: center;
-            height: 42px;
+            height: 46px;
             
             .radio-label {
               display: flex;
@@ -166,7 +166,7 @@
           transition: all 0.2s ease;
           background: $primary;
           color: white;
-          height: 42px;
+          height: 46px;
           min-width: 60px;
 
           &:hover:not(:disabled) {
@@ -193,7 +193,7 @@
           transition: all 0.2s ease;
           background: $bg-primary;
           color: $text-primary;
-          height: 42px;
+          height: 46px;
           min-width: 60px;
 
           &:hover:not(:disabled) {

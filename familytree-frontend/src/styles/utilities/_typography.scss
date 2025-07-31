@@ -1,0 +1,409 @@
+// ================================
+// 排版工具類別 (Typography Utilities)
+// ================================
+
+@import '../foundation/tokens';
+@import '../foundation/responsive-mobile-first';
+@import '../foundation/advanced-mixins';
+
+// ================================
+// 字體大小
+// ================================
+
+$font-sizes: (
+  'xs': var(--font-size-xs),
+  'sm': var(--font-size-sm),
+  'base': var(--font-size-base),
+  'lg': var(--font-size-lg),
+  'xl': var(--font-size-xl),
+  '2xl': var(--font-size-2xl),
+  '3xl': var(--font-size-3xl),
+  '4xl': var(--font-size-4xl),
+  '5xl': var(--font-size-5xl)
+);
+
+@each $name, $size in $font-sizes {
+  .text-#{$name} {
+    font-size: $size;
+  }
+  
+  // 響應式變體
+  @include from-sm {
+    .sm\:text-#{$name} {
+      font-size: $size;
+    }
+  }
+  
+  @include from-md {
+    .md\:text-#{$name} {
+      font-size: $size;
+    }
+  }
+  
+  @include from-lg {
+    .lg\:text-#{$name} {
+      font-size: $size;
+    }
+  }
+}
+
+// ================================
+// 字體粗細
+// ================================
+
+$font-weights: (
+  'thin': var(--font-weight-thin),
+  'light': var(--font-weight-light),
+  'normal': var(--font-weight-normal),
+  'medium': var(--font-weight-medium),
+  'semibold': var(--font-weight-semibold),
+  'bold': var(--font-weight-bold),
+  'extrabold': var(--font-weight-extrabold)
+);
+
+@each $name, $weight in $font-weights {
+  .font-#{$name} {
+    font-weight: $weight;
+  }
+}
+
+// ================================
+// 行高
+// ================================
+
+$line-heights: (
+  'none': 1,
+  'tight': var(--line-height-tight),
+  'snug': 1.375,
+  'normal': var(--line-height-normal),
+  'relaxed': var(--line-height-relaxed),
+  'loose': 2
+);
+
+@each $name, $height in $line-heights {
+  .leading-#{$name} {
+    line-height: $height;
+  }
+}
+
+// ================================
+// 文字對齊
+// ================================
+
+$text-aligns: (left, center, right, justify);
+
+@each $align in $text-aligns {
+  .text-#{$align} {
+    text-align: $align;
+  }
+  
+  // 響應式變體
+  @include from-sm {
+    .sm\:text-#{$align} {
+      text-align: $align;
+    }
+  }
+  
+  @include from-md {
+    .md\:text-#{$align} {
+      text-align: $align;
+    }
+  }
+  
+  @include from-lg {
+    .lg\:text-#{$align} {
+      text-align: $align;
+    }
+  }
+}
+
+// ================================
+// 文字顏色
+// ================================
+
+$text-colors: (
+  'primary': var(--text-primary),
+  'secondary': var(--text-secondary),
+  'tertiary': var(--text-tertiary),
+  'inverse': var(--text-inverse),
+  'disabled': var(--text-disabled),
+  'brand': var(--primary),
+  'success': var(--success),
+  'warning': var(--warning),
+  'error': var(--error),
+  'info': var(--info)
+);
+
+@each $name, $color in $text-colors {
+  .text-#{$name} {
+    color: $color;
+  }
+  
+  // hover 變體
+  .hover\:text-#{$name}:hover {
+    color: $color;
+  }
+}
+
+// ================================
+// 文字裝飾
+// ================================
+
+.underline {
+  text-decoration: underline;
+}
+
+.line-through {
+  text-decoration: line-through;
+}
+
+.no-underline {
+  text-decoration: none;
+}
+
+.hover\:underline:hover {
+  text-decoration: underline;
+}
+
+.hover\:no-underline:hover {
+  text-decoration: none;
+}
+
+// ================================
+// 文字轉換
+// ================================
+
+.uppercase {
+  text-transform: uppercase;
+}
+
+.lowercase {
+  text-transform: lowercase;
+}
+
+.capitalize {
+  text-transform: capitalize;
+}
+
+.normal-case {
+  text-transform: none;
+}
+
+// ================================
+// 文字樣式
+// ================================
+
+.italic {
+  font-style: italic;
+}
+
+.not-italic {
+  font-style: normal;
+}
+
+// ================================
+// 字母間距
+// ================================
+
+$letter-spacings: (
+  'tighter': -0.05em,
+  'tight': -0.025em,
+  'normal': 0,
+  'wide': 0.025em,
+  'wider': 0.05em,
+  'widest': 0.1em
+);
+
+@each $name, $spacing in $letter-spacings {
+  .tracking-#{$name} {
+    letter-spacing: $spacing;
+  }
+}
+
+// ================================
+// 文字溢出
+// ================================
+
+.truncate {
+  @include text-truncate(1);
+}
+
+.line-clamp-2 {
+  @include text-truncate(2);
+}
+
+.line-clamp-3 {
+  @include text-truncate(3);
+}
+
+.line-clamp-4 {
+  @include text-truncate(4);
+}
+
+.line-clamp-5 {
+  @include text-truncate(5);
+}
+
+.line-clamp-none {
+  -webkit-line-clamp: unset;
+}
+
+// ================================
+// 文字選擇
+// ================================
+
+.select-none {
+  user-select: none;
+}
+
+.select-text {
+  user-select: text;
+}
+
+.select-all {
+  user-select: all;
+}
+
+.select-auto {
+  user-select: auto;
+}
+
+// ================================
+// 垂直對齊
+// ================================
+
+$vertical-aligns: (
+  'baseline': baseline,
+  'top': top,
+  'middle': middle,
+  'bottom': bottom,
+  'text-top': text-top,
+  'text-bottom': text-bottom,
+  'sub': sub,
+  'super': super
+);
+
+@each $name, $value in $vertical-aligns {
+  .align-#{$name} {
+    vertical-align: $value;
+  }
+}
+
+// ================================
+// 空白處理
+// ================================
+
+.whitespace-normal {
+  white-space: normal;
+}
+
+.whitespace-nowrap {
+  white-space: nowrap;
+}
+
+.whitespace-pre {
+  white-space: pre;
+}
+
+.whitespace-pre-line {
+  white-space: pre-line;
+}
+
+.whitespace-pre-wrap {
+  white-space: pre-wrap;
+}
+
+// ================================
+// 文字斷行
+// ================================
+
+.break-normal {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.break-words {
+  overflow-wrap: break-word;
+}
+
+.break-all {
+  word-break: break-all;
+}
+
+// ================================
+// 預設文字樣式
+// ================================
+
+// 標題
+.heading-1 {
+  @include text-heading-1;
+}
+
+.heading-2 {
+  @include text-heading-2;
+}
+
+.heading-3 {
+  @include text-heading-3;
+}
+
+// 段落
+.body-text {
+  @include text-body;
+}
+
+.caption {
+  @include text-caption;
+}
+
+.label {
+  @include text-label;
+}
+
+.small {
+  @include text-small;
+}
+
+// ================================
+// 漸變文字
+// ================================
+
+.text-gradient-primary {
+  @include gradient-text(linear-gradient(135deg, var(--primary), var(--primary-dark)));
+}
+
+.text-gradient-brand {
+  @include gradient-text(linear-gradient(135deg, var(--primary), var(--secondary)));
+}
+
+.text-gradient-warm {
+  @include gradient-text(linear-gradient(135deg, var(--warning), var(--error)));
+}
+
+.text-gradient-cool {
+  @include gradient-text(linear-gradient(135deg, var(--info), var(--primary)));
+}
+
+// ================================
+// 列表樣式
+// ================================
+
+.list-none {
+  list-style: none;
+}
+
+.list-disc {
+  list-style-type: disc;
+}
+
+.list-decimal {
+  list-style-type: decimal;
+}
+
+.list-inside {
+  list-style-position: inside;
+}
+
+.list-outside {
+  list-style-position: outside;
+}

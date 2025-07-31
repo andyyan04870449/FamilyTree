@@ -106,7 +106,7 @@
       }
 
       &:hover {
-        background: #DCB438;
+        background: var(--warning);
       }
     }
 
@@ -118,7 +118,7 @@
       width: 30px;
       height: 30px;
       border: none;
-      background: #ef4444;
+      background: var(--error);
       color: white;
       border-radius: 50%;
       font-size: 18px;
@@ -126,7 +126,7 @@
       transition: all 0.3s ease;
 
       &:hover {
-        background: #dc2626;
+        background: var(--error-hover);
         transform: scale(1.1);
       }
     }
@@ -149,7 +149,7 @@
         align-items: center;
         gap: 8px;
         padding: 16px 12px;
-        color: #ffffff;
+        color: var(--text-inverse);
         text-decoration: none;
         border-radius: 10px;
         transition: all 0.3s ease;
@@ -177,16 +177,16 @@
         }
 
         &:hover {
-          background: #DCB438;
+          background: var(--warning);
         }
       }
 
       &.active a {
-        background: #0369A1;
+        background: var(--primary);
         font-weight: 700;
 
         &:hover {
-          background: #0369A1;
+          background: var(--primary);
         }
       }
     }
@@ -235,6 +235,6 @@
 // 桌面版樣式
 @media (min-width: 769px) {
   .sidebar-nav {
-    transform: translateX(0) !important;
+    transform: translateX(0);
   }
 } 

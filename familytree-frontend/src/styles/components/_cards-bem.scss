@@ -1,0 +1,272 @@
+// ================================
+// 卡片組件 - BEM 版本
+// ================================
+
+// 卡片基礎樣式
+.card {
+  position: relative;
+  background: var(--bg-surface);
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  transition: all var(--duration-normal) var(--easing-ease-in-out);
+  
+  // 卡片頭部
+  &__header {
+    padding: var(--spacing-lg) var(--card-padding);
+    border-bottom: 1px solid var(--border-primary);
+    
+    &--no-border {
+      border-bottom: none;
+    }
+  }
+  
+  // 卡片標題
+  &__title {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    line-height: var(--line-height-tight);
+  }
+  
+  // 卡片副標題
+  &__subtitle {
+    margin: var(--spacing-xs) 0 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: var(--line-height-normal);
+  }
+  
+  // 卡片主體
+  &__body {
+    padding: var(--card-padding);
+    
+    &--no-padding {
+      padding: 0;
+    }
+  }
+  
+  // 卡片頁腳
+  &__footer {
+    padding: var(--spacing-md) var(--card-padding);
+    border-top: 1px solid var(--border-primary);
+    background: var(--bg-secondary);
+    
+    &--no-border {
+      border-top: none;
+    }
+    
+    &--actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--spacing-md);
+    }
+  }
+  
+  // 卡片圖片
+  &__image {
+    width: 100%;
+    height: auto;
+    display: block;
+    
+    &--cover {
+      object-fit: cover;
+    }
+    
+    &--contain {
+      object-fit: contain;
+    }
+  }
+  
+  // 卡片媒體區域
+  &__media {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    
+    &--16-9 {
+      padding-top: 56.25%;
+    }
+    
+    &--4-3 {
+      padding-top: 75%;
+    }
+    
+    &--1-1 {
+      padding-top: 100%;
+    }
+    
+    .card__image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+  
+  // 卡片徽章
+  &__badge {
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--primary);
+    color: var(--text-inverse);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--radius-sm);
+    line-height: 1;
+  }
+  
+  // ================================
+  // 卡片變體
+  // ================================
+  
+  // 可點擊卡片
+  &--clickable {
+    cursor: pointer;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    &:active {
+      transform: translateY(0);
+      box-shadow: var(--shadow-md);
+    }
+  }
+  
+  // 邊框卡片
+  &--bordered {
+    box-shadow: none;
+    border: 1px solid var(--border-primary);
+  }
+  
+  // 平面卡片
+  &--flat {
+    box-shadow: none;
+    background: var(--bg-secondary);
+  }
+  
+  // 高亮卡片
+  &--highlighted {
+    border: 2px solid var(--primary);
+  }
+  
+  // 緊湊卡片
+  &--compact {
+    .card__header {
+      padding: var(--spacing-md) var(--spacing-lg);
+    }
+    
+    .card__body {
+      padding: var(--spacing-md) var(--spacing-lg);
+    }
+    
+    .card__footer {
+      padding: var(--spacing-sm) var(--spacing-lg);
+    }
+  }
+  
+  // ================================
+  // 卡片狀態
+  // ================================
+  
+  // 載入狀態
+  &--loading {
+    pointer-events: none;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(var(--bg-primary), 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+    }
+  }
+  
+  // 禁用狀態
+  &--disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+}
+
+// ================================
+// 卡片列表
+// ================================
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  
+  // 卡片項目
+  &__item {
+    // 可以添加額外樣式
+  }
+}
+
+// ================================
+// 卡片網格
+// ================================
+
+.card-grid {
+  display: grid;
+  gap: var(--spacing-lg);
+  
+  // 自動適應網格
+  &--auto {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+  
+  // 2列網格
+  &--2 {
+    grid-template-columns: repeat(2, 1fr);
+    
+    @include tablet {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  // 3列網格
+  &--3 {
+    grid-template-columns: repeat(3, 1fr);
+    
+    @include tablet {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    @include mobile {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  // 4列網格
+  &--4 {
+    grid-template-columns: repeat(4, 1fr);
+    
+    @include desktop {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    
+    @include tablet {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    @include mobile {
+      grid-template-columns: 1fr;
+    }
+  }
+}

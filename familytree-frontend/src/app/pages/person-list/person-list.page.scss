@@ -238,7 +238,7 @@
       transition: background-color 0.2s ease;
 
       &:hover {
-        background: var(--hover-background, #f8f9fa);
+        background: var(--bg-secondary);
       }
 
       &:last-child {
@@ -382,49 +382,49 @@
 // 響應式設計
 @media (max-width: 768px) {
   .person-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
-    gap: 1rem !important;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
   }
   
   .person-card {
-    padding: 1rem !important;
+    padding: 1rem;
     
     .person-header {
       .person-avatar {
-        width: 40px !important;
-        height: 40px !important;
+        width: 40px;
+        height: 40px;
         
         .avatar-text {
-          font-size: 1rem !important;
+          font-size: 1rem;
         }
       }
       
       .person-name {
-        font-size: 1rem !important;
+        font-size: 1rem;
       }
     }
   }
   
   .stats-section {
-    gap: 1.5rem !important;
-    padding: 1rem !important;
+    gap: 1.5rem;
+    padding: 1rem;
     
     .stat-item .stat-number {
-      font-size: 1.5rem !important;
+      font-size: 1.5rem;
     }
   }
 }
 
 @media (max-width: 480px) {
   .person-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
   
   .search-box {
-    flex-direction: column !important;
+    flex-direction: column;
     
     .search-btn, .clear-btn {
-      width: 100% !important;
+      width: 100%;
     }
   }
 }

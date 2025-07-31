@@ -1,0 +1,436 @@
+// ================================
+// 登入頁面 - 移動優先響應式設計
+// ================================
+
+@import '../../../styles/foundation/tokens';
+@import '../../../styles/foundation/responsive-mobile-first';
+
+// ================================
+// 頁面容器
+// ================================
+.login-page-mf {
+  // 移動裝置：全螢幕高度
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--spacing-md);
+  background: var(--bg-primary);
+  
+  // 平板：增加內邊距
+  @include from-md {
+    padding: var(--spacing-xl);
+  }
+  
+  // 背景裝飾（僅桌面顯示）
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+    opacity: 0;
+    z-index: -1;
+    
+    @include from-lg {
+      opacity: 0.1;
+    }
+  }
+}
+
+// ================================
+// 登入容器
+// ================================
+.login-container-mf {
+  // 移動裝置：全寬度
+  width: 100%;
+  max-width: 100%;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  
+  // 小型手機：限制最大寬度
+  @include from-sm {
+    max-width: 400px;
+  }
+  
+  // 平板：增加寬度
+  @include from-md {
+    max-width: 450px;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  // 桌面：兩欄佈局
+  @include from-lg {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 900px;
+  }
+}
+
+// ================================
+// 左側品牌區域（桌面才顯示）
+// ================================
+.login-brand-mf {
+  // 移動裝置：隱藏
+  display: none;
+  
+  // 桌面：顯示品牌區域
+  @include from-lg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-3xl);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--text-inverse);
+  }
+  
+  &__logo {
+    width: 120px;
+    height: 120px;
+    margin-bottom: var(--spacing-xl);
+  }
+  
+  &__title {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+  }
+  
+  &__subtitle {
+    font-size: var(--font-size-lg);
+    opacity: 0.9;
+    text-align: center;
+  }
+}
+
+// ================================
+// 登入表單區域
+// ================================
+.login-form-area-mf {
+  // 移動裝置
+  padding: var(--spacing-lg);
+  
+  // 平板
+  @include from-md {
+    padding: var(--spacing-xl);
+  }
+  
+  // 桌面
+  @include from-lg {
+    padding: var(--spacing-3xl);
+  }
+}
+
+// ================================
+// 登入頭部
+// ================================
+.login-header-mf {
+  // 移動裝置
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+  
+  &__logo {
+    // 移動裝置：顯示小 logo
+    width: 60px;
+    height: 60px;
+    margin: 0 auto var(--spacing-md);
+    
+    // 桌面：隱藏（因為左側已有）
+    @include from-lg {
+      display: none;
+    }
+  }
+  
+  &__title {
+    // 移動裝置
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+    
+    // 平板
+    @include from-md {
+      font-size: var(--font-size-2xl);
+    }
+  }
+  
+  &__subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    
+    @include from-md {
+      font-size: var(--font-size-base);
+    }
+  }
+}
+
+// ================================
+// 登入表單
+// ================================
+.login-form-mf {
+  // 表單群組
+  &__group {
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  // 標籤
+  &__label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+  }
+  
+  // 輸入框
+  &__input {
+    // 移動裝置
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    transition: all var(--duration-fast) var(--easing-ease-in-out);
+    
+    // 觸控優化：增加高度
+    min-height: 44px;
+    
+    // 平板以上
+    @include from-md {
+      padding: var(--spacing-md) var(--spacing-lg);
+    }
+    
+    &:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+    }
+    
+    &::placeholder {
+      color: var(--text-tertiary);
+    }
+  }
+  
+  // 錯誤訊息
+  &__error {
+    display: block;
+    margin-top: var(--spacing-xs);
+    font-size: var(--font-size-xs);
+    color: var(--error);
+  }
+  
+  // 記住我區域
+  &__remember {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xl);
+    font-size: var(--font-size-sm);
+    
+    @include from-md {
+      font-size: var(--font-size-base);
+    }
+  }
+  
+  // 核取方塊標籤
+  &__checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary);
+    }
+  }
+  
+  // 忘記密碼連結
+  &__forgot {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+  
+  // 提交按鈕
+  &__submit {
+    // 移動裝置：全寬度
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-inverse);
+    background: var(--primary);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--easing-ease-in-out);
+    
+    // 觸控優化
+    min-height: 48px;
+    
+    &:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// ================================
+// 社交登入區域
+// ================================
+.login-social-mf {
+  margin-top: var(--spacing-2xl);
+  
+  &__divider {
+    position: relative;
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--border-primary);
+    }
+    
+    span {
+      position: relative;
+      padding: 0 var(--spacing-md);
+      background: var(--bg-surface);
+      color: var(--text-tertiary);
+      font-size: var(--font-size-sm);
+    }
+  }
+  
+  &__buttons {
+    // 移動裝置：垂直排列
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    
+    // 平板以上：水平排列
+    @include from-md {
+      flex-direction: row;
+    }
+  }
+  
+  &__button {
+    // 移動裝置
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    transition: all var(--duration-fast) var(--easing-ease-in-out);
+    
+    // 觸控優化
+    min-height: 44px;
+    
+    @include from-md {
+      font-size: var(--font-size-base);
+    }
+    
+    &:hover {
+      background: var(--bg-secondary);
+      border-color: var(--primary);
+    }
+    
+    &__icon {
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+// ================================
+// 註冊連結
+// ================================
+.login-register-mf {
+  margin-top: var(--spacing-2xl);
+  padding-top: var(--spacing-xl);
+  border-top: 1px solid var(--border-secondary);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  
+  @include from-md {
+    font-size: var(--font-size-base);
+  }
+  
+  a {
+    color: var(--primary);
+    font-weight: var(--font-weight-medium);
+    text-decoration: none;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// ================================
+// 載入狀態
+// ================================
+.login-loading-mf {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-lg);
+  z-index: 10;
+  
+  &__spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--bg-secondary);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

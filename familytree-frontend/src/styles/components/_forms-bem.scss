@@ -1,0 +1,413 @@
+// ================================
+// 表單組件 - BEM 版本
+// ================================
+
+// 表單容器
+.form {
+  // 表單區塊
+  &__section {
+    margin-bottom: var(--spacing-2xl);
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  // 表單標題
+  &__title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  // 表單描述
+  &__description {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xl);
+    line-height: var(--line-height-relaxed);
+  }
+  
+  // 表單行
+  &__row {
+    display: flex;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    
+    @include mobile {
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+  }
+  
+  // 表單列
+  &__col {
+    flex: 1;
+    
+    &--half {
+      flex: 0 0 50%;
+      
+      @include mobile {
+        flex: 1;
+      }
+    }
+    
+    &--third {
+      flex: 0 0 33.333%;
+      
+      @include mobile {
+        flex: 1;
+      }
+    }
+  }
+}
+
+// 表單欄位
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+  
+  // 標籤
+  &__label {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+    
+    // 必填標記
+    &--required::after {
+      content: ' *';
+      color: var(--error);
+    }
+  }
+  
+  // 輸入框容器
+  &__input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  // 輸入框
+  &__input {
+    width: 100%;
+    padding: var(--input-padding-y) var(--input-padding-x);
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    color: var(--text-primary);
+    background: var(--bg-surface);
+    border: 1px solid var(--input-border-color);
+    border-radius: var(--input-border-radius);
+    transition: all var(--duration-fast) var(--easing-ease-in-out);
+    
+    &::placeholder {
+      color: var(--text-tertiary);
+    }
+    
+    &:hover:not(:disabled) {
+      border-color: var(--border-secondary);
+    }
+    
+    &:focus {
+      outline: none;
+      border-color: var(--input-focus-border-color);
+      box-shadow: var(--shadow-focus);
+    }
+    
+    &:disabled {
+      background: var(--bg-tertiary);
+      color: var(--text-disabled);
+      cursor: not-allowed;
+    }
+    
+    // 輸入框變體
+    &--error {
+      border-color: var(--error);
+      
+      &:focus {
+        border-color: var(--error);
+        box-shadow: 0 0 0 3px rgba(var(--error-rgb), 0.1);
+      }
+    }
+    
+    &--success {
+      border-color: var(--success);
+      
+      &:focus {
+        border-color: var(--success);
+        box-shadow: 0 0 0 3px rgba(var(--success-rgb), 0.1);
+      }
+    }
+    
+    // 輸入框尺寸
+    &--small {
+      padding: var(--spacing-xs) var(--spacing-sm);
+      font-size: var(--font-size-sm);
+    }
+    
+    &--large {
+      padding: var(--spacing-md) var(--spacing-lg);
+      font-size: var(--font-size-lg);
+    }
+  }
+  
+  // 文字區域
+  &__textarea {
+    @extend .form-field__input;
+    min-height: 100px;
+    resize: vertical;
+  }
+  
+  // 選擇框
+  &__select {
+    @extend .form-field__input;
+    padding-right: calc(var(--spacing-lg) * 2);
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--spacing-md) center;
+    background-size: 12px;
+    appearance: none;
+  }
+  
+  // 前後綴
+  &__prefix,
+  &__suffix {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    pointer-events: none;
+  }
+  
+  &__prefix {
+    left: var(--input-padding-x);
+  }
+  
+  &__suffix {
+    right: var(--input-padding-x);
+  }
+  
+  // 帶前後綴的輸入框
+  &__input--with-prefix {
+    padding-left: calc(var(--input-padding-x) * 3);
+  }
+  
+  &__input--with-suffix {
+    padding-right: calc(var(--input-padding-x) * 3);
+  }
+  
+  // 提示文字
+  &__hint {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    line-height: var(--line-height-normal);
+  }
+  
+  // 錯誤訊息
+  &__error {
+    font-size: var(--font-size-xs);
+    color: var(--error);
+    line-height: var(--line-height-normal);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    
+    &-icon {
+      width: 14px;
+      height: 14px;
+    }
+  }
+  
+  // 成功訊息
+  &__success {
+    font-size: var(--font-size-xs);
+    color: var(--success);
+    line-height: var(--line-height-normal);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+  }
+  
+  // 字數統計
+  &__counter {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    text-align: right;
+    
+    &--exceeded {
+      color: var(--error);
+    }
+  }
+  
+  // 內聯表單欄位
+  &--inline {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing-md);
+    
+    .form-field__label {
+      margin-bottom: 0;
+      min-width: 120px;
+    }
+  }
+}
+
+// 複選框和單選框
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  user-select: none;
+  
+  // 輸入框（隱藏原生）
+  &__input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    
+    &:checked + .form-check__control {
+      background: var(--primary);
+      border-color: var(--primary);
+      
+      &::after {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    &:focus-visible + .form-check__control {
+      box-shadow: var(--shadow-focus);
+    }
+    
+    &:disabled + .form-check__control {
+      background: var(--bg-tertiary);
+      border-color: var(--border-primary);
+      cursor: not-allowed;
+    }
+  }
+  
+  // 控制元件
+  &__control {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    background: var(--bg-surface);
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    transition: all var(--duration-fast) var(--easing-ease-in-out);
+    
+    // 勾選標記
+    &::after {
+      content: '';
+      position: absolute;
+      width: 6px;
+      height: 10px;
+      border: 2px solid var(--text-inverse);
+      border-top: 0;
+      border-left: 0;
+      transform: rotate(45deg) scale(0);
+      opacity: 0;
+      transition: all var(--duration-fast) var(--easing-ease-in-out);
+    }
+    
+    // 單選框樣式
+    &--radio {
+      border-radius: var(--radius-full);
+      
+      &::after {
+        width: 8px;
+        height: 8px;
+        border: 0;
+        border-radius: var(--radius-full);
+        background: var(--text-inverse);
+        transform: scale(0);
+      }
+    }
+  }
+  
+  // 標籤
+  &__label {
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+    line-height: var(--line-height-tight);
+  }
+  
+  // 禁用狀態
+  &--disabled {
+    cursor: not-allowed;
+    
+    .form-check__label {
+      color: var(--text-disabled);
+    }
+  }
+}
+
+// 開關
+.form-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  
+  // 輸入框
+  &__input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    
+    &:checked + .form-switch__control {
+      background: var(--primary);
+      
+      &::after {
+        transform: translateX(18px);
+      }
+    }
+    
+    &:focus-visible + .form-switch__control {
+      box-shadow: var(--shadow-focus);
+    }
+    
+    &:disabled + .form-switch__control {
+      background: var(--bg-tertiary);
+      cursor: not-allowed;
+    }
+  }
+  
+  // 控制元件
+  &__control {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    transition: all var(--duration-normal) var(--easing-ease-in-out);
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      background: var(--text-inverse);
+      border-radius: var(--radius-full);
+      transition: all var(--duration-normal) var(--easing-ease-in-out);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+  
+  // 標籤
+  &__label {
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+  }
+}

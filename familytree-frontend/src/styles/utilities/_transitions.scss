@@ -1,0 +1,525 @@
+// ================================
+// 過渡和動畫工具類別 (Transitions & Animations)
+// ================================
+
+@import '../foundation/tokens';
+@import '../foundation/responsive-mobile-first';
+@import '../foundation/advanced-mixins';
+
+// ================================
+// 過渡屬性
+// ================================
+
+.transition-none {
+  transition-property: none;
+}
+
+.transition-all {
+  transition-property: all;
+  transition-timing-function: var(--easing-ease-in-out);
+  transition-duration: var(--duration-normal);
+}
+
+.transition {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: var(--easing-ease-in-out);
+  transition-duration: var(--duration-normal);
+}
+
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: var(--easing-ease-in-out);
+  transition-duration: var(--duration-normal);
+}
+
+.transition-opacity {
+  transition-property: opacity;
+  transition-timing-function: var(--easing-ease-in-out);
+  transition-duration: var(--duration-normal);
+}
+
+.transition-shadow {
+  transition-property: box-shadow;
+  transition-timing-function: var(--easing-ease-in-out);
+  transition-duration: var(--duration-normal);
+}
+
+.transition-transform {
+  transition-property: transform;
+  transition-timing-function: var(--easing-ease-in-out);
+  transition-duration: var(--duration-normal);
+}
+
+// ================================
+// 過渡持續時間
+// ================================
+
+$durations: (
+  '75': 75ms,
+  '100': 100ms,
+  '150': 150ms,
+  '200': 200ms,
+  '300': 300ms,
+  '500': 500ms,
+  '700': 700ms,
+  '1000': 1000ms,
+  'fast': var(--duration-fast),
+  'normal': var(--duration-normal),
+  'slow': var(--duration-slow)
+);
+
+@each $name, $duration in $durations {
+  .duration-#{$name} {
+    transition-duration: $duration;
+  }
+}
+
+// ================================
+// 過渡時間函數
+// ================================
+
+.ease-linear {
+  transition-timing-function: linear;
+}
+
+.ease-in {
+  transition-timing-function: var(--easing-ease-in);
+}
+
+.ease-out {
+  transition-timing-function: var(--easing-ease-out);
+}
+
+.ease-in-out {
+  transition-timing-function: var(--easing-ease-in-out);
+}
+
+.ease-bounce {
+  transition-timing-function: var(--easing-bounce);
+}
+
+// ================================
+// 過渡延遲
+// ================================
+
+$delays: (
+  '75': 75ms,
+  '100': 100ms,
+  '150': 150ms,
+  '200': 200ms,
+  '300': 300ms,
+  '500': 500ms,
+  '700': 700ms,
+  '1000': 1000ms
+);
+
+@each $name, $delay in $delays {
+  .delay-#{$name} {
+    transition-delay: $delay;
+  }
+}
+
+// ================================
+// 變換 - 縮放
+// ================================
+
+$scales: (
+  '0': 0,
+  '50': 0.5,
+  '75': 0.75,
+  '90': 0.9,
+  '95': 0.95,
+  '100': 1,
+  '105': 1.05,
+  '110': 1.1,
+  '125': 1.25,
+  '150': 1.5
+);
+
+@each $name, $scale in $scales {
+  .scale-#{$name} {
+    transform: scale($scale);
+  }
+  
+  .scale-x-#{$name} {
+    transform: scaleX($scale);
+  }
+  
+  .scale-y-#{$name} {
+    transform: scaleY($scale);
+  }
+  
+  // hover 變體
+  .hover\:scale-#{$name}:hover {
+    transform: scale($scale);
+  }
+}
+
+// ================================
+// 變換 - 旋轉
+// ================================
+
+$rotations: (
+  '0': 0deg,
+  '1': 1deg,
+  '2': 2deg,
+  '3': 3deg,
+  '6': 6deg,
+  '12': 12deg,
+  '45': 45deg,
+  '90': 90deg,
+  '180': 180deg
+);
+
+@each $name, $rotation in $rotations {
+  .rotate-#{$name} {
+    transform: rotate($rotation);
+  }
+  
+  .-rotate-#{$name} {
+    transform: rotate(-$rotation);
+  }
+}
+
+// ================================
+// 變換 - 位移
+// ================================
+
+$translates: (
+  '0': 0,
+  'px': 1px,
+  '0-5': 0.125rem,
+  '1': 0.25rem,
+  '1-5': 0.375rem,
+  '2': 0.5rem,
+  '2-5': 0.625rem,
+  '3': 0.75rem,
+  '3-5': 0.875rem,
+  '4': 1rem,
+  '5': 1.25rem,
+  '6': 1.5rem,
+  '7': 1.75rem,
+  '8': 2rem,
+  '9': 2.25rem,
+  '10': 2.5rem,
+  '11': 2.75rem,
+  '12': 3rem,
+  '14': 3.5rem,
+  '16': 4rem,
+  '20': 5rem,
+  '24': 6rem,
+  '28': 7rem,
+  '32': 8rem,
+  '36': 9rem,
+  '40': 10rem,
+  '44': 11rem,
+  '48': 12rem,
+  '52': 13rem,
+  '56': 14rem,
+  '60': 15rem,
+  '64': 16rem,
+  '72': 18rem,
+  '80': 20rem,
+  '96': 24rem,
+  '1-2': 50%,
+  'full': 100%
+);
+
+@each $name, $translate in $translates {
+  .translate-x-#{$name} {
+    transform: translateX($translate);
+  }
+  
+  .-translate-x-#{$name} {
+    transform: translateX(-$translate);
+  }
+  
+  .translate-y-#{$name} {
+    transform: translateY($translate);
+  }
+  
+  .-translate-y-#{$name} {
+    transform: translateY(-$translate);
+  }
+}
+
+// ================================
+// 變換 - 傾斜
+// ================================
+
+$skews: (
+  '0': 0deg,
+  '1': 1deg,
+  '2': 2deg,
+  '3': 3deg,
+  '6': 6deg,
+  '12': 12deg
+);
+
+@each $name, $skew in $skews {
+  .skew-x-#{$name} {
+    transform: skewX($skew);
+  }
+  
+  .-skew-x-#{$name} {
+    transform: skewX(-$skew);
+  }
+  
+  .skew-y-#{$name} {
+    transform: skewY($skew);
+  }
+  
+  .-skew-y-#{$name} {
+    transform: skewY(-$skew);
+  }
+}
+
+// ================================
+// 變換原點
+// ================================
+
+$origins: (
+  'center': center,
+  'top': top,
+  'top-right': top right,
+  'right': right,
+  'bottom-right': bottom right,
+  'bottom': bottom,
+  'bottom-left': bottom left,
+  'left': left,
+  'top-left': top left
+);
+
+@each $name, $origin in $origins {
+  .origin-#{$name} {
+    transform-origin: $origin;
+  }
+}
+
+// ================================
+// 動畫
+// ================================
+
+// 旋轉動畫
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+// 脈衝動畫
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-ping {
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+// 彈跳動畫
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+// 脈動動畫
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+// 淡入動畫
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--duration-normal) var(--easing-ease-in-out);
+}
+
+// 淡出動畫
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.animate-fade-out {
+  animation: fadeOut var(--duration-normal) var(--easing-ease-in-out);
+}
+
+// 滑入動畫
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-up {
+  animation: slideInUp var(--duration-normal) var(--easing-ease-out);
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-down {
+  animation: slideInDown var(--duration-normal) var(--easing-ease-out);
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft var(--duration-normal) var(--easing-ease-out);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight var(--duration-normal) var(--easing-ease-out);
+}
+
+// 縮放動畫
+@keyframes zoomIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-zoom-in {
+  animation: zoomIn var(--duration-normal) var(--easing-ease-out);
+}
+
+// 搖晃動畫
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+  20%, 40%, 60%, 80% { transform: translateX(10px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s var(--easing-ease-in-out);
+}
+
+// ================================
+// 動畫控制
+// ================================
+
+.animate-none {
+  animation: none;
+}
+
+// 動畫填充模式
+.animate-fill-none {
+  animation-fill-mode: none;
+}
+
+.animate-fill-forwards {
+  animation-fill-mode: forwards;
+}
+
+.animate-fill-backwards {
+  animation-fill-mode: backwards;
+}
+
+.animate-fill-both {
+  animation-fill-mode: both;
+}
+
+// 動畫播放狀態
+.animate-play {
+  animation-play-state: running;
+}
+
+.animate-pause {
+  animation-play-state: paused;
+}
+
+// ================================
+// 減少動畫偏好
+// ================================
+
+@include reduced-motion {
+  .transition,
+  .transition-all,
+  .transition-colors,
+  .transition-opacity,
+  .transition-shadow,
+  .transition-transform {
+    transition: none;
+  }
+  
+  .animate-spin,
+  .animate-ping,
+  .animate-pulse,
+  .animate-bounce,
+  .animate-fade-in,
+  .animate-fade-out,
+  .animate-slide-in-up,
+  .animate-slide-in-down,
+  .animate-slide-in-left,
+  .animate-slide-in-right,
+  .animate-zoom-in,
+  .animate-shake {
+    animation: none;
+  }
+}

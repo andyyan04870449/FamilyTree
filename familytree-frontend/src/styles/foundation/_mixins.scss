@@ -4,10 +4,13 @@
 // 可重用的樣式混入，提升開發效率
 
 @import 'tokens';
+@import 'responsive-mobile-first';
 
 // ================================
-// 響應式設計混入
+// 響應式設計混入（舊版 - 將逐步淘汰）
 // ================================
+// 保留舊版 mixins 以維持向後相容性
+// 新開發請使用 responsive-mobile-first.scss 中的 mixins
 
 @mixin mobile {
   @media (max-width: #{$breakpoint-md - 1px}) {

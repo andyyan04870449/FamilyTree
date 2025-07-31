@@ -1,0 +1,286 @@
+// ================================
+// 間距工具類別 (Spacing Utilities)
+// ================================
+
+@import '../foundation/tokens';
+@import '../foundation/responsive-mobile-first';
+
+// 間距尺寸映射
+$spacing-sizes: (
+  '0': 0,
+  'xs': var(--spacing-xs),
+  'sm': var(--spacing-sm),
+  'md': var(--spacing-md),
+  'lg': var(--spacing-lg),
+  'xl': var(--spacing-xl),
+  '2xl': var(--spacing-2xl),
+  '3xl': var(--spacing-3xl),
+  'auto': auto
+);
+
+// 方向映射
+$directions: (
+  '': '',
+  't': '-top',
+  'r': '-right', 
+  'b': '-bottom',
+  'l': '-left',
+  'x': '-inline',
+  'y': '-block'
+);
+
+// ================================
+// Margin 工具類別
+// ================================
+
+// 生成所有方向的 margin
+@each $dir-key, $dir-value in $directions {
+  @each $size-key, $size-value in $spacing-sizes {
+    .m#{$dir-key}-#{$size-key} {
+      @if $dir-key == 'x' {
+        margin-left: $size-value;
+        margin-right: $size-value;
+      } @else if $dir-key == 'y' {
+        margin-top: $size-value;
+        margin-bottom: $size-value;
+      } @else if $dir-key == '' {
+        margin: $size-value;
+      } @else {
+        margin#{$dir-value}: $size-value;
+      }
+    }
+    
+    // 響應式變體
+    @include from-sm {
+      .sm\:m#{$dir-key}-#{$size-key} {
+        @if $dir-key == 'x' {
+          margin-left: $size-value;
+          margin-right: $size-value;
+        } @else if $dir-key == 'y' {
+          margin-top: $size-value;
+          margin-bottom: $size-value;
+        } @else if $dir-key == '' {
+          margin: $size-value;
+        } @else {
+          margin#{$dir-value}: $size-value;
+        }
+      }
+    }
+    
+    @include from-md {
+      .md\:m#{$dir-key}-#{$size-key} {
+        @if $dir-key == 'x' {
+          margin-left: $size-value;
+          margin-right: $size-value;
+        } @else if $dir-key == 'y' {
+          margin-top: $size-value;
+          margin-bottom: $size-value;
+        } @else if $dir-key == '' {
+          margin: $size-value;
+        } @else {
+          margin#{$dir-value}: $size-value;
+        }
+      }
+    }
+    
+    @include from-lg {
+      .lg\:m#{$dir-key}-#{$size-key} {
+        @if $dir-key == 'x' {
+          margin-left: $size-value;
+          margin-right: $size-value;
+        } @else if $dir-key == 'y' {
+          margin-top: $size-value;
+          margin-bottom: $size-value;
+        } @else if $dir-key == '' {
+          margin: $size-value;
+        } @else {
+          margin#{$dir-value}: $size-value;
+        }
+      }
+    }
+  }
+}
+
+// 負 margin
+@each $dir-key, $dir-value in $directions {
+  @each $size-key, $size-value in $spacing-sizes {
+    @if $size-key != '0' and $size-key != 'auto' {
+      .-m#{$dir-key}-#{$size-key} {
+        @if $dir-key == 'x' {
+          margin-left: calc(#{$size-value} * -1);
+          margin-right: calc(#{$size-value} * -1);
+        } @else if $dir-key == 'y' {
+          margin-top: calc(#{$size-value} * -1);
+          margin-bottom: calc(#{$size-value} * -1);
+        } @else if $dir-key == '' {
+          margin: calc(#{$size-value} * -1);
+        } @else {
+          margin#{$dir-value}: calc(#{$size-value} * -1);
+        }
+      }
+    }
+  }
+}
+
+// ================================
+// Padding 工具類別
+// ================================
+
+// 生成所有方向的 padding
+@each $dir-key, $dir-value in $directions {
+  @each $size-key, $size-value in $spacing-sizes {
+    @if $size-key != 'auto' {
+      .p#{$dir-key}-#{$size-key} {
+        @if $dir-key == 'x' {
+          padding-left: $size-value;
+          padding-right: $size-value;
+        } @else if $dir-key == 'y' {
+          padding-top: $size-value;
+          padding-bottom: $size-value;
+        } @else if $dir-key == '' {
+          padding: $size-value;
+        } @else {
+          padding#{$dir-value}: $size-value;
+        }
+      }
+      
+      // 響應式變體
+      @include from-sm {
+        .sm\:p#{$dir-key}-#{$size-key} {
+          @if $dir-key == 'x' {
+            padding-left: $size-value;
+            padding-right: $size-value;
+          } @else if $dir-key == 'y' {
+            padding-top: $size-value;
+            padding-bottom: $size-value;
+          } @else if $dir-key == '' {
+            padding: $size-value;
+          } @else {
+            padding#{$dir-value}: $size-value;
+          }
+        }
+      }
+      
+      @include from-md {
+        .md\:p#{$dir-key}-#{$size-key} {
+          @if $dir-key == 'x' {
+            padding-left: $size-value;
+            padding-right: $size-value;
+          } @else if $dir-key == 'y' {
+            padding-top: $size-value;
+            padding-bottom: $size-value;
+          } @else if $dir-key == '' {
+            padding: $size-value;
+          } @else {
+            padding#{$dir-value}: $size-value;
+          }
+        }
+      }
+      
+      @include from-lg {
+        .lg\:p#{$dir-key}-#{$size-key} {
+          @if $dir-key == 'x' {
+            padding-left: $size-value;
+            padding-right: $size-value;
+          } @else if $dir-key == 'y' {
+            padding-top: $size-value;
+            padding-bottom: $size-value;
+          } @else if $dir-key == '' {
+            padding: $size-value;
+          } @else {
+            padding#{$dir-value}: $size-value;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ================================
+// Gap 工具類別 (for Grid/Flexbox)
+// ================================
+
+@each $size-key, $size-value in $spacing-sizes {
+  @if $size-key != 'auto' {
+    .gap-#{$size-key} {
+      gap: $size-value;
+    }
+    
+    .gap-x-#{$size-key} {
+      column-gap: $size-value;
+    }
+    
+    .gap-y-#{$size-key} {
+      row-gap: $size-value;
+    }
+    
+    // 響應式變體
+    @include from-sm {
+      .sm\:gap-#{$size-key} {
+        gap: $size-value;
+      }
+      
+      .sm\:gap-x-#{$size-key} {
+        column-gap: $size-value;
+      }
+      
+      .sm\:gap-y-#{$size-key} {
+        row-gap: $size-value;
+      }
+    }
+    
+    @include from-md {
+      .md\:gap-#{$size-key} {
+        gap: $size-value;
+      }
+      
+      .md\:gap-x-#{$size-key} {
+        column-gap: $size-value;
+      }
+      
+      .md\:gap-y-#{$size-key} {
+        row-gap: $size-value;
+      }
+    }
+    
+    @include from-lg {
+      .lg\:gap-#{$size-key} {
+        gap: $size-value;
+      }
+      
+      .lg\:gap-x-#{$size-key} {
+        column-gap: $size-value;
+      }
+      
+      .lg\:gap-y-#{$size-key} {
+        row-gap: $size-value;
+      }
+    }
+  }
+}
+
+// ================================
+// Space Between 工具類別
+// ================================
+
+// 水平間距
+.space-x {
+  @each $size-key, $size-value in $spacing-sizes {
+    @if $size-key != 'auto' {
+      &-#{$size-key} > * + * {
+        margin-left: $size-value;
+      }
+    }
+  }
+}
+
+// 垂直間距
+.space-y {
+  @each $size-key, $size-value in $spacing-sizes {
+    @if $size-key != 'auto' {
+      &-#{$size-key} > * + * {
+        margin-top: $size-value;
+      }
+    }
+  }
+}

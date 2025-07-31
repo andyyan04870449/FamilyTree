@@ -8,6 +8,7 @@
 // ================================
 @import 'foundation/tokens';
 @import 'foundation/mixins';
+@import 'foundation/css-variables';
 
 // ================================
 // 全局樣式重置
@@ -249,11 +250,24 @@ input, textarea, select {
 }
 
 // ================================
-// 組件樣式
+// 11. 工具類別（Utility Classes）
 // ================================
-@import 'components/buttons';
-@import 'components/forms';
-@import 'components/select';
-@import 'components/tables';
-@import 'components/cards';
-@import 'components/unified-design';
+// 全面的工具類別系統
+@import 'utilities/index';
+
+// ================================
+// 組件樣式（使用 BEM 版本）
+// ================================
+// 舊版組件已經整合到 BEM 版本中
+// @import 'components/buttons';     // → 使用 buttons-bem
+// @import 'components/forms';       // → 使用 forms-bem
+// @import 'components/tables';      // → 使用 tables-bem
+// @import 'components/cards';       // → 使用 cards-bem
+
+@import 'components/buttons-bem';
+@import 'components/forms-bem';
+@import 'components/cards-bem';
+@import 'components/tables-bem';
+@import 'components/navigation-bem';
+@import 'components/select';         // TODO: 考慮整合到 forms-bem
+// @import 'components/unified-design'; // 評估是否需要保留

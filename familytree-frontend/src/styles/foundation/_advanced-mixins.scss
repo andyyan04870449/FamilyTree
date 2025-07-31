@@ -1,0 +1,412 @@
+// ================================
+// FamilyTree 設計系統 - 進階 Mixins
+// ================================
+// 提供更強大和靈活的樣式混入
+
+@import 'tokens';
+@import 'responsive-mobile-first';
+
+// ================================
+// 進階按鈕 Mixins
+// ================================
+
+// 按鈕尺寸生成器
+@mixin button-size($size: 'md') {
+  @if $size == 'xs' {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    min-height: 32px;
+  } @else if $size == 'sm' {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-sm);
+    min-height: 36px;
+  } @else if $size == 'md' {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: var(--font-size-base);
+    min-height: 40px;
+  } @else if $size == 'lg' {
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: var(--font-size-lg);
+    min-height: 48px;
+  } @else if $size == 'xl' {
+    padding: var(--spacing-lg) var(--spacing-2xl);
+    font-size: var(--font-size-xl);
+    min-height: 56px;
+  }
+}
+
+// 按鈕變體生成器
+@mixin button-variant($bg, $color: var(--text-inverse), $border: $bg) {
+  background: $bg;
+  color: $color;
+  border-color: $border;
+  
+  &:hover:not(:disabled) {
+    background: var(--#{$bg}-hover);
+    border-color: var(--#{$bg}-hover);
+  }
+  
+  &:active:not(:disabled) {
+    background: var(--#{$bg}-active);
+    border-color: var(--#{$bg}-active);
+  }
+  
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(var(--#{$bg}-rgb), 0.2);
+  }
+}
+
+// 輪廓按鈕變體
+@mixin button-outline-variant($color) {
+  background: transparent;
+  color: $color;
+  border: 1px solid $color;
+  
+  &:hover:not(:disabled) {
+    background: $color;
+    color: var(--text-inverse);
+  }
+  
+  &:active:not(:disabled) {
+    background: var(--#{$color}-active);
+    border-color: var(--#{$color}-active);
+  }
+  
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(var(--#{$color}-rgb), 0.2);
+  }
+}
+
+// ================================
+// 進階表單 Mixins
+// ================================
+
+// 表單輸入狀態
+@mixin input-state($state: 'default') {
+  @if $state == 'error' {
+    border-color: var(--error);
+    box-shadow: 0 0 0 3px rgba(var(--error-rgb), 0.1);
+    
+    &:focus {
+      border-color: var(--error);
+      box-shadow: 0 0 0 3px rgba(var(--error-rgb), 0.2);
+    }
+  } @else if $state == 'success' {
+    border-color: var(--success);
+    box-shadow: 0 0 0 3px rgba(var(--success-rgb), 0.1);
+    
+    &:focus {
+      border-color: var(--success);
+      box-shadow: 0 0 0 3px rgba(var(--success-rgb), 0.2);
+    }
+  } @else if $state == 'warning' {
+    border-color: var(--warning);
+    box-shadow: 0 0 0 3px rgba(var(--warning-rgb), 0.1);
+    
+    &:focus {
+      border-color: var(--warning);
+      box-shadow: 0 0 0 3px rgba(var(--warning-rgb), 0.2);
+    }
+  }
+}
+
+// 自定義核取方塊/單選按鈕
+@mixin custom-control($type: 'checkbox') {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  
+  input {
+    position: absolute;
+    opacity: 0;
+    
+    &:checked + .control-indicator {
+      background: var(--primary);
+      border-color: var(--primary);
+      
+      @if $type == 'checkbox' {
+        &::after {
+          content: '✓';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          color: var(--text-inverse);
+          font-size: 12px;
+        }
+      } @else if $type == 'radio' {
+        &::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 6px;
+          height: 6px;
+          background: var(--text-inverse);
+          border-radius: 50%;
+        }
+      }
+    }
+    
+    &:focus + .control-indicator {
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.2);
+    }
+    
+    &:disabled + .control-indicator {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+  
+  .control-indicator {
+    width: 20px;
+    height: 20px;
+    background: var(--bg-surface);
+    border: 2px solid var(--border-primary);
+    margin-right: var(--spacing-sm);
+    transition: all var(--duration-fast);
+    
+    @if $type == 'checkbox' {
+      border-radius: var(--radius-sm);
+    } @else if $type == 'radio' {
+      border-radius: 50%;
+    }
+  }
+}
+
+// ================================
+// 進階佈局 Mixins
+// ================================
+
+// 網格生成器
+@mixin grid-generator($columns: 12, $gap: var(--spacing-lg)) {
+  display: grid;
+  gap: $gap;
+  
+  @for $i from 1 through $columns {
+    &.cols-#{$i} {
+      grid-template-columns: repeat($i, 1fr);
+    }
+    
+    @include from-md {
+      &.md\:cols-#{$i} {
+        grid-template-columns: repeat($i, 1fr);
+      }
+    }
+    
+    @include from-lg {
+      &.lg\:cols-#{$i} {
+        grid-template-columns: repeat($i, 1fr);
+      }
+    }
+  }
+}
+
+// Aspect Ratio 容器
+@mixin aspect-ratio($width: 16, $height: 9) {
+  position: relative;
+  
+  &::before {
+    content: '';
+    display: block;
+    padding-bottom: percentage(math.div($height, $width));
+  }
+  
+  > * {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// ================================
+// 進階效果 Mixins
+// ================================
+
+// 玻璃擬態效果
+@mixin glassmorphism($blur: 10px, $opacity: 0.1) {
+  background: rgba(255, 255, 255, $opacity);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+// 新擬態效果
+@mixin neumorphism($bg: var(--bg-surface), $distance: 5px, $blur: 10px) {
+  background: $bg;
+  box-shadow: 
+    $distance $distance $blur rgba(0, 0, 0, 0.1),
+    -$distance -$distance $blur rgba(255, 255, 255, 0.5);
+}
+
+// 長陰影效果
+@mixin long-shadow($color: rgba(0, 0, 0, 0.1), $length: 100) {
+  $shadow: '';
+  
+  @for $i from 1 through $length {
+    $shadow: $shadow + $i + 'px ' + $i + 'px 0 ' + $color;
+    @if $i < $length {
+      $shadow: $shadow + ', ';
+    }
+  }
+  
+  text-shadow: #{$shadow};
+}
+
+// 漸變文字
+@mixin gradient-text($gradient) {
+  background: $gradient;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+// ================================
+// 進階動畫 Mixins
+// ================================
+
+// 動畫延遲生成器
+@mixin stagger-animation($items: 5, $delay: 0.1s) {
+  @for $i from 1 through $items {
+    &:nth-child(#{$i}) {
+      animation-delay: $delay * $i;
+    }
+  }
+}
+
+// 平滑滾動
+@mixin smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+// 自定義滾動條
+@mixin custom-scrollbar(
+  $width: 8px,
+  $track-bg: var(--bg-tertiary),
+  $thumb-bg: var(--border-secondary),
+  $thumb-hover-bg: var(--border-primary)
+) {
+  &::-webkit-scrollbar {
+    width: $width;
+    height: $width;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: $track-bg;
+    border-radius: var(--radius-full);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: $thumb-bg;
+    border-radius: var(--radius-full);
+    
+    &:hover {
+      background: $thumb-hover-bg;
+    }
+  }
+  
+  // Firefox
+  scrollbar-width: thin;
+  scrollbar-color: $thumb-bg $track-bg;
+}
+
+// ================================
+// 進階排版 Mixins
+// ================================
+
+// 文字裁切
+@mixin text-truncate($lines: 1) {
+  @if $lines == 1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+// 流體排版
+@mixin fluid-type($min-font-size, $max-font-size, $min-vw: 320px, $max-vw: 1200px) {
+  font-size: $min-font-size;
+  
+  @media screen and (min-width: $min-vw) {
+    font-size: calc(#{$min-font-size} + #{strip-unit($max-font-size - $min-font-size)} * ((100vw - #{$min-vw}) / #{strip-unit($max-vw - $min-vw)}));
+  }
+  
+  @media screen and (min-width: $max-vw) {
+    font-size: $max-font-size;
+  }
+}
+
+// ================================
+// 進階主題 Mixins
+// ================================
+
+// 深色模式支援
+@mixin dark-mode {
+  @media (prefers-color-scheme: dark) {
+    @content;
+  }
+  
+  [data-theme="dark"] & {
+    @content;
+  }
+}
+
+// 高對比模式
+@mixin high-contrast {
+  @media (prefers-contrast: high) {
+    @content;
+  }
+}
+
+// 減少動畫模式
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
+
+// ================================
+// 工具函數
+// ================================
+
+// 移除單位
+@function strip-unit($number) {
+  @if type-of($number) == 'number' and not unitless($number) {
+    @return math.div($number, $number * 0 + 1);
+  }
+  @return $number;
+}
+
+// 像素轉 rem
+@function px-to-rem($px, $base: 16) {
+  @return math.div($px, $base) * 1rem;
+}
+
+// 顏色對比檢查
+@function color-contrast($bg-color) {
+  $r: red($bg-color);
+  $g: green($bg-color);
+  $b: blue($bg-color);
+  
+  $brightness: math.div(($r * 299) + ($g * 587) + ($b * 114), 1000);
+  
+  @if $brightness > 155 {
+    @return var(--text-primary);
+  } @else {
+    @return var(--text-inverse);
+  }
+}

@@ -1,0 +1,497 @@
+// ================================
+// FamilyTree 設計系統 - Mobile-First 響應式設計
+// ================================
+// 採用移動優先的設計方式，從小螢幕開始構建
+
+@import 'tokens';
+
+// ================================
+// 移動優先斷點系統
+// ================================
+// 從小到大的斷點定義
+$breakpoint-sm: 480px;   // 小型手機
+$breakpoint-md: 768px;   // 平板裝置
+$breakpoint-lg: 1024px;  // 桌面電腦
+$breakpoint-xl: 1280px;  // 大型桌面
+$breakpoint-2xl: 1536px; // 超大螢幕
+
+// ================================
+// 移動優先響應式 Mixins
+// ================================
+
+// 基礎移動樣式（預設）
+// 不需要 mixin，直接寫在根層級
+
+// 小型手機以上
+@mixin from-sm {
+  @media (min-width: $breakpoint-sm) {
+    @content;
+  }
+}
+
+// 平板以上
+@mixin from-md {
+  @media (min-width: $breakpoint-md) {
+    @content;
+  }
+}
+
+// 桌面以上
+@mixin from-lg {
+  @media (min-width: $breakpoint-lg) {
+    @content;
+  }
+}
+
+// 大型桌面以上
+@mixin from-xl {
+  @media (min-width: $breakpoint-xl) {
+    @content;
+  }
+}
+
+// 超大螢幕以上
+@mixin from-2xl {
+  @media (min-width: $breakpoint-2xl) {
+    @content;
+  }
+}
+
+// ================================
+// 特定範圍 Mixins（較少使用）
+// ================================
+
+// 僅在特定範圍內
+@mixin only-sm {
+  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-md - 1px}) {
+    @content;
+  }
+}
+
+@mixin only-md {
+  @media (min-width: $breakpoint-md) and (max-width: #{$breakpoint-lg - 1px}) {
+    @content;
+  }
+}
+
+@mixin only-lg {
+  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+    @content;
+  }
+}
+
+@mixin only-xl {
+  @media (min-width: $breakpoint-xl) and (max-width: #{$breakpoint-2xl - 1px}) {
+    @content;
+  }
+}
+
+// ================================
+// 容器系統（移動優先）
+// ================================
+
+@mixin responsive-container {
+  // 移動裝置：全寬度，有內邊距
+  width: 100%;
+  padding-left: var(--spacing-md);
+  padding-right: var(--spacing-md);
+  margin-left: auto;
+  margin-right: auto;
+  
+  // 小型手機
+  @include from-sm {
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+  }
+  
+  // 平板
+  @include from-md {
+    padding-left: var(--spacing-xl);
+    padding-right: var(--spacing-xl);
+  }
+  
+  // 桌面
+  @include from-lg {
+    max-width: $breakpoint-lg;
+  }
+  
+  // 大型桌面
+  @include from-xl {
+    max-width: $breakpoint-xl;
+  }
+  
+  // 超大螢幕
+  @include from-2xl {
+    max-width: $breakpoint-2xl;
+  }
+}
+
+// ================================
+// 網格系統（移動優先）
+// ================================
+
+@mixin responsive-grid($mobile-cols: 1, $tablet-cols: 2, $desktop-cols: 3, $gap: var(--spacing-lg)) {
+  // 移動裝置：單欄
+  display: grid;
+  grid-template-columns: repeat($mobile-cols, 1fr);
+  gap: $gap;
+  
+  // 平板：雙欄
+  @include from-md {
+    grid-template-columns: repeat($tablet-cols, 1fr);
+  }
+  
+  // 桌面：多欄
+  @include from-lg {
+    grid-template-columns: repeat($desktop-cols, 1fr);
+  }
+}
+
+// ================================
+// 文字大小（移動優先）
+// ================================
+
+@mixin responsive-text($mobile-size: var(--font-size-base), $desktop-size: var(--font-size-lg)) {
+  // 移動裝置
+  font-size: $mobile-size;
+  
+  // 桌面
+  @include from-lg {
+    font-size: $desktop-size;
+  }
+}
+
+@mixin responsive-heading {
+  // 移動裝置
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-tight);
+  
+  // 平板
+  @include from-md {
+    font-size: var(--font-size-2xl);
+  }
+  
+  // 桌面
+  @include from-lg {
+    font-size: var(--font-size-3xl);
+  }
+}
+
+// ================================
+// 間距系統（移動優先）
+// ================================
+
+@mixin responsive-spacing($property: padding, $mobile: var(--spacing-md), $desktop: var(--spacing-xl)) {
+  // 移動裝置
+  #{$property}: $mobile;
+  
+  // 桌面
+  @include from-lg {
+    #{$property}: $desktop;
+  }
+}
+
+// ================================
+// 顯示/隱藏工具（移動優先）
+// ================================
+
+@mixin hide-until($breakpoint) {
+  display: none;
+  
+  @if $breakpoint == sm {
+    @include from-sm {
+      display: initial;
+    }
+  } @else if $breakpoint == md {
+    @include from-md {
+      display: initial;
+    }
+  } @else if $breakpoint == lg {
+    @include from-lg {
+      display: initial;
+    }
+  } @else if $breakpoint == xl {
+    @include from-xl {
+      display: initial;
+    }
+  }
+}
+
+@mixin show-until($breakpoint) {
+  display: initial;
+  
+  @if $breakpoint == sm {
+    @include from-sm {
+      display: none;
+    }
+  } @else if $breakpoint == md {
+    @include from-md {
+      display: none;
+    }
+  } @else if $breakpoint == lg {
+    @include from-lg {
+      display: none;
+    }
+  } @else if $breakpoint == xl {
+    @include from-xl {
+      display: none;
+    }
+  }
+}
+
+// ================================
+// Flexbox 佈局（移動優先）
+// ================================
+
+@mixin responsive-flex($mobile-direction: column, $desktop-direction: row) {
+  // 移動裝置：垂直排列
+  display: flex;
+  flex-direction: $mobile-direction;
+  gap: var(--spacing-md);
+  
+  // 桌面：水平排列
+  @include from-lg {
+    flex-direction: $desktop-direction;
+    gap: var(--spacing-lg);
+  }
+}
+
+// ================================
+// 卡片佈局（移動優先）
+// ================================
+
+@mixin responsive-card {
+  // 移動裝置
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  border-radius: var(--radius-md);
+  
+  // 平板
+  @include from-md {
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  // 桌面
+  @include from-lg {
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+  }
+}
+
+// ================================
+// 表格響應式（移動優先）
+// ================================
+
+@mixin responsive-table {
+  // 移動裝置：卡片式顯示
+  display: block;
+  
+  thead {
+    display: none;
+  }
+  
+  tbody, tr, td {
+    display: block;
+  }
+  
+  tr {
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+  }
+  
+  td {
+    position: relative;
+    padding-left: 50%;
+    text-align: right;
+    
+    &::before {
+      content: attr(data-label);
+      position: absolute;
+      left: var(--spacing-md);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-secondary);
+    }
+  }
+  
+  // 平板以上：傳統表格
+  @include from-md {
+    display: table;
+    
+    thead {
+      display: table-header-group;
+    }
+    
+    tbody {
+      display: table-row-group;
+    }
+    
+    tr {
+      display: table-row;
+      margin-bottom: 0;
+      padding: 0;
+      background: transparent;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    
+    td {
+      display: table-cell;
+      padding: var(--spacing-md);
+      text-align: left;
+      
+      &::before {
+        display: none;
+      }
+    }
+  }
+}
+
+// ================================
+// 導航響應式（移動優先）
+// ================================
+
+@mixin responsive-nav {
+  // 移動裝置：漢堡選單
+  position: fixed;
+  top: 0;
+  left: -100%;
+  width: 80%;
+  height: 100vh;
+  background: var(--bg-secondary);
+  transition: left var(--duration-normal) var(--easing-ease-in-out);
+  z-index: var(--z-modal);
+  
+  &.is-open {
+    left: 0;
+  }
+  
+  // 桌面：水平導航
+  @include from-lg {
+    position: static;
+    width: auto;
+    height: auto;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+  }
+}
+
+// ================================
+// 圖片響應式（移動優先）
+// ================================
+
+@mixin responsive-image {
+  // 移動裝置：全寬度
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  
+  // 桌面：限制最大寬度
+  @include from-lg {
+    max-width: 600px;
+  }
+}
+
+// ================================
+// 模態框響應式（移動優先）
+// ================================
+
+@mixin responsive-modal {
+  // 移動裝置：全螢幕
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border-radius: 0;
+  
+  // 平板以上：居中模態框
+  @include from-md {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 600px;
+    height: auto;
+    max-height: 90vh;
+    border-radius: var(--radius-lg);
+  }
+}
+
+// ================================
+// 按鈕組響應式（移動優先）
+// ================================
+
+@mixin responsive-button-group {
+  // 移動裝置：垂直堆疊
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  
+  > * {
+    width: 100%;
+  }
+  
+  // 平板以上：水平排列
+  @include from-md {
+    flex-direction: row;
+    
+    > * {
+      width: auto;
+    }
+  }
+}
+
+// ================================
+// 實用工具類別
+// ================================
+
+// 容器
+.container {
+  @include responsive-container;
+}
+
+// 顯示/隱藏
+.hide-mobile { @include hide-until(md); }
+.show-mobile { @include show-until(md); }
+.hide-tablet { @include hide-until(lg); }
+.show-tablet { @include show-until(lg); }
+.hide-desktop { @include hide-until(xl); }
+.show-desktop { @include show-until(xl); }
+
+// 文字大小
+.text-responsive {
+  @include responsive-text;
+}
+
+.heading-responsive {
+  @include responsive-heading;
+}
+
+// 間距
+.p-responsive {
+  @include responsive-spacing(padding);
+}
+
+.m-responsive {
+  @include responsive-spacing(margin);
+}
+
+// 網格
+.grid-responsive {
+  @include responsive-grid;
+}
+
+// Flexbox
+.flex-responsive {
+  @include responsive-flex;
+}

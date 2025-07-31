@@ -1,31 +1,13 @@
 // 引入新的設計系統
 @import 'styles/index';
 
-// CSS 變數定義（供組件使用）
+// CSS 變數系統已經在 foundation/css-variables.scss 中定義
+// 這裡只需保留特殊的 RGB 值用於透明度計算
 :root {
-  // 主要顏色
-  --primary: #{$primary};
+  // RGB 值（用於 rgba() 函數）
   --primary-rgb: 59, 130, 246;
-  
-  // 狀態顏色
-  --success: #{$success};
-  --warning: #{$warning};
-  --error: #{$error};
-  --info: #{$info};
-  
-  // 背景顏色
-  --bg-primary: #{$bg-primary};
-  --bg-secondary: #{$bg-secondary};
-  --bg-tertiary: #{$bg-tertiary};
-  --bg-surface: #{$bg-surface};
-  
-  // 文字顏色
-  --text-primary: #{$text-primary};
-  --text-secondary: #{$text-secondary};
-  --text-tertiary: #{$text-tertiary};
-  --text-inverse: #{$text-inverse};
-  
-  // 邊框顏色
-  --border-primary: #{$border-primary};
-  --border-secondary: #{$border-secondary};
+  --success-rgb: 34, 197, 94;
+  --warning-rgb: 234, 179, 8;
+  --error-rgb: 239, 68, 68;
+  --info-rgb: 59, 130, 246;
 }

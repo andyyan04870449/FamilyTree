@@ -37,14 +37,14 @@
 .form-group label {
   @include form-label;
   font-family: $font-family-base;
-  color: #283C64;
+  color: var(--text-primary);
 }
 
 .form-group input {
   @include form-control;
   height: 36px;
-  background: #fff;
-  border-color: #CDCFD1;
+  background: var(--color-neutral-50);
+  border-color: var(--border-primary);
 }
 
 .captcha-group {
@@ -62,26 +62,26 @@
 
 .refresh-captcha {
   @include button-base;
-  background: #efa82d;
+  background: var(--warning);
   color: $text-inverse;
   padding: $spacing-md $spacing-2xl;
   font-weight: $font-weight-bold;
   height: 48px;
   
   &:hover {
-    background: darken(#efa82d, 10%);
+    background: var(--warning-hover);
   }
 }
 
 .login-btn {
   @include button-primary;
-  background: #326FD1;
+  background: var(--primary);
   padding: $spacing-md $spacing-2xl;
   font-weight: $font-weight-bold;
   width: 100%;
   height: 48px;
   
   &:hover {
-    background: darken(#326FD1, 10%);
+    background: var(--primary-hover);
   }
 } 
