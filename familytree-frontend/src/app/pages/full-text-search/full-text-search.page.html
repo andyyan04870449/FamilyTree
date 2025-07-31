@@ -30,12 +30,28 @@
             (keyup.enter)="performSearch()"
           >
         </div>
-        <div class="search-group">
+        <div class="search-group search-type-group">
           <label>查詢方式</label>
-          <select class="search-input" [(ngModel)]="searchType">
-            <option value="exact">精準查詢</option>
-            <option value="fuzzy">模糊查詢</option>
-          </select>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input 
+                type="radio" 
+                name="searchType" 
+                value="exact" 
+                [(ngModel)]="searchType"
+              >
+              <span>精準</span>
+            </label>
+            <label class="radio-label">
+              <input 
+                type="radio" 
+                name="searchType" 
+                value="fuzzy" 
+                [(ngModel)]="searchType"
+              >
+              <span>模糊</span>
+            </label>
+          </div>
         </div>
         <div class="search-actions">
           <button class="btn-search" (click)="performSearch()" [disabled]="loading || !searchKeyword.trim()">搜尋</button>

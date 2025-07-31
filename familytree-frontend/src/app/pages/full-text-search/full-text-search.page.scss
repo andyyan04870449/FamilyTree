@@ -30,14 +30,14 @@
     .header-left {
       h1 {
         margin: 0 0 4px 0;
-        font-size: 20px;
+        font-size: 22px;
         font-weight: 600;
         color: $text-primary;
       }
 
       .page-subtitle {
         margin: 0;
-        font-size: 12px;
+        font-size: 14px;
         color: $text-secondary;
       }
     }
@@ -69,7 +69,7 @@
 
     .search-row {
       display: grid;
-      grid-template-columns: 2fr 1fr auto;
+      grid-template-columns: 2fr auto auto;
       gap: 12px;
       align-items: end;
 
@@ -79,7 +79,7 @@
         gap: 4px;
 
         label {
-          font-size: 11px;
+          font-size: 13px;
           color: $text-secondary;
           font-weight: 500;
         }
@@ -90,13 +90,13 @@
         }
 
         .search-input {
-          height: 32px;
-          padding: 6px 10px;
+          height: 34px;
+          padding: 8px 12px;
           border: 1px solid $border-secondary;
           border-radius: 4px;
           background: $bg-primary;
           color: $text-primary;
-          font-size: 13px;
+          font-size: 15px;
           
           &:focus {
             border-color: $primary;
@@ -106,7 +106,42 @@
 
           &::placeholder {
             color: $text-tertiary;
-            font-size: 12px;
+            font-size: 14px;
+          }
+        }
+        
+        &.search-type-group {
+          min-width: 120px;
+          
+          .radio-group {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            height: 34px;
+            
+            .radio-label {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              cursor: pointer;
+              font-size: 14px;
+              color: $text-primary;
+              
+              input[type="radio"] {
+                width: 16px;
+                height: 16px;
+                cursor: pointer;
+                accent-color: $primary;
+              }
+              
+              span {
+                font-weight: 500;
+              }
+              
+              &:hover {
+                color: $primary;
+              }
+            }
           }
         }
       }
@@ -121,16 +156,16 @@
           align-items: center;
           justify-content: center;
           gap: 4px;
-          padding: 6px 12px;
+          padding: 8px 14px;
           border: none;
           border-radius: 4px;
-          font-size: 13px;
+          font-size: 15px;
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s ease;
           background: $primary;
           color: white;
-          height: 32px;
+          height: 34px;
           min-width: 60px;
 
           &:hover:not(:disabled) {
@@ -148,16 +183,16 @@
           align-items: center;
           justify-content: center;
           gap: 4px;
-          padding: 6px 12px;
+          padding: 8px 14px;
           border: 1px solid $border-primary;
           border-radius: 4px;
-          font-size: 13px;
+          font-size: 15px;
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s ease;
           background: $bg-primary;
           color: $text-primary;
-          height: 32px;
+          height: 34px;
           min-width: 60px;
 
           &:hover:not(:disabled) {
@@ -185,7 +220,7 @@
         gap: 8px;
 
         label {
-          font-size: 11px;
+          font-size: 13px;
           color: $text-secondary;
           font-weight: 500;
           white-space: nowrap;
@@ -206,7 +241,7 @@
           border: 1px solid $border-secondary;
           border-radius: 4px;
           color: $text-primary;
-          font-size: 12px;
+          font-size: 14px;
           cursor: pointer;
           transition: all 0.2s ease;
 
@@ -268,7 +303,7 @@
 
   p {
     margin: 0;
-    font-size: 14px;
+    font-size: 16px;
   }
 }
 
@@ -316,7 +351,7 @@
     border-bottom: 1px solid $border-primary;
 
     .table-title {
-      font-size: 14px;
+      font-size: 16px;
       color: $text-primary;
       font-weight: 600;
     }
@@ -339,7 +374,7 @@
         padding: 12px 16px;
         text-align: left;
         font-weight: 600;
-        font-size: 13px;
+        font-size: 15px;
         color: $text-primary;
         border-bottom: 1px solid $border-primary;
 
@@ -391,7 +426,7 @@
 
         td {
           padding: 12px 16px;
-          font-size: 13px;
+          font-size: 15px;
           color: $text-primary;
           vertical-align: middle;
 
@@ -414,10 +449,10 @@
             justify-content: center;
 
             .btn-action {
-              padding: 6px 12px;
+              padding: 8px 14px;
               border: none;
               border-radius: 4px;
-              font-size: 12px;
+              font-size: 14px;
               font-weight: 500;
               cursor: pointer;
               transition: all 0.2s ease;
@@ -473,12 +508,12 @@
     margin: 0 0 15px 0;
     color: $text-primary;
     font-weight: 600;
-    font-size: 18px;
+    font-size: 20px;
   }
 
   p {
     margin: 0;
-    font-size: 14px;
+    font-size: 16px;
     text-align: center;
     line-height: 1.5;
   }
@@ -495,7 +530,7 @@
   border: 1px solid $border-primary;
 
   .pagination-info {
-    font-size: 14px;
+    font-size: 16px;
     color: $text-secondary;
   }
 
@@ -514,7 +549,7 @@
       color: $text-primary;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 500;
       transition: all 0.2s ease;
       min-width: 40px;
@@ -547,7 +582,7 @@
       border-radius: 6px;
       background: $bg-primary;
       color: $text-primary;
-      font-size: 14px;
+      font-size: 16px;
       margin-left: 8px;
 
       &:focus {
@@ -583,7 +618,7 @@
   
   h3 {
     color: $text-primary;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
     margin: 0;
   }
@@ -613,7 +648,7 @@
   
   .favorite-name {
     color: $text-primary;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     flex: 1;
     
