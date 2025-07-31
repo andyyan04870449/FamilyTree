@@ -217,28 +217,26 @@
 
     .action-buttons {
       display: flex;
-      gap: 4px;
-      justify-content: center;
+      gap: 6px;
       flex-wrap: nowrap;
+      justify-content: center;
 
       .btn-action {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 2px;
-        padding: 4px 6px;
+        padding: 6px 12px;
         border: none;
         border-radius: 4px;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.2s ease;
         color: white;
-        min-width: 50px;
         white-space: nowrap;
+        min-width: 50px;
+        text-align: center;
 
         &.btn-edit {
           background: $warning;
+
           &:hover {
             background: color.adjust($warning, $lightness: -10%);
           }
@@ -246,6 +244,7 @@
 
         &.btn-upload {
           background: $success;
+
           &:hover {
             background: color.adjust($success, $lightness: -10%);
           }
@@ -253,6 +252,7 @@
 
         &.btn-analysis {
           background: $info;
+
           &:hover {
             background: color.adjust($info, $lightness: -10%);
           }
@@ -260,6 +260,7 @@
 
         &.btn-delete {
           background: $error;
+
           &:hover {
             background: color.adjust($error, $lightness: -10%);
           }
