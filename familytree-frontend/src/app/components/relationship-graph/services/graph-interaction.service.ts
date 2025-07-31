@@ -90,7 +90,7 @@ export class GraphInteractionService {
         .distance(100)
         .strength(0.1))
       .force('charge', d3.forceManyBody()
-        .strength(-300)
+        .strength(-75)
         .distanceMax(400))
       .force('center', d3.forceCenter(rect.width / 2, rect.height / 2))
       .force('collision', d3.forceCollide().radius(40));

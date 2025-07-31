@@ -1,37 +1,43 @@
 // 組織圖頁面：用於視覺化顯示組織架構圖
 // 主要功能：階層式人員卡片顯示、關係連線、人員管理操作
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
+import { OrganizationChartService, OrgNode, OrgConnection, OrgFilter } from '../../services/organization-chart.service';
 
-// 組織圖節點接口
-interface OrgNode {
-  id: string;
-  name: string;
-  position?: string;
-  passport?: string;
-  birthday?: string;
-  avatar?: string;
-  children?: OrgNode[];
-  parentId?: string;
-}
+// 匯入組件
+import { OrgNodeComponent } from '../../components/org-node/org-node.component';
+import { OrgConnectionsComponent } from '../../components/org-connections/org-connections.component';
+import { OrgSidebarComponent } from '../../components/org-sidebar/org-sidebar.component';
+import { NodeEditDialogComponent } from '../../components/node-edit-dialog/node-edit-dialog.component';
 
 @Component({
   selector: 'app-organization-chart',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule, 
+    FormsModule,
+    OrgNodeComponent,
+    OrgConnectionsComponent,
+    OrgSidebarComponent,
+    NodeEditDialogComponent
+  ],
   template: `
     <div class="organization-chart-page">
-      <!-- 頁面標題 -->
-      <div class="page-header">
-        <h1>🏢 組織圖</h1>
-        <p>視覺化組織架構與人員階層關係</p>
-      </div>
-
       <!-- 功能操作區 -->
       <div class="toolbar-section">
         <div class="toolbar-left">
+          <button *ngIf="isFromRelationshipGraph" class="btn btn-secondary" (click)="backToRelationshipGraph()">
+            <span class="btn-icon">←</span>
+            <span class="btn-text">返回關係圖</span>
+          </button>
+          <button class="btn btn-secondary" (click)="isSidebarOpen = !isSidebarOpen">
+            <span class="btn-icon">🔍</span>
+            <span class="btn-text">搜尋篩選</span>
+          </button>
           <button class="btn btn-primary" (click)="addNewPerson()">
             <span class="btn-icon">👤</span>
             <span class="btn-text">新增人員</span>
@@ -53,22 +59,6 @@ interface OrgNode {
         </div>
       </div>
 
-      <!-- 組織圖統計資訊 -->
-      <div class="stats-section">
-        <div class="stat-item">
-          <span class="stat-number">{{ totalMembers }}</span>
-          <span class="stat-label">總人員</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number">{{ hierarchyLevels }}</span>
-          <span class="stat-label">層級數</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number">{{ departments }}</span>
-          <span class="stat-label">部門數</span>
-        </div>
-      </div>
-
       <!-- 載入狀態 -->
       <div *ngIf="loading" class="loading-container">
         <div class="loading-spinner"></div>
@@ -84,76 +74,80 @@ interface OrgNode {
 
       <!-- 組織圖容器 -->
       <div *ngIf="!loading && !error" class="chart-container" #chartContainer>
-        <div class="chart-viewport">
-          <!-- 組織圖將在這裡渲染 -->
-          <div class="org-chart-wrapper">
-            
-            <!-- 簡化的組織圖示例 -->
-            <div class="simple-org-chart">
+          <!-- 側邊欄 -->
+          <app-org-sidebar
+            [isOpen]="isSidebarOpen"
+            [searchTerm]="searchTerm"
+            [filters]="filters"
+            (close)="isSidebarOpen = false"
+            (onSearchChange)="handleSearch($event)"
+            (onFilterChange)="handleFilterChange($event.filterId, $event.checked)"
+          ></app-org-sidebar>
+          
+          <div 
+            class="chart-viewport"
+            (mousemove)="onMouseMove($event)"
+            (mouseup)="onMouseUp()"
+          >
+            <div 
+              class="org-chart-wrapper"
+              [style.transform]="'scale(' + zoom + ')'"
+              [style.transformOrigin]="'center center'"
+            >
+              <!-- 節點組件 (放在上層) -->
+              <app-org-node
+                *ngFor="let node of nodes | keyvalue"
+                [node]="node.value"
+                [isSelected]="selectedNode === node.value.id"
+                [isDragging]="isDragging && currentDragNode === node.value.id"
+                (select)="selectedNode = $event"
+                (edit)="handleNodeEdit($event)"
+                (delete)="handleNodeDelete($event)"
+                (dragStart)="onNodeMouseDown($event.event, $event.nodeId)"
+              ></app-org-node>
               
-              <!-- 根節點 -->
-              <div class="org-node root-node">
-                <div class="node-card">
-                  <div class="node-avatar">王</div>
-                  <div class="node-info">
-                    <h3>王大明</h3>
-                    <p>執行長</p>
-                    <span>A000000000</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 連接線 -->
-              <div class="connection-lines">
-                <div class="vertical-line"></div>
-                <div class="horizontal-line"></div>
-              </div>
-
-              <!-- 子節點容器 -->
-              <div class="child-nodes">
-                <div class="org-node child-node">
-                  <div class="node-card">
-                    <div class="node-avatar">李</div>
-                    <div class="node-info">
-                      <h3>李小美</h3>
-                      <p>技術總監</p>
-                      <span>B987654321</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="org-node child-node">
-                  <div class="node-card">
-                    <div class="node-avatar">張</div>
-                    <div class="node-info">
-                      <h3>張三</h3>
-                      <p>營運總監</p>
-                      <span>C456789012</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+              <!-- 連線組件 (放在下層) -->
+              <app-org-connections
+                [connections]="connections"
+                [nodes]="nodes"
+              ></app-org-connections>
             </div>
           </div>
-        </div>
 
-        <!-- 圖表控制按鈕 -->
-        <div class="chart-controls">
-          <button class="control-btn" (click)="zoomIn()" title="放大">
-            <span>🔍+</span>
-          </button>
-          <button class="control-btn" (click)="zoomOut()" title="縮小">
-            <span>🔍−</span>
-          </button>
-          <button class="control-btn" (click)="resetZoom()" title="重置縮放">
-            <span>⌂</span>
-          </button>
-          <button class="control-btn" (click)="centerChart()" title="置中顯示">
-            <span>⭕</span>
-          </button>
-        </div>
+          <!-- 圖表控制按鈕 -->
+          <div class="chart-controls">
+            <button class="control-btn" (click)="zoomIn()" title="放大">
+              <span>🔍+</span>
+            </button>
+            <button class="control-btn" (click)="zoomOut()" title="縮小">
+              <span>🔍−</span>
+            </button>
+            <button class="control-btn" (click)="resetZoom()" title="重置縮放">
+              <span>⌂</span>
+            </button>
+            <button class="control-btn" (click)="centerChart()" title="置中顯示">
+              <span>⭕</span>
+            </button>
+          </div>
+          
+          <!-- 底部操作按鈕 -->
+          <div class="bottom-actions">
+            <button class="btn btn-secondary" (click)="saveToTemp()">
+              暫存系統
+            </button>
+            <button class="btn btn-primary" (click)="confirmSave()">
+              確認
+            </button>
+          </div>
       </div>
+      
+      <!-- 編輯對話框 -->
+      <app-node-edit-dialog
+        [isOpen]="isEditDialogOpen"
+        [node]="editingNode"
+        (close)="isEditDialogOpen = false; editingNode = null"
+        (save)="handleNodeSave($event); isEditDialogOpen = false; editingNode = null"
+      ></app-node-edit-dialog>
 
       <!-- 空狀態 -->
       <div *ngIf="!loading && !error && totalMembers === 0" class="empty-state">
@@ -169,26 +163,94 @@ interface OrgNode {
   `,
   styleUrls: ['./organization-chart.page.scss']
 })
-export class OrganizationChartComponent implements OnInit {
+export class OrganizationChartComponent implements OnInit, OnDestroy {
+  @ViewChild('chartContainer') chartContainer!: ElementRef<HTMLDivElement>;
   
   // 狀態管理
   loading = false;
   error = '';
   
   // 統計資料
-  totalMembers = 3;
+  totalMembers = 0;
   hierarchyLevels = 2;
   departments = 2;
   
   // 組織資料
-  organizationData: OrgNode[] = [];
+  nodes: Record<string, OrgNode> = {};
+  connections: OrgConnection[] = [];
+  filters: OrgFilter[] = [];
   
-  constructor() {
+  // UI 狀態
+  selectedNode: string | null = null;
+  isSidebarOpen = false;
+  editingNode: OrgNode | null = null;
+  isEditDialogOpen = false;
+  searchTerm = '';
+  zoom = 1;
+  isDragging = false;
+  dragStart = { x: 0, y: 0 };
+  currentDragNode: string | null = null;
+  
+  // 導航相關
+  isFromRelationshipGraph = false;
+  sourceNodeName = '';
+  
+  private destroy$ = new Subject<void>();
+  
+  constructor(
+    private orgChartService: OrganizationChartService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {
     console.log('🏢 OrganizationChartComponent 初始化');
   }
 
   ngOnInit(): void {
+    // 處理來自關係圖的查詢參數
+    this.route.queryParams.subscribe(params => {
+      if (params['nodeId'] && params['from'] === 'relationship-graph') {
+        this.isFromRelationshipGraph = true;
+        this.sourceNodeName = params['nodeName'] || '';
+        
+        console.log('從關係圖導航而來', {
+          nodeId: params['nodeId'],
+          nodeName: params['nodeName'],
+          from: params['from']
+        });
+        
+        // TODO: 根據節點ID載入相關的組織資料
+        // 例如：高亮顯示特定節點，或載入該節點相關的組織結構
+      }
+    });
+    
     this.loadOrganizationData();
+    this.subscribeToData();
+  }
+  
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+  
+  private subscribeToData(): void {
+    this.orgChartService.nodes$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(nodes => {
+        this.nodes = nodes;
+        this.totalMembers = Object.keys(nodes).length;
+      });
+      
+    this.orgChartService.connections$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(connections => {
+        this.connections = connections;
+      });
+      
+    this.orgChartService.filters$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(filters => {
+        this.filters = filters;
+      });
   }
 
   /**
@@ -206,11 +268,88 @@ export class OrganizationChartComponent implements OnInit {
   }
 
   /**
+   * 處理節點拖拽
+   */
+  handleNodeDrag(id: string, x: number, y: number): void {
+    this.orgChartService.updateNodePosition(id, x, y);
+  }
+
+  /**
+   * 開始拖拽節點
+   */
+  onNodeMouseDown(event: MouseEvent, nodeId: string): void {
+    event.preventDefault();
+    this.isDragging = true;
+    this.currentDragNode = nodeId;
+    this.selectedNode = nodeId;
+    
+    const node = this.nodes[nodeId];
+    this.dragStart = {
+      x: event.clientX - node.x,
+      y: event.clientY - node.y
+    };
+  }
+
+  /**
+   * 處理鼠標移動
+   */
+  onMouseMove(event: MouseEvent): void {
+    if (!this.isDragging || !this.currentDragNode) return;
+    
+    const newX = event.clientX - this.dragStart.x;
+    const newY = event.clientY - this.dragStart.y;
+    this.handleNodeDrag(this.currentDragNode, newX, newY);
+  }
+
+  /**
+   * 結束拖拽
+   */
+  onMouseUp(): void {
+    this.isDragging = false;
+    this.currentDragNode = null;
+  }
+
+  /**
+   * 處理節點編輯
+   */
+  handleNodeEdit(id: string): void {
+    this.editingNode = this.nodes[id];
+    this.isEditDialogOpen = true;
+  }
+
+  /**
+   * 處理節點刪除
+   */
+  handleNodeDelete(id: string): void {
+    if (confirm('確定要刪除此人員嗎？')) {
+      this.orgChartService.deleteNode(id);
+      if (this.selectedNode === id) {
+        this.selectedNode = null;
+      }
+    }
+  }
+
+  /**
+   * 處理節點保存
+   */
+  handleNodeSave(nodeData: OrgNode): void {
+    if (this.editingNode) {
+      this.orgChartService.updateNode(nodeData);
+    } else {
+      const { id, ...nodeWithoutId } = nodeData;
+      this.orgChartService.addNode(nodeWithoutId);
+    }
+    this.isEditDialogOpen = false;
+    this.editingNode = null;
+  }
+
+  /**
    * 新增人員
    */
   addNewPerson(): void {
     console.log('👤 新增人員');
-    // TODO: 開啟新增人員對話框
+    this.editingNode = null;
+    this.isEditDialogOpen = true;
   }
 
   /**
@@ -234,31 +373,35 @@ export class OrganizationChartComponent implements OnInit {
    */
   toggleFullscreen(): void {
     console.log('⛶ 切換全螢幕模式');
-    // TODO: 實現全螢幕功能
+    if (!document.fullscreenElement) {
+      this.chartContainer?.nativeElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
   }
 
   /**
    * 放大圖表
    */
   zoomIn(): void {
-    console.log('🔍+ 放大圖表');
-    // TODO: 實現圖表縮放
+    this.zoom = Math.min(this.zoom + 0.1, 2);
+    console.log('🔍+ 放大圖表', this.zoom);
   }
 
   /**
    * 縮小圖表
    */
   zoomOut(): void {
-    console.log('🔍− 縮小圖表');
-    // TODO: 實現圖表縮放
+    this.zoom = Math.max(this.zoom - 0.1, 0.5);
+    console.log('🔍− 縮小圖表', this.zoom);
   }
 
   /**
    * 重置縮放
    */
   resetZoom(): void {
+    this.zoom = 1;
     console.log('⌂ 重置縮放');
-    // TODO: 實現縮放重置
   }
 
   /**
@@ -267,5 +410,44 @@ export class OrganizationChartComponent implements OnInit {
   centerChart(): void {
     console.log('⭕ 置中顯示圖表');
     // TODO: 實現圖表置中
+  }
+
+  /**
+   * 處理搜尋
+   */
+  handleSearch(term: string): void {
+    this.searchTerm = term;
+    const results = this.orgChartService.searchNodes(term);
+    console.log('搜尋結果:', results);
+  }
+
+  /**
+   * 處理篩選器變更
+   */
+  handleFilterChange(filterId: string, checked: boolean): void {
+    this.orgChartService.updateFilter(filterId, checked);
+  }
+
+  /**
+   * 暫存系統
+   */
+  saveToTemp(): void {
+    console.log('暫存系統');
+    // TODO: 實現暫存功能
+  }
+
+  /**
+   * 確認儲存
+   */
+  confirmSave(): void {
+    console.log('確認儲存');
+    // TODO: 實現儲存功能
+  }
+
+  /**
+   * 返回關係圖頁面
+   */
+  backToRelationshipGraph(): void {
+    this.router.navigate(['/relationship-graph']);
   }
 } 

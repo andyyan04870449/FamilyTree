@@ -178,7 +178,8 @@ namespace familytree_backend.Controllers
                 {
                     success = true,
                     message = "專案建立成功",
-                    projectId = newId
+                    projectId = newId,
+                    project = project  // 保持向後兼容
                 };
 
                 LogRequestComplete("建立專案");

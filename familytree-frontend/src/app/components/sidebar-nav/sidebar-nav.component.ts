@@ -54,6 +54,8 @@ export class SidebarNavComponent implements OnInit {
       this.activeRoute = 'visual-analysis';
     } else if (url.includes('/case-management')) {
       this.activeRoute = 'case-management';
+    } else if (url.includes('/user-management')) {
+      this.activeRoute = 'user-management';
     } else if (url.includes('/system-settings')) {
       this.activeRoute = 'system-settings';
     } else if (url === '/' || url === '/home') {

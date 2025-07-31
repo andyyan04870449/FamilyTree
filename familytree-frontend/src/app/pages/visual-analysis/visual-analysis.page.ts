@@ -9,11 +9,13 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ProjectService, Project } from '../../services/project.service';
 import { VisualAnalysisService, VisualAnalysisGraph, CreateVisualAnalysisRequest } from '../../services/visual-analysis.service';
+import { ConfirmDialogComponent } from '../../components/confirm-dialog/confirm-dialog.component';
+import { InputDialogComponent } from '../../components/input-dialog/input-dialog.component';
 
 @Component({
   selector: 'app-visual-analysis',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ConfirmDialogComponent, InputDialogComponent],
   templateUrl: './visual-analysis.page.html',
   styleUrls: ['./visual-analysis.page.scss']
 })
@@ -48,6 +50,14 @@ export class VisualAnalysisComponent implements OnInit {
     updatedBy: '',      // 最後更新人
     updatedAt: ''       // 最後更新日期
   };
+  
+  // 確認對話框相關
+  showDeleteConfirm = false;
+  deleteTargetId: number | null = null;
+  
+  // 重新命名對話框相關
+  showRenameDialog = false;
+  renameTarget: VisualAnalysisGraph | null = null;
 
   // 篩選後的資料
   filteredVisualAnalysisData: VisualAnalysisGraph[] = [];
@@ -222,22 +232,35 @@ export class VisualAnalysisComponent implements OnInit {
 
   // 刪除分析圖
   deleteGraph(id: number): void {
-    if (confirm('確定要刪除這個視覺化分析圖嗎？')) {
-      this.visualAnalysisService.deleteVisualAnalysisGraph(id).subscribe({
-        next: (response) => {
-          if (response.success) {
-            alert('刪除成功');
-            this.loadVisualAnalysisData(); // 重新載入資料
-          } else {
-            alert('刪除失敗: ' + response.message);
-          }
-        },
-        error: (error) => {
-          console.error('刪除視覺化分析圖時發生錯誤:', error);
-          alert('刪除時發生錯誤，請稍後再試');
+    this.deleteTargetId = id;
+    this.showDeleteConfirm = true;
+  }
+  
+  // 確認刪除
+  confirmDelete(): void {
+    if (this.deleteTargetId === null) return;
+    
+    this.visualAnalysisService.deleteVisualAnalysisGraph(this.deleteTargetId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.showDeleteConfirm = false;
+          this.deleteTargetId = null;
+          this.loadVisualAnalysisData(); // 重新載入資料
+        } else {
+          alert('刪除失敗: ' + response.message);
         }
-      });
-    }
+      },
+      error: (error) => {
+        console.error('刪除視覺化分析圖時發生錯誤:', error);
+        alert('刪除時發生錯誤，請稍後再試');
+      }
+    });
+  }
+  
+  // 取消刪除
+  cancelDelete(): void {
+    this.showDeleteConfirm = false;
+    this.deleteTargetId = null;
   }
 
   // 檢查是否有啟用的篩選條件
@@ -251,12 +274,35 @@ export class VisualAnalysisComponent implements OnInit {
 
   // 重新命名分析圖
   renameGraph(item: VisualAnalysisGraph): void {
-    const newName = prompt('請輸入新的名稱:', item.name);
-    if (newName && newName.trim() && newName.trim() !== item.name) {
-      console.log('🏷️ 重新命名分析圖:', item.id, '->', newName.trim());
-      // TODO: 實作重新命名API
-      alert('重新命名功能尚未實作');
+    this.renameTarget = item;
+    this.showRenameDialog = true;
+  }
+  
+  // 確認重新命名
+  confirmRename(newName: string): void {
+    if (!this.renameTarget || newName === this.renameTarget.name) {
+      this.showRenameDialog = false;
+      this.renameTarget = null;
+      return;
     }
+    
+    console.log('🏷️ 重新命名分析圖:', this.renameTarget.id, '->', newName);
+    // TODO: 實作重新命名API
+    // 暫時更新本地資料
+    const index = this.visualAnalysisData.findIndex(item => item.id === this.renameTarget!.id);
+    if (index !== -1) {
+      this.visualAnalysisData[index].name = newName;
+      this.applyFilters();
+    }
+    
+    this.showRenameDialog = false;
+    this.renameTarget = null;
+  }
+  
+  // 取消重新命名
+  cancelRename(): void {
+    this.showRenameDialog = false;
+    this.renameTarget = null;
   }
 
   // 確認新增

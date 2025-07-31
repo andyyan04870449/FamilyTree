@@ -171,13 +171,15 @@ export class ProjectService {
     // 創建新專案
     this.setLoading(true);
 
-    return this.http.post<{ success: boolean; projectId: string; message: string }>(`${this.baseUrl}`, request).pipe(
+    return this.http.post<{ success: boolean; projectId?: string; project?: any; message: string }>(`${this.baseUrl}`, request).pipe(
       map(response => {
         if (response.success) {
-          console.log('✅ 專案創建成功:', response.projectId);
+          // 處理兩種可能的回應格式
+          const projectId = response.projectId || (response.project && response.project.id);
+          console.log('✅ 專案創建成功:', projectId);
           // 重新載入專案列表
           this.refreshProjects();
-          return { projectId: response.projectId };
+          return { projectId: projectId || '' };
         }
         throw new Error(response.message || '創建專案失敗');
       }),

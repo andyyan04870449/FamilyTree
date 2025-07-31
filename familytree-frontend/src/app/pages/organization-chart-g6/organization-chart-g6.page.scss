@@ -1,0 +1,362 @@
+@use 'sass:color';
+@import '../../../styles/foundation/tokens';
+@import '../../../styles/foundation/mixins';
+
+// ============ G6 組織圖頁面樣式 ============
+
+.organization-chart-g6-page {
+  width: 100%;
+  height: 100vh;
+  background: $bg-primary;
+  color: $text-primary;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// ============ 頁面標題區 ============
+.page-header {
+  padding: $spacing-xl;
+  background: $bg-secondary;
+  border-bottom: 1px solid $border-primary;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+
+  .header-content {
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0;
+      color: $primary;
+    }
+
+    p {
+      margin: $spacing-sm 0 0 0;
+      color: $text-secondary;
+      font-size: 1rem;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    gap: $spacing-md;
+
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      padding: $spacing-sm $spacing-lg;
+      border-radius: $radius-md;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+
+      .icon {
+        font-size: 1.1rem;
+      }
+
+      &.btn-primary {
+        background: $primary;
+        color: white;
+        
+        &:hover {
+          background: darken($primary, 10%);
+        }
+      }
+
+      &.btn-secondary {
+        background: $bg-tertiary;
+        color: $text-primary;
+        border-color: $border-primary;
+        
+        &:hover {
+          background: $bg-secondary;
+          border-color: $primary;
+        }
+      }
+    }
+  }
+}
+
+// ============ 工具列 ============
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xl;
+  padding: $spacing-lg;
+  background: $bg-tertiary;
+  border-bottom: 1px solid $border-primary;
+  flex-shrink: 0;
+
+  .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+
+    label {
+      font-size: 0.875rem;
+      color: $text-secondary;
+      font-weight: 500;
+    }
+
+    select {
+      padding: $spacing-xs $spacing-md;
+      background: $bg-primary;
+      border: 1px solid $border-primary;
+      border-radius: $radius-sm;
+      color: $text-primary;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: $primary;
+      }
+
+      &:focus {
+        outline: none;
+        border-color: $primary;
+        box-shadow: 0 0 0 3px rgba($primary, 0.1);
+      }
+    }
+
+    .btn-sm {
+      padding: $spacing-xs $spacing-md;
+      background: $bg-primary;
+      border: 1px solid $border-primary;
+      border-radius: $radius-sm;
+      color: $text-primary;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: $bg-secondary;
+        border-color: $primary;
+        color: $primary;
+      }
+    }
+  }
+}
+
+// ============ 圖表容器 ============
+.chart-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: $bg-primary;
+  
+  // G6 畫布樣式
+  canvas {
+    cursor: grab;
+    
+    &:active {
+      cursor: grabbing;
+    }
+  }
+}
+
+// ============ 右鍵選單 ============
+.context-menu {
+  position: fixed;
+  background: $bg-secondary;
+  border: 1px solid $border-primary;
+  border-radius: $radius-md;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: $spacing-xs;
+  min-width: 150px;
+  z-index: 1000;
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius-sm;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    .icon {
+      font-size: 1rem;
+    }
+
+    &:hover {
+      background: $bg-tertiary;
+      color: $primary;
+    }
+  }
+
+  .menu-divider {
+    height: 1px;
+    background: $border-primary;
+    margin: $spacing-xs 0;
+  }
+}
+
+// ============ 編輯對話框 ============
+.edit-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+
+  .dialog-content {
+    background: $bg-secondary;
+    border-radius: $radius-lg;
+    padding: $spacing-xl;
+    min-width: 400px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+
+    h3 {
+      margin: 0 0 $spacing-lg 0;
+      color: $text-primary;
+      font-size: 1.25rem;
+    }
+
+    .form-group {
+      margin-bottom: $spacing-lg;
+
+      label {
+        display: block;
+        margin-bottom: $spacing-xs;
+        color: $text-secondary;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      input {
+        width: 100%;
+        padding: $spacing-sm $spacing-md;
+        background: $bg-primary;
+        border: 1px solid $border-primary;
+        border-radius: $radius-sm;
+        color: $text-primary;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+
+        &:focus {
+          outline: none;
+          border-color: $primary;
+          box-shadow: 0 0 0 3px rgba($primary, 0.1);
+        }
+      }
+    }
+
+    .dialog-actions {
+      display: flex;
+      gap: $spacing-md;
+      justify-content: flex-end;
+      margin-top: $spacing-xl;
+
+      .btn {
+        padding: $spacing-sm $spacing-lg;
+        border-radius: $radius-sm;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+
+        &.btn-primary {
+          background: $primary;
+          color: white;
+          
+          &:hover {
+            background: darken($primary, 10%);
+          }
+        }
+
+        &.btn-secondary {
+          background: $bg-tertiary;
+          color: $text-primary;
+          border: 1px solid $border-primary;
+          
+          &:hover {
+            background: $bg-primary;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ============ 響應式設計 ============
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-md;
+
+    .header-actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+    gap: $spacing-md;
+
+    .toolbar-group {
+      flex: 1 1 auto;
+      min-width: 200px;
+    }
+  }
+
+  .edit-dialog {
+    .dialog-content {
+      margin: $spacing-lg;
+      min-width: auto;
+      width: calc(100% - #{$spacing-lg * 2});
+    }
+  }
+}
+
+// ============ 主題變化 ============
+.theme-dark {
+  .chart-container {
+    background: #141414;
+  }
+
+  .context-menu {
+    background: #262626;
+    border-color: #434343;
+  }
+
+  .edit-dialog {
+    .dialog-content {
+      background: #262626;
+    }
+  }
+}
+
+// ============ 動畫效果 ============
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.context-menu {
+  animation: fadeIn 0.2s ease;
+}
+
+.edit-dialog {
+  animation: fadeIn 0.3s ease;
+}

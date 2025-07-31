@@ -1,0 +1,278 @@
+// ================================
+// 統一設計系統 - 下拉式選單元件
+// ================================
+// 全域統一的下拉式選單樣式設計
+// 符合深色主題的設計風格
+
+@use 'sass:color';
+@import '../foundation/tokens';
+@import '../foundation/mixins';
+
+// ================================
+// 基礎下拉式選單樣式
+// ================================
+
+// 統一的 select 樣式
+select,
+.select,
+.form-select,
+.search-select,
+.page-selector,
+.page-size-select {
+  // 基礎樣式
+  display: inline-block;
+  width: 100%;
+  min-width: 120px;
+  height: 46px;
+  padding: 13px 36px 13px 12px;
+  
+  // 邊框與背景
+  border: 1px solid $border-secondary;
+  border-radius: 6px;
+  background-color: $bg-surface;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23cbd5e1' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px 12px;
+  
+  // 文字樣式
+  color: $text-primary;
+  font-family: $font-family-base;
+  font-size: 15px;
+  font-weight: $font-weight-normal;
+  line-height: 20px;
+  
+  // 其他
+  cursor: pointer;
+  appearance: none;
+  transition: all $duration-normal $easing-ease-in-out;
+  
+  // 懸停狀態
+  &:hover:not(:disabled) {
+    border-color: $primary;
+    background-color: color.adjust($bg-surface, $lightness: 5%);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+  
+  // 聚焦狀態
+  &:focus {
+    outline: none;
+    border-color: $primary;
+    background-color: $bg-primary;
+    box-shadow: 0 0 0 3px rgba($primary, 0.1);
+  }
+  
+  // 禁用狀態
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: $bg-tertiary;
+    color: $text-disabled;
+  }
+  
+  // Option 樣式
+  option {
+    background-color: $bg-surface;
+    color: $text-primary;
+    padding: 8px 12px;
+    
+    &:checked {
+      background-color: $primary;
+      color: white;
+    }
+  }
+}
+
+// ================================
+// 尺寸變體
+// ================================
+
+// 小尺寸
+.select-sm,
+.form-select-sm,
+.search-select-sm {
+  height: 34px;
+  padding: 8px 32px 8px 10px;
+  font-size: 14px;
+  min-width: 100px;
+  background-size: 14px 10px;
+  background-position: right 10px center;
+}
+
+// 大尺寸
+.select-lg,
+.form-select-lg,
+.search-select-lg {
+  height: 48px;
+  padding: 14px 40px 14px 16px;
+  font-size: 16px;
+  background-size: 18px 14px;
+  background-position: right 14px center;
+}
+
+// ================================
+// 特殊用途樣式
+// ================================
+
+// 搜尋過濾器專用
+.search-select {
+  height: 46px;
+  min-width: 150px;
+  background-color: $bg-primary;
+  
+  &:focus {
+    background-color: $bg-primary;
+  }
+}
+
+// 分頁選擇器專用
+.page-selector,
+.page-size-select {
+  width: auto;
+  min-width: 80px;
+  max-width: 120px;
+  height: 40px;
+  padding: 10px 32px 10px 12px;
+  font-size: 14px;
+}
+
+// 表單內的選擇器
+.form-group {
+  select,
+  .form-select {
+    width: 100%;
+    
+    &:not(:last-child) {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// ================================
+// 狀態樣式
+// ================================
+
+// 錯誤狀態
+.select-error,
+.form-select.is-invalid,
+select.is-invalid {
+  border-color: $error;
+  
+  &:focus {
+    border-color: $error;
+    box-shadow: 0 0 0 3px rgba($error, 0.1);
+  }
+}
+
+// 成功狀態
+.select-success,
+.form-select.is-valid,
+select.is-valid {
+  border-color: $success;
+  
+  &:focus {
+    border-color: $success;
+    box-shadow: 0 0 0 3px rgba($success, 0.1);
+  }
+}
+
+// ================================
+// 群組樣式
+// ================================
+
+// 下拉選單群組
+.select-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  label {
+    font-size: 14px;
+    color: $text-secondary;
+    font-weight: $font-weight-medium;
+    white-space: nowrap;
+  }
+  
+  select {
+    flex: 1;
+  }
+}
+
+// 並排下拉選單
+.select-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  
+  select {
+    flex: 1;
+  }
+}
+
+// ================================
+// 響應式設計
+// ================================
+
+@media (max-width: $breakpoint-md) {
+  select,
+  .select,
+  .form-select {
+    font-size: 16px; // 防止 iOS 縮放
+  }
+  
+  .select-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    
+    label {
+      text-align: left;
+    }
+  }
+  
+  .select-row {
+    flex-direction: column;
+    
+    select {
+      width: 100%;
+    }
+  }
+}
+
+// ================================
+// 深色主題優化
+// ================================
+
+// 確保在深色背景下的可見性
+.dark-theme {
+  select,
+  .select,
+  .form-select {
+    // 調整箭頭顏色為更亮的色調
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23e2e8f0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    
+    &:hover:not(:disabled) {
+      background-color: color.adjust($bg-surface, $lightness: 8%);
+    }
+  }
+}
+
+// ================================
+// 動畫效果
+// ================================
+
+// 下拉展開動畫（需要配合 JavaScript）
+.select-dropdown {
+  animation: slideDown $duration-normal $easing-ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

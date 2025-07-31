@@ -90,17 +90,18 @@
         }
 
         .search-input {
-          height: 34px;
-          padding: 8px 12px;
+          height: 42px;
+          padding: 12px;
           border: 1px solid $border-secondary;
-          border-radius: 4px;
+          border-radius: 6px;
           background: $bg-primary;
           color: $text-primary;
           font-size: 15px;
+          line-height: 18px;
           
           &:focus {
             border-color: $primary;
-            box-shadow: 0 0 0 2px rgba($primary, 0.1);
+            box-shadow: 0 0 0 3px rgba($primary, 0.1);
             outline: none;
           }
 
@@ -117,7 +118,7 @@
             display: flex;
             gap: 16px;
             align-items: center;
-            height: 34px;
+            height: 42px;
             
             .radio-label {
               display: flex;
@@ -165,7 +166,7 @@
           transition: all 0.2s ease;
           background: $primary;
           color: white;
-          height: 34px;
+          height: 42px;
           min-width: 60px;
 
           &:hover:not(:disabled) {
@@ -192,7 +193,7 @@
           transition: all 0.2s ease;
           background: $bg-primary;
           color: $text-primary;
-          height: 34px;
+          height: 42px;
           min-width: 60px;
 
           &:hover:not(:disabled) {
@@ -576,19 +577,9 @@
       gap: 8px;
     }
 
+    // 分頁選擇器使用全域樣式
     .page-selector {
-      padding: 8px;
-      border: 1px solid $border-primary;
-      border-radius: 6px;
-      background: $bg-primary;
-      color: $text-primary;
-      font-size: 16px;
       margin-left: 8px;
-
-      &:focus {
-        outline: none;
-        border-color: $primary;
-      }
     }
   }
 }

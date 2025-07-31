@@ -14,26 +14,6 @@
   flex-direction: column;
 }
 
-// ============ 頁面標題區 ============
-.page-header {
-  padding: $spacing-xl;
-  background: $bg-secondary;
-  border-bottom: 1px solid $border-primary;
-
-  h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin: 0;
-    color: $primary;
-  }
-
-  p {
-    margin: $spacing-sm 0 0 0;
-    color: $text-secondary;
-    font-size: 1rem;
-  }
-}
-
 // ============ 工具列區 ============
 .toolbar-section {
   display: flex;
@@ -112,33 +92,6 @@
   }
 }
 
-// ============ 統計資訊區 ============
-.stats-section {
-  display: flex;
-  gap: $spacing-3xl;
-  padding: $spacing-lg;
-  background: $bg-secondary;
-  border-bottom: 1px solid $border-primary;
-
-  .stat-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-
-    .stat-number {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: $primary;
-    }
-
-    .stat-label {
-      font-size: 0.875rem;
-      color: $text-secondary;
-      margin-top: $spacing-xs;
-    }
-  }
-}
 
 // ============ 載入與錯誤狀態 ============
 .loading-container,
@@ -197,144 +150,43 @@
   }
 }
 
-// ============ 簡化組織圖樣式 ============
-.simple-org-chart {
+// ============ 底部操作按鈕 ============
+.bottom-actions {
+  position: absolute;
+  bottom: $spacing-lg;
+  right: $spacing-lg;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-  position: relative;
-  padding: $spacing-xl;
+  gap: $spacing-md;
+  z-index: 10;
 
-  .org-node {
-    position: relative;
-
-    &.root-node {
-      margin-bottom: 80px; // 為連接線留空間
-    }
-
-    .node-card {
-      background: linear-gradient(135deg, #4a90e2 0%, #357abd 50%, #2563eb 100%);
-      border-radius: 12px;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
-      padding: $spacing-lg;
-      min-width: 200px;
-      display: flex;
-      align-items: center;
-      gap: $spacing-md;
-      transition: all 0.3s ease;
-      border: 2px solid rgba(255, 255, 255, 0.1);
-      cursor: pointer;
-
-      &:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-      }
-
-      .node-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: white;
-        border: 2px solid rgba(255, 255, 255, 0.8);
-        flex-shrink: 0;
-      }
-
-      .node-info {
-        flex: 1;
-
-        h3 {
-          margin: 0 0 $spacing-xs 0;
-          font-size: 1.125rem;
-          font-weight: 700;
-          color: white;
-        }
-
-        p {
-          margin: 0 0 $spacing-xs 0;
-          font-size: 0.875rem;
-          color: rgba(255, 255, 255, 0.9);
-          font-weight: 500;
-        }
-
-        span {
-          font-size: 0.75rem;
-          color: rgba(255, 255, 255, 0.7);
-          font-family: monospace;
-          letter-spacing: 0.5px;
-        }
-      }
-    }
-  }
-
-  // 子節點容器
-  .child-nodes {
+  .btn {
     display: flex;
-    gap: 60px;
-    position: relative;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-lg;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
 
-    .org-node .node-card {
-      background: linear-gradient(135deg, #6b7280 0%, #4b5563 50%, #374151 100%);
+    &.btn-primary {
+      background: $primary;
+      color: white;
 
       &:hover {
-        background: linear-gradient(135deg, #4a90e2 0%, #357abd 50%, #2563eb 100%);
+        background: color.adjust($primary, $lightness: -10%);
       }
     }
-  }
 
-  // 連接線容器
-  .connection-lines {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
+    &.btn-secondary {
+      background: $color-neutral-300;
+      color: white;
+      border: 1px solid $border-primary;
 
-    .vertical-line {
-      position: absolute;
-      width: 3px;
-      height: 60px;
-      background: rgba(255, 255, 255, 0.6);
-      border-radius: 2px;
-      top: -30px;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-
-    .horizontal-line {
-      position: absolute;
-      height: 3px;
-      width: 140px;
-      background: rgba(255, 255, 255, 0.6);
-      border-radius: 2px;
-      top: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-
-      // 添加垂直連接線
-      &::before,
-      &::after {
-        content: '';
-        position: absolute;
-        width: 3px;
-        height: 40px;
-        background: rgba(255, 255, 255, 0.6);
-        border-radius: 2px;
-        top: 0;
-      }
-
-      &::before {
-        left: 0;
-      }
-
-      &::after {
-        right: 0;
+      &:hover {
+        background: color.adjust($color-neutral-300, $lightness: -10%);
       }
     }
   }
@@ -435,13 +287,6 @@
       }
     }
 
-    .stats-section {
-      gap: $spacing-lg;
-      
-      .stat-item .stat-number {
-        font-size: 1.125rem;
-      }
-    }
 
     .simple-org-chart {
       .child-nodes {

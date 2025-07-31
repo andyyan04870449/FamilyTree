@@ -4,6 +4,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, ElementRef, ViewChild, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Subscription, Observable } from 'rxjs';
 
 // 服務導入
@@ -213,7 +214,8 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
     private cdr: ChangeDetectorRef,
     private logService: LogService,
     private photoUtils: PhotoUtilsService,
-    private projectService: ProjectService
+    private projectService: ProjectService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -611,5 +613,14 @@ export class RelationshipGraphComponent implements OnInit, OnChanges, AfterViewI
   handleOrgChart(node: GraphNode): void {
     // 組織圖編輯邏輯
     this.logService.info('開啟組織圖編輯', `節點ID: ${node.id}`);
+    
+    // 導航到組織圖頁面
+    this.router.navigate(['/organization-chart'], {
+      queryParams: {
+        nodeId: node.id,
+        nodeName: node.name,
+        from: 'relationship-graph'
+      }
+    });
   }
 }

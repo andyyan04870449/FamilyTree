@@ -1,0 +1,215 @@
+<!-- 下拉式選單設計系統示範頁面 -->
+<div class="design-demo-page">
+  <h1>統一設計系統 - 下拉式選單元件</h1>
+  
+  <section class="demo-section">
+    <h2>基礎下拉選單</h2>
+    <div class="demo-grid">
+      <div class="demo-item">
+        <label>預設尺寸</label>
+        <select class="form-select">
+          <option value="">請選擇</option>
+          <option value="1">選項一</option>
+          <option value="2">選項二</option>
+          <option value="3">選項三</option>
+        </select>
+      </div>
+      
+      <div class="demo-item">
+        <label>小尺寸</label>
+        <select class="form-select-sm">
+          <option value="">請選擇</option>
+          <option value="1">選項一</option>
+          <option value="2">選項二</option>
+        </select>
+      </div>
+      
+      <div class="demo-item">
+        <label>大尺寸</label>
+        <select class="form-select-lg">
+          <option value="">請選擇</option>
+          <option value="1">選項一</option>
+          <option value="2">選項二</option>
+        </select>
+      </div>
+    </div>
+  </section>
+  
+  <section class="demo-section">
+    <h2>特殊用途下拉選單</h2>
+    <div class="demo-grid">
+      <div class="demo-item">
+        <label>搜尋過濾器</label>
+        <select class="search-select">
+          <option value="">全部狀態</option>
+          <option value="active">啟用</option>
+          <option value="inactive">停用</option>
+        </select>
+      </div>
+      
+      <div class="demo-item">
+        <label>分頁選擇器</label>
+        <select class="page-selector">
+          <option value="10">10 筆/頁</option>
+          <option value="20">20 筆/頁</option>
+          <option value="50">50 筆/頁</option>
+        </select>
+      </div>
+      
+      <div class="demo-item">
+        <label>頁碼選擇器</label>
+        <select class="page-size-select">
+          <option value="1">第 1 頁</option>
+          <option value="2">第 2 頁</option>
+          <option value="3">第 3 頁</option>
+        </select>
+      </div>
+    </div>
+  </section>
+  
+  <section class="demo-section">
+    <h2>狀態樣式</h2>
+    <div class="demo-grid">
+      <div class="demo-item">
+        <label>錯誤狀態</label>
+        <select class="form-select is-invalid">
+          <option value="">請選擇</option>
+          <option value="1">選項一</option>
+        </select>
+        <div class="form-error">請選擇一個選項</div>
+      </div>
+      
+      <div class="demo-item">
+        <label>成功狀態</label>
+        <select class="form-select is-valid">
+          <option value="1" selected>已選擇</option>
+          <option value="2">選項二</option>
+        </select>
+        <div class="form-success">選擇正確</div>
+      </div>
+      
+      <div class="demo-item">
+        <label>禁用狀態</label>
+        <select class="form-select" disabled>
+          <option value="">無法選擇</option>
+        </select>
+      </div>
+    </div>
+  </section>
+  
+  <section class="demo-section">
+    <h2>群組和佈局</h2>
+    <div class="demo-grid">
+      <div class="demo-item full-width">
+        <label>下拉選單群組</label>
+        <div class="select-group">
+          <label>選擇專案：</label>
+          <select class="form-select">
+            <option value="">請選擇專案</option>
+            <option value="1">專案 A</option>
+            <option value="2">專案 B</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="demo-item full-width">
+        <label>並排下拉選單</label>
+        <div class="select-row">
+          <select class="form-select">
+            <option value="">年份</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+          </select>
+          <select class="form-select">
+            <option value="">月份</option>
+            <option value="1">1月</option>
+            <option value="2">2月</option>
+          </select>
+          <select class="form-select">
+            <option value="">日期</option>
+            <option value="1">1日</option>
+            <option value="2">2日</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="demo-section">
+    <h2>實際應用範例</h2>
+    <div class="demo-grid">
+      <div class="demo-item full-width">
+        <div class="form-group">
+          <label class="form-label">使用者狀態</label>
+          <select class="form-select">
+            <option value="">請選擇狀態</option>
+            <option value="active">啟用</option>
+            <option value="inactive">停用</option>
+            <option value="pending">待審核</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="demo-item full-width">
+        <div class="form-group">
+          <label class="form-label">部門選擇 <span class="required">*</span></label>
+          <select class="form-select" required>
+            <option value="">請選擇部門</option>
+            <option value="hr">人力資源部</option>
+            <option value="it">資訊技術部</option>
+            <option value="sales">銷售部</option>
+            <option value="marketing">行銷部</option>
+          </select>
+          <div class="form-help">選擇使用者所屬部門</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<style>
+.design-demo-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.demo-section {
+  background: var(--bg-surface);
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border-primary);
+}
+
+.demo-section h2 {
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.demo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.demo-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.demo-item > label:first-child {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.required {
+  color: var(--error);
+}
+</style>

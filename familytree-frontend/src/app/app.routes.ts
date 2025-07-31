@@ -26,10 +26,14 @@ export const routes: Routes = [
     path: 'case-management',
     loadComponent: () => import('./pages/case-management/case-management.page').then(m => m.CaseManagementComponent)
   },
-  // 4. 系統設定模組
+  // 4. 系統管理模組
   {
     path: 'system-settings',
     loadComponent: () => import('./pages/system-settings/system-settings.page').then(m => m.SystemSettingsComponent)
+  },
+  {
+    path: 'user-management',
+    loadComponent: () => import('./pages/user-management/user-management.page').then(m => m.UserManagementComponent)
   },
   
   // === 以下路由保留但隱藏，供內部功能使用 ===
@@ -52,6 +56,14 @@ export const routes: Routes = [
   {
     path: 'organization-chart',
     loadComponent: () => import('./pages/organization-chart/organization-chart.page').then(m => m.OrganizationChartComponent)
+  },
+  {
+    path: 'organization-chart-g6',
+    loadComponent: () => import('./pages/organization-chart-g6/organization-chart-g6.page').then(m => m.OrganizationChartG6Page)
+  },
+  {
+    path: 'organization-chart-d3',
+    loadComponent: () => import('./pages/organization-chart-d3/organization-chart-d3.page').then(m => m.OrganizationChartD3Page)
   },
   {
     path: 'project-management',
