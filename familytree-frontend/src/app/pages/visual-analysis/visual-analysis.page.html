@@ -1,5 +1,5 @@
 <div class="visual-analysis-page">
-  <!-- 頁面標題 -->
+  <!-- 整合的頁面標題和搜尋區域 -->
   <div class="page-header">
     <div class="header-top">
       <div class="header-left">
@@ -7,7 +7,65 @@
         <div class="page-subtitle">管理所有關聯分析圖和視覺化資料</div>
       </div>
       <div class="header-right">
-        <button class="btn-main" (click)="openAddDialog()">新增</button>
+        <button class="btn-new-case" (click)="openAddDialog()">新增</button>
+      </div>
+    </div>
+    
+    <div class="search-filter-section">
+      <div class="search-row">
+        <div class="search-group">
+          <label>分析圖名稱</label>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="請輸入分析圖名稱"
+            [(ngModel)]="searchFilters.name"
+            (input)="onFilterChange()"
+          >
+        </div>
+        <div class="search-group">
+          <label>分析案件</label>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="請輸入案件關鍵字"
+            [(ngModel)]="searchFilters.cases"
+            (input)="onFilterChange()"
+          >
+        </div>
+        <div class="search-group">
+          <label>關聯人數</label>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="請輸入人數"
+            [(ngModel)]="searchFilters.relationCount"
+            (input)="onFilterChange()"
+          >
+        </div>
+        <div class="search-group">
+          <label>最後更新人</label>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="請輸入更新人"
+            [(ngModel)]="searchFilters.updatedBy"
+            (input)="onFilterChange()"
+          >
+        </div>
+        <div class="search-group">
+          <label>最後更新日期</label>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="請輸入日期關鍵字"
+            [(ngModel)]="searchFilters.updatedAt"
+            (input)="onFilterChange()"
+          >
+        </div>
+        <div class="search-actions">
+          <button class="btn-search" (click)="onFilterChange()">搜尋</button>
+        </div>
       </div>
     </div>
   </div>
@@ -19,21 +77,12 @@
   </div>
 
   <!-- 分析圖列表 -->
-  <div *ngIf="!loading" class="content-section">
-    <div class="section-header">
-      <div class="section-title">分析圖列表({{ getFilteredCount() }})</div>
-      <div class="section-actions">
-        <button 
-          *ngIf="hasActiveFilters()" 
-          class="btn-action btn-delete" 
-          (click)="clearAllFilters()"
-          title="清除篩選">
-          清除篩選
-        </button>
-      </div>
+  <div *ngIf="!loading" class="table-section">
+    <div class="table-header">
+      <span class="table-title">分析圖列表({{ getFilteredCount() }})</span>
     </div>
     
-    <table class="data-table" *ngIf="filteredVisualAnalysisData.length > 0">
+    <table class="case-table" *ngIf="filteredVisualAnalysisData.length > 0">
       <thead>
         <tr>
           <th class="col-index">項次</th>
@@ -43,56 +92,6 @@
           <th class="col-user">最後更新人</th>
           <th class="col-date">最後更新日期</th>
           <th class="col-actions">功能</th>
-        </tr>
-        <!-- 搜尋欄位行 -->
-        <tr class="search-row">
-          <th></th>
-          <th>
-            <input 
-              type="text" 
-              class="search-input" 
-              placeholder="請輸入分析圖名稱"
-              [(ngModel)]="searchFilters.name"
-              (input)="onFilterChange()"
-            >
-          </th>
-          <th>
-            <input 
-              type="text" 
-              class="search-input" 
-              placeholder="請輸入案件關鍵字"
-              [(ngModel)]="searchFilters.cases"
-              (input)="onFilterChange()"
-            >
-          </th>
-          <th>
-            <input 
-              type="text" 
-              class="search-input" 
-              placeholder="請輸入人數"
-              [(ngModel)]="searchFilters.relationCount"
-              (input)="onFilterChange()"
-            >
-          </th>
-          <th>
-            <input 
-              type="text" 
-              class="search-input" 
-              placeholder="請輸入更新人"
-              [(ngModel)]="searchFilters.updatedBy"
-              (input)="onFilterChange()"
-            >
-          </th>
-          <th>
-            <input 
-              type="text" 
-              class="search-input" 
-              placeholder="請輸入日期關鍵字"
-              [(ngModel)]="searchFilters.updatedAt"
-              (input)="onFilterChange()"
-            >
-          </th>
-          <th></th>
         </tr>
       </thead>
       <tbody>
