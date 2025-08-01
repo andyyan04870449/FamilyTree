@@ -7,7 +7,6 @@ import { Subscription } from 'rxjs';
 import { FileUploadService, FileUploadModel, UploadProgress } from '../../services/file-upload.service';
 import { PhotoUploadService, PhotoUploadProgress, PhotoUploadResponse } from '../../services/photo-upload.service';
 import { ProjectService } from '../../services/project.service';
-import { FileListComponent } from '../../components/file-list/file-list.component';
 
 // 檔案記錄統一介面
 interface UnifiedFileRecord {
@@ -28,7 +27,7 @@ interface UnifiedFileRecord {
   templateUrl: './file-upload.page.html',
   styleUrls: ['./file-upload.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, FileListComponent]
+  imports: [CommonModule, FormsModule]
 })
 export class FileUploadComponent implements OnInit, OnDestroy {
   selectedFile: File | null = null;

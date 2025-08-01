@@ -20,7 +20,6 @@ import {
 } from '../../services/visual-analysis.service';
 import { RelationshipGraphComponent } from '../../components/relationship-graph/relationship-graph.component';
 import { GraphData, GraphNode, GraphLink } from '../../services/relationship-graph.service';
-import { PersonDetailDialogComponent } from '../../components/person-detail-dialog/person-detail-dialog.component';
 import { LogService } from '../../services/log.service';
 import { ProjectTreeComponent, ProjectGroup } from '../../shared/components/project-tree/project-tree.component';
 import { PersonItem } from '../../shared/components/person-item/person-item.component';
@@ -28,7 +27,7 @@ import { PersonItem } from '../../shared/components/person-item/person-item.comp
 @Component({
   selector: 'app-visual-analysis-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RelationshipGraphComponent, PersonDetailDialogComponent, ProjectTreeComponent],
+  imports: [CommonModule, FormsModule, RelationshipGraphComponent, ProjectTreeComponent],
   templateUrl: './visual-analysis-editor.page.html',
   styleUrls: ['./visual-analysis-editor.page.scss']
 })
