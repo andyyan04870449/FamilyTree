@@ -135,6 +135,13 @@
   }
 }
 
+.search-form__fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
 .search-form__legend {
   font-size: 13px;
   color: $text-secondary;

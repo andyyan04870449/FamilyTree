@@ -1,0 +1,137 @@
+// ================================
+// 表單組件 - 簡化版
+// ================================
+// 統一的表單樣式，減少客製化差異
+
+// 表單容器
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// 表單行
+.form-row {
+  display: flex;
+  gap: $spacing-md;
+  align-items: flex-end;
+  
+  .form-group {
+    flex: 1;
+  }
+}
+
+// 表單組
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+// 標籤
+.form-label {
+  @include text-label;
+  color: $text-secondary;
+  margin-bottom: $spacing-xs;
+}
+
+// 基礎輸入控制項
+.form-control {
+  @include form-control;
+  
+  // 尺寸變體
+  &.form-control-sm {
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-sm;
+  }
+  
+  &.form-control-lg {
+    padding: $spacing-md $spacing-lg;
+    font-size: $font-size-lg;
+  }
+  
+  // 狀態變體
+  &.is-invalid {
+    border-color: $error;
+    
+    &:focus {
+      border-color: $error;
+      box-shadow: 0 0 0 2px rgba($error, 0.2);
+    }
+  }
+  
+  &.is-valid {
+    border-color: $success;
+    
+    &:focus {
+      border-color: $success;
+      box-shadow: 0 0 0 2px rgba($success, 0.2);
+    }
+  }
+}
+
+// 文本域
+.form-textarea {
+  @extend .form-control;
+  min-height: 100px;
+  resize: vertical;
+}
+
+// 選擇框
+.form-select {
+  @extend .form-control;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right $spacing-sm center;
+  background-repeat: no-repeat;
+  background-size: 16px 12px;
+  padding-right: $spacing-xl;
+  appearance: none;
+}
+
+// 複選框
+.form-checkbox {
+  @include form-checkbox;
+}
+
+// 單選框
+.form-radio {
+  @include form-radio;
+}
+
+// 開關
+.form-switch {
+  @include form-switch;
+}
+
+// 幫助文字
+.form-help {
+  @include text-caption;
+  color: $text-tertiary;
+  margin-top: $spacing-xs;
+}
+
+// 錯誤訊息
+.form-error {
+  @include text-caption;
+  color: $error;
+  margin-top: $spacing-xs;
+}
+
+// 成功訊息
+.form-success {
+  @include text-caption;
+  color: $success;
+  margin-top: $spacing-xs;
+}
+
+// 表單按鈕組
+.form-actions {
+  display: flex;
+  gap: $spacing-md;
+  justify-content: flex-end;
+  margin-top: $spacing-lg;
+  
+  .btn {
+    min-width: 80px;
+  }
+}

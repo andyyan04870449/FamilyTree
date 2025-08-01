@@ -1,0 +1,72 @@
+// ================================
+// 按鈕組件 - 簡化版
+// ================================
+// 統一的按鈕樣式，減少客製化差異
+
+// 基礎按鈕樣式 - 統一藍色背景白色文字
+.btn {
+  @include button-base;
+  @include button-primary;
+  
+  // 尺寸變體
+  &.btn-sm {
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-sm;
+  }
+  
+  &.btn-lg {
+    padding: $spacing-md $spacing-xl;
+    font-size: $font-size-lg;
+  }
+  
+  // 所有變體都使用相同的藍色背景白色文字樣式
+  &.btn-secondary,
+  &.btn-success,
+  &.btn-warning,
+  &.btn-danger,
+  &.btn-outline {
+    @include button-primary;
+  }
+  
+  // 圖標按鈕
+  &.btn-icon {
+    padding: $spacing-sm;
+    min-width: auto;
+    width: auto;
+    height: auto;
+    
+    i, svg {
+      margin: 0;
+    }
+  }
+  
+  // 禁用狀態
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// 按鈕組
+.btn-group {
+  display: flex;
+  gap: $spacing-xs;
+  
+  .btn {
+    border-radius: $radius-sm;
+    
+    &:first-child {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    
+    &:last-child {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+    
+    &:not(:first-child):not(:last-child) {
+      border-radius: 0;
+    }
+  }
+}
