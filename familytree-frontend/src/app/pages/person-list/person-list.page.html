@@ -1,93 +1,106 @@
-<div class="person-list-page">
-  <div class="page-header">
-    <div class="header-top">
-      <div class="header-left">
-        <h1>👥 人員列表</h1>
-        <div class="page-subtitle">管理所有資料庫中的人員資料</div>
+<div class="page-person-list">
+  <header class="page-person-list__header">
+    <div class="page-person-list__header-content">
+      <div class="page-person-list__header-left">
+        <h1 class="page-person-list__title">👥 人員列表</h1>
+        <p class="page-person-list__subtitle">管理所有資料庫中的人員資料</p>
       </div>
     </div>
-  </div>
+  </header>
 
   <!-- 搜尋區域 -->
-  <div class="search-section">
-    <div class="search-row">
-      <div class="search-group">
-        <label>搜尋姓名</label>
+  <section class="page-person-list__search" aria-label="搜尋人員">
+    <form class="search-form" role="search">
+      <div class="search-form__group">
+        <label for="search-name" class="search-form__label">搜尋姓名</label>
         <input 
+          id="search-name"
           type="text" 
           [(ngModel)]="searchName" 
           placeholder="搜尋姓名..." 
           (keyup.enter)="searchPersonData()"
-          class="search-input"
+          class="search-form__input"
+          aria-label="輸入姓名進行搜尋"
+          autocomplete="name"
         >
       </div>
-      <div class="search-actions">
-        <button (click)="searchPersonData()" class="btn-search" [disabled]="loading">
-          🔍 搜尋
+      <div class="search-form__actions">
+        <button 
+          type="submit"
+          (click)="searchPersonData()" 
+          class="btn btn--primary" 
+          [disabled]="loading"
+          aria-label="執行搜尋"
+        >
+          <span class="btn__icon" aria-hidden="true">🔍</span>
+          <span class="btn__text">搜尋</span>
         </button>
-        <button (click)="clearSearch()" class="clear-btn" [disabled]="loading">
-          🗑️ 清除
+        <button 
+          type="button"
+          (click)="clearSearch()" 
+          class="btn btn--secondary" 
+          [disabled]="loading"
+          aria-label="清除搜尋條件"
+        >
+          <span class="btn__icon" aria-hidden="true">🗑️</span>
+          <span class="btn__text">清除</span>
         </button>
       </div>
-    </div>
-  </div>
+    </form>
+  </section>
 
   <!-- 統計資訊 -->
-  <div class="stats-section">
-    <div class="stat-item">
-      <span class="stat-number">{{ totalCount }}</span>
-      <span class="stat-label">總人數</span>
+  <section class="stats" aria-label="統計資訊">
+    <div class="stats__item">
+      <span class="stats__number">{{ totalCount }}</span>
+      <span class="stats__label">總人數</span>
     </div>
-    <div class="stat-item">
-      <span class="stat-number">{{ currentPage }}</span>
-      <span class="stat-label">當前頁面</span>
+    <div class="stats__item">
+      <span class="stats__number">{{ currentPage }}</span>
+      <span class="stats__label">當前頁面</span>
     </div>
-    <div class="stat-item">
-      <span class="stat-number">{{ totalPages }}</span>
-      <span class="stat-label">總頁數</span>
+    <div class="stats__item">
+      <span class="stats__number">{{ totalPages }}</span>
+      <span class="stats__label">總頁數</span>
     </div>
-  </div>
+  </section>
 
   <!-- 載入中 -->
-  <div *ngIf="loading" class="loading-container">
-    <div class="loading-spinner"></div>
-    <p>載入人員資料中...</p>
-  </div>
+  <app-loading *ngIf="loading" [message]="'載入人員資料中...'"></app-loading>
 
   <!-- 錯誤訊息 -->
-  <div *ngIf="error && !loading" class="error-message">
-    <span class="error-icon">❌</span>
-    <p>{{ error }}</p>
-  </div>
+  <app-error *ngIf="error && !loading" [message]="error"></app-error>
 
   <!-- 人員列表 -->
-  <div *ngIf="!loading && !error" class="content-section">
-    <div class="section-header">
-      <div class="section-title">人員資料</div>
+  <section *ngIf="!loading && !error" class="page-person-list__content" aria-label="人員資料列表">
+    <div class="page-person-list__content-header">
+      <h2 class="page-person-list__content-title">人員資料</h2>
     </div>
     
-    <div *ngIf="!personDataList || personDataList.length === 0" class="empty-state">
-      <div class="empty-icon">👥</div>
-      <h3>目前沒有人員資料</h3>
-      <p>上傳Excel檔案或手動新增人員資料</p>
-    </div>
+    <app-empty-state 
+      *ngIf="!personDataList || personDataList.length === 0"
+      [icon]="'👥'"
+      [title]="'目前沒有人員資料'"
+      [description]="'上傳Excel檔案或手動新增人員資料'">
+    </app-empty-state>
     
-    <table class="data-table" *ngIf="personDataList && personDataList.length > 0">
-      <thead>
-        <tr>
-          <th>序號</th>
-          <th>照片</th>
-          <th>姓名</th>
-          <th>性別</th>
-          <th>來源</th>
-          <th>建立日期</th>
-          <th class="col-actions">功能</th>
+    <table class="table table--striped" *ngIf="personDataList && personDataList.length > 0">
+      <caption class="u-sr-only">人員資料列表，包含姓名、性別、來源等資訊</caption>
+      <thead class="table__header">
+        <tr class="table__row">
+          <th class="table__cell">序號</th>
+          <th class="table__cell">照片</th>
+          <th class="table__cell">姓名</th>
+          <th class="table__cell">性別</th>
+          <th class="table__cell">來源</th>
+          <th class="table__cell">建立日期</th>
+          <th class="table__cell table__cell--actions">功能</th>
         </tr>
       </thead>
-      <tbody>
-        <tr *ngFor="let person of personDataList; let i = index">
-          <td>{{ (currentPage - 1) * pageSize + i + 1 }}</td>
-          <td class="photo-cell">
+      <tbody class="table__body">
+        <tr *ngFor="let person of personDataList; let i = index" class="table__row">
+          <td class="table__cell">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+          <td class="table__cell table__cell--photo">
             <app-person-photo
               [photoIndex]="person.photo"
               [personName]="person.name"
@@ -95,57 +108,81 @@
               shape="rounded">
             </app-person-photo>
           </td>
-          <td>{{ person.name }}</td>
-          <td>{{ getGenderText(person.gender) }}</td>
-          <td>{{ getSourceText(person) }}</td>
-          <td>{{ formatDate(person.createdAt) }}</td>
-          <td class="col-actions">
-            <div class="action-buttons">
-              <button class="btn-action btn-edit" (click)="editPersonData(person)" title="檢視">👁️</button>
-              <button class="btn-action btn-delete" (click)="deletePersonData(person)" title="刪除">🗑️</button>
-              <button class="btn-action btn-upload" title="收藏">☆</button>
+          <td class="table__cell">{{ person.name }}</td>
+          <td class="table__cell">{{ getGenderText(person.gender) }}</td>
+          <td class="table__cell">{{ getSourceText(person) }}</td>
+          <td class="table__cell">{{ formatDate(person.createdAt) }}</td>
+          <td class="table__cell table__cell--actions">
+            <div class="table__actions">
+              <button 
+                class="btn btn--icon btn--small" 
+                (click)="editPersonData(person)" 
+                [attr.aria-label]="'檢視 ' + person.name + ' 的資料'"
+              >
+                <span aria-hidden="true">👁️</span>
+                <span class="u-sr-only">檢視</span>
+              </button>
+              <button 
+                class="btn btn--icon btn--small btn--danger" 
+                (click)="deletePersonData(person)" 
+                [attr.aria-label]="'刪除 ' + person.name + ' 的資料'"
+              >
+                <span aria-hidden="true">🗑️</span>
+                <span class="u-sr-only">刪除</span>
+              </button>
+              <button 
+                class="btn btn--icon btn--small" 
+                [attr.aria-label]="'收藏 ' + person.name"
+              >
+                <span aria-hidden="true">☆</span>
+                <span class="u-sr-only">收藏</span>
+              </button>
             </div>
           </td>
         </tr>
       </tbody>
     </table>
-  </div>
+  </section>
 
   <!-- 分頁控制 -->
-  <div *ngIf="!loading && !error && totalPages > 1" class="pagination-section">
-    <div class="pagination-info">
+  <nav *ngIf="!loading && !error && totalPages > 1" class="pagination" aria-label="分頁導航">
+    <div class="pagination__info">
       顯示 {{ (currentPage - 1) * pageSize + 1 }}-{{ (currentPage * pageSize > totalCount ? totalCount : currentPage * pageSize) }} 筆，共 {{ totalCount }} 筆
     </div>
     
-    <div class="pagination-controls">
+    <div class="pagination__controls">
       <button 
-        class="pagination-btn" 
+        class="pagination__btn" 
         [disabled]="currentPage === 1"
         (click)="goToPage(currentPage - 1)"
+        aria-label="前往上一頁"
       >
         ← 上一頁
       </button>
       
-      <div class="page-numbers">
+      <div class="pagination__pages">
         <button 
           *ngFor="let page of getPageNumbers()" 
-          class="pagination-btn page-number" 
-          [class.active]="page === currentPage"
+          class="pagination__btn pagination__btn--page" 
+          [class.is-active]="page === currentPage"
           (click)="goToPage(page)"
+          [attr.aria-label]="'前往第 ' + page + ' 頁'"
+          [attr.aria-current]="page === currentPage ? 'page' : null"
         >
           {{ page }}
         </button>
       </div>
       
       <button 
-        class="pagination-btn" 
+        class="pagination__btn" 
         [disabled]="currentPage === totalPages"
         (click)="goToPage(currentPage + 1)"
+        aria-label="前往下一頁"
       >
         下一頁 →
       </button>
     </div>
-  </div>
+  </nav>
 
   <!-- 個人詳細資料對話框 -->
   <app-person-detail-dialog

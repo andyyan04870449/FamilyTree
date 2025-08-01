@@ -1,72 +1,76 @@
 <!-- 漢堡選單按鈕 -->
-<div class="hamburger-menu" (click)="toggleSidebar()">
-  <div class="hamburger-icon" [class.active]="isSidebarOpen">
-    <span></span>
-    <span></span>
-    <span></span>
+<button class="hamburger" (click)="toggleSidebar()" [attr.aria-expanded]="isSidebarOpen" aria-label="切換導航選單">
+  <div class="hamburger__icon" [class.is-active]="isSidebarOpen">
+    <span class="hamburger__line"></span>
+    <span class="hamburger__line"></span>
+    <span class="hamburger__line"></span>
   </div>
-</div>
+</button>
 
 <!-- 手機版遮罩 -->
-<div class="sidebar-overlay" 
-     [class.active]="isSidebarOpen" 
-     (click)="closeSidebar()">
+<div class="sidebar__overlay" 
+     [class.is-active]="isSidebarOpen" 
+     (click)="closeSidebar()"
+     [attr.aria-hidden]="!isSidebarOpen">
 </div>
 
 <!-- 側邊欄 - 根據 Figma 設計重構 -->
-<div class="sidebar-nav" [class.mobile-open]="isSidebarOpen">
+<aside class="sidebar" [class.sidebar--mobile-open]="isSidebarOpen">
   <!-- 側邊欄頂部 - 收起按鈕 -->
-  <div class="nav-header">
-    <div class="collapse-btn" (click)="toggleSidebar()">
-      <img src="/assets/icons/circle-left.png" alt="收起" class="collapse-icon">
-    </div>
+  <div class="sidebar__header">
+    <button class="sidebar__collapse-btn" (click)="toggleSidebar()" aria-label="收起側邊欄">
+      <img src="/assets/icons/circle-left.png" alt="" class="sidebar__collapse-icon">
+    </button>
     <!-- 手機版關閉按鈕 -->
-    <button class="close-btn" (click)="closeSidebar()">×</button>
+    <button class="sidebar__close-btn" (click)="closeSidebar()" aria-label="關閉側邊欄">×</button>
   </div>
 
-  <!-- 導航選單 -->
-  <nav class="nav-menu">
-    <!-- 關鍵字檢索 -->
-    <div class="nav-item" [class.active]="activeRoute === 'full-text-search'">
-      <a routerLink="/full-text-search" (click)="closeSidebar()">
-        <div class="nav-icon">
-          <img src="/assets/icons/magnifying-glass-chart.png" alt="關鍵字檢索">
-        </div>
-        <span class="nav-text">關鍵字檢索</span>
-      </a>
-    </div>
-    
-    <!-- 視覺化分析 -->
-    <div class="nav-item" [class.active]="activeRoute === 'visual-analysis'">
-      <a routerLink="/visual-analysis" (click)="closeSidebar()">
-        <div class="nav-icon">
-          <img src="/assets/icons/chart-pie.png" alt="視覺化分析">
-        </div>
-        <span class="nav-text">視覺化分析</span>
-      </a>
-    </div>
-    
-    <!-- 案件管理 -->
-    <div class="nav-item" [class.active]="activeRoute === 'case-management'">
-      <a routerLink="/case-management" (click)="closeSidebar()">
-        <div class="nav-icon">
-          <img src="/assets/icons/folder-open.png" alt="案件管理">
-        </div>
-        <span class="nav-text">案件管理</span>
-      </a>
-    </div>
-    
-    <!-- 系統管理 -->
-    <div class="nav-item" [class.active]="activeRoute === 'user-management'">
-      <a routerLink="/user-management" (click)="closeSidebar()">
-        <div class="nav-icon">
-          <img src="/assets/icons/gear.png" alt="系統管理">
-        </div>
-        <span class="nav-text">系統管理</span>
-      </a>
-    </div>
+  <!-- 主要導航選單 -->
+  <nav class="sidebar__nav" role="navigation" aria-label="主要導航">
+    <!-- 導航項目列表 -->
+    <ul class="nav__list">
+      <!-- 關鍵字檢索 -->
+      <li class="nav__item" [class.is-active]="activeRoute === 'full-text-search'">
+        <a class="nav__link" routerLink="/full-text-search" (click)="closeSidebar()" [attr.aria-current]="activeRoute === 'full-text-search' ? 'page' : null">
+          <div class="nav__icon">
+            <img src="/assets/icons/magnifying-glass-chart.png" alt="" class="nav__icon-img">
+          </div>
+          <span class="nav__text">關鍵字檢索</span>
+        </a>
+      </li>
+      
+      <!-- 視覺化分析 -->
+      <li class="nav__item" [class.is-active]="activeRoute === 'visual-analysis'">
+        <a class="nav__link" routerLink="/visual-analysis" (click)="closeSidebar()" [attr.aria-current]="activeRoute === 'visual-analysis' ? 'page' : null">
+          <div class="nav__icon">
+            <img src="/assets/icons/chart-pie.png" alt="" class="nav__icon-img">
+          </div>
+          <span class="nav__text">視覺化分析</span>
+        </a>
+      </li>
+      
+      <!-- 案件管理 -->
+      <li class="nav__item" [class.is-active]="activeRoute === 'case-management'">
+        <a class="nav__link" routerLink="/case-management" (click)="closeSidebar()" [attr.aria-current]="activeRoute === 'case-management' ? 'page' : null">
+          <div class="nav__icon">
+            <img src="/assets/icons/folder-open.png" alt="" class="nav__icon-img">
+          </div>
+          <span class="nav__text">案件管理</span>
+        </a>
+      </li>
+      
+      <!-- 系統管理 -->
+      <li class="nav__item" [class.is-active]="activeRoute === 'user-management'">
+        <a class="nav__link" routerLink="/user-management" (click)="closeSidebar()" [attr.aria-current]="activeRoute === 'user-management' ? 'page' : null">
+          <div class="nav__icon">
+            <img src="/assets/icons/gear.png" alt="" class="nav__icon-img">
+          </div>
+          <span class="nav__text">系統管理</span>
+        </a>
+      </li>
+    </ul>
   </nav>
 
   <!-- 背景裝飾 -->
-  <div class="sidebar-background"></div>
-</div> 
+  <div class="sidebar__background" aria-hidden="true"></div>
+</aside> 

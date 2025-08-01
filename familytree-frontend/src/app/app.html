@@ -1,9 +1,16 @@
+<!-- Skip Navigation Link for Accessibility -->
+<a href="#main-content" class="skip-nav-link">跳至主要內容</a>
+
 <!-- 只在非專案管理頁面和登入頁面顯示狀態欄和側邊欄 -->
-<app-status-bar *ngIf="!isProjectManagementPage()"></app-status-bar>
+<header>
+  <app-status-bar *ngIf="!isProjectManagementPage()"></app-status-bar>
+</header>
 
-<app-sidebar-nav *ngIf="!isProjectManagementPage()" (fullTextSearchClick)="onFullTextSearchClick()"></app-sidebar-nav>
+<aside>
+  <app-sidebar-nav *ngIf="!isProjectManagementPage()" (fullTextSearchClick)="onFullTextSearchClick()"></app-sidebar-nav>
+</aside>
 
-<main class="main" [class.fullscreen]="isProjectManagementPage()">
+<main class="main" [class.fullscreen]="isProjectManagementPage()" id="main-content">
   <div class="content" [class.fullscreen-content]="isProjectManagementPage()">
     <router-outlet></router-outlet>
   </div>
@@ -56,6 +63,40 @@
     padding: 0;
   }
 
+  /* Skip Navigation Link 樣式 */
+  .skip-nav-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #000;
+    color: #fff;
+    padding: 8px;
+    text-decoration: none;
+    z-index: 200;
+    border-radius: 0 0 4px 0;
+  }
+
+  .skip-nav-link:focus {
+    top: 0;
+  }
+
+  /* 語意化標籤樣式調整 */
+  header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
+
+  aside {
+    position: fixed;
+    left: 0;
+    top: 80px;
+    height: calc(100vh - 80px);
+    z-index: 90;
+  }
+
   /* 響應式設計 */
   @media (max-width: 768px) {
     main {
@@ -67,6 +108,9 @@
     .content {
       max-width: 100vw;
       padding: 0 2px;
+    }
+    aside {
+      position: absolute;
     }
   }
 </style>

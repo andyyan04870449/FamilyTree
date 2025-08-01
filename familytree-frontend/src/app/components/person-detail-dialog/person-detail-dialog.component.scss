@@ -342,19 +342,14 @@
 }
 
 .info-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.info-row {
-  display: flex;
-  gap: 30px;
-
-  &.full-width {
-    .info-item {
-      flex: 1;
-    }
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  align-items: start;
+  
+  // 使用 CSS Grid 簡化結構，避免深層嵌套
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
   }
 }
 

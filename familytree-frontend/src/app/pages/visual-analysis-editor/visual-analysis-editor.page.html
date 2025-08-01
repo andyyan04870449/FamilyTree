@@ -1,66 +1,43 @@
 <div class="visual-analysis-editor" *ngIf="!loading">
   <!-- 主要內容區域 -->
-  <div class="editor-content">
+  <main class="editor-content" role="main">
     <!-- 左側搜尋面板 -->
-    <div class="search-panel" [class.show]="showSearchPanel">
-      <div class="search-header">
-        <button class="close-btn" (click)="toggleSearchPanel()">×</button>
+    <aside class="search-panel" [class.show]="showSearchPanel" role="complementary" aria-label="搜尋面板">
+      <header class="search-header">
+        <button class="close-btn" (click)="toggleSearchPanel()" aria-label="關閉搜尋面板">×</button>
         <h3>查詢</h3>
-      </div>
+      </header>
       
-      <div class="search-content">
+      <section class="search-content" aria-label="搜尋內容">
         <!-- 搜尋輸入框 -->
-        <div class="search-input-group">
+        <form class="search-input-group" role="search">
           <input 
             type="text" 
             placeholder="請輸入關鍵字" 
             class="search-input"
-            [(ngModel)]="searchKeyword">
-          <button class="search-submit-btn">🔍</button>
-        </div>
+            [(ngModel)]="searchKeyword"
+            aria-label="搜尋關鍵字">
+          <button class="search-submit-btn" type="submit" aria-label="搜尋">🔍</button>
+        </form>
         
         <!-- 全選選項 -->
         <div class="select-all-option">
           <label class="checkbox-label">
-            <input type="checkbox" checked>
+            <input type="checkbox" (change)="toggleAllNodes($event)">
             <span>全選</span>
           </label>
         </div>
         
         <!-- 專案樹狀結構 -->
-        <div class="project-tree">
-          <div *ngFor="let project of getFilteredProjects()" class="project-group">
-            <!-- 專案標題 -->
-            <div class="project-header" [style.background-color]="getProjectColor(project.projectId)">
-              <span class="expand-icon">▼</span>
-              <label class="checkbox-label">
-                <input type="checkbox">
-                <span>{{ project.projectName }}</span>
-              </label>
-            </div>
-            
-            <!-- 人員列表 -->
-            <div class="person-list">
-              <div *ngFor="let person of project.persons" class="person-item">
-                <label class="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    [checked]="person.isVisible"
-                    (change)="onNodeVisibilityChange(project.projectId, person.personId, $event.target.checked)">
-                  <span class="person-avatar" [style.background-color]="getProjectColor(project.projectId)">
-                    👤
-                  </span>
-                  <span>{{ person.name }}</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+        <app-project-tree
+          [projects]="getProjectTreeData()"
+          (personVisibilityChanged)="onProjectTreeVisibilityChange($event)"
+        ></app-project-tree>
+      </section>
+    </aside>
 
     <!-- 右側圖譜畫布 - 直接使用關係圖譜組件 -->
-    <div class="graph-canvas-container">
+    <section class="graph-canvas-container" aria-label="關係圖譜畫布">
       <!-- 關係圖譜組件 -->
       <div class="canvas-wrapper">
         <app-relationship-graph
@@ -78,11 +55,11 @@
           <p>請從左側選擇要顯示的節點</p>
         </div>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 
   <!-- 底部按鈕列 -->
-  <div class="bottom-toolbar">
+  <footer class="bottom-toolbar" role="toolbar" aria-label="工具列">
     <div class="bottom-left">
       <button class="bottom-btn back-btn" (click)="goBack()">
         返回
@@ -97,10 +74,10 @@
         儲存
       </button>
     </div>
-  </div>
+  </footer>
 </div>
 
 <!-- 載入中顯示 -->
-<div class="loading-container" *ngIf="loading">
+<div class="loading-container" *ngIf="loading" role="status" aria-live="polite">
   <div class="loading-spinner">載入編輯器中...</div>
 </div> 

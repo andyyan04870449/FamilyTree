@@ -1,0 +1,130 @@
+// 匯入所有共享樣式
+@import 'buttons';
+@import 'tables';
+@import 'forms';
+
+// 工具類別
+.u-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.u-text-center {
+  text-align: center;
+}
+
+.u-text-right {
+  text-align: right;
+}
+
+.u-text-left {
+  text-align: left;
+}
+
+// 間距工具類別
+@for $i from 0 through 5 {
+  .u-mt-#{$i} {
+    margin-top: #{$i * 0.5}rem;
+  }
+  .u-mb-#{$i} {
+    margin-bottom: #{$i * 0.5}rem;
+  }
+  .u-ml-#{$i} {
+    margin-left: #{$i * 0.5}rem;
+  }
+  .u-mr-#{$i} {
+    margin-right: #{$i * 0.5}rem;
+  }
+  .u-m-#{$i} {
+    margin: #{$i * 0.5}rem;
+  }
+  
+  .u-pt-#{$i} {
+    padding-top: #{$i * 0.5}rem;
+  }
+  .u-pb-#{$i} {
+    padding-bottom: #{$i * 0.5}rem;
+  }
+  .u-pl-#{$i} {
+    padding-left: #{$i * 0.5}rem;
+  }
+  .u-pr-#{$i} {
+    padding-right: #{$i * 0.5}rem;
+  }
+  .u-p-#{$i} {
+    padding: #{$i * 0.5}rem;
+  }
+}
+
+// 顯示工具類別
+.u-hidden {
+  display: none !important;
+}
+
+.u-visible {
+  visibility: visible !important;
+}
+
+.u-invisible {
+  visibility: hidden !important;
+}
+
+// Flex 工具類別
+.u-flex {
+  display: flex;
+}
+
+.u-flex-column {
+  flex-direction: column;
+}
+
+.u-flex-center {
+  justify-content: center;
+  align-items: center;
+}
+
+.u-flex-between {
+  justify-content: space-between;
+}
+
+.u-flex-wrap {
+  flex-wrap: wrap;
+}
+
+// 標籤樣式
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  
+  &--history {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    
+    &:hover {
+      background-color: #bbdefb;
+    }
+  }
+  
+  &--popular {
+    background-color: #fff3e0;
+    color: #f57c00;
+    
+    &:hover {
+      background-color: #ffe0b2;
+    }
+  }
+}

@@ -7,6 +7,10 @@ import { FullTextSearchService, SearchRequest, SearchResult as ApiSearchResult, 
 import { FavoritesService } from '../../services/favorites.service';
 import { ProjectService } from '../../services/project.service';
 import { PersonDetailDialogComponent } from '../../components/person-detail-dialog/person-detail-dialog.component';
+import { LoadingComponent } from '../../shared/components/loading/loading.component';
+import { ErrorComponent } from '../../shared/components/error/error.component';
+import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { ActionButtonGroupComponent, ActionButton } from '../../shared/components/action-button-group/action-button-group.component';
 
 // 搜索結果接口
 interface SearchResult {
@@ -45,9 +49,17 @@ interface Favorite {
 @Component({
   selector: 'app-full-text-search',
   templateUrl: './full-text-search.page.html',
-  styleUrls: ['./full-text-search.page.scss'],
+  styleUrls: ['./full-text-search-bem.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, PersonDetailDialogComponent]
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    PersonDetailDialogComponent,
+    LoadingComponent,
+    ErrorComponent,
+    EmptyStateComponent,
+    ActionButtonGroupComponent
+  ]
 })
 export class FullTextSearchPage implements OnInit {
   // 搜索相關
@@ -436,7 +448,66 @@ export class FullTextSearchPage implements OnInit {
     }
   }
 
+  // 獲取操作按鈕配置
+  getActionButtons(result: SearchResult): ActionButton[] {
+    return [
+      {
+        id: 'view',
+        label: '檢視',
+        buttonClass: 'btn-action btn-view',
+        title: '檢視詳細資料'
+      },
+      {
+        id: 'favorite',
+        label: '收藏',
+        buttonClass: 'btn-action btn-favorite',
+        isActive: result.isFavorited,
+        title: result.isFavorited ? '取消收藏' : '加入收藏'
+      }
+    ];
+  }
 
+  // 處理操作按鈕點擊
+  handleActionClick(event: { actionId: string; event: Event }, result: SearchResult): void {
+    switch (event.actionId) {
+      case 'view':
+        this.viewDetails(result);
+        break;
+      case 'favorite':
+        this.toggleFavorite(result);
+        break;
+    }
+  }
 
+  // 獲取收藏夾操作按鈕
+  getFavoriteActions(favorite: Favorite): ActionButton[] {
+    return [
+      {
+        id: 'delete',
+        icon: '🗑️',
+        buttonClass: 'btn-action btn-delete',
+        title: '刪除收藏',
+        ariaLabel: `刪除收藏：${favorite.name}`
+      },
+      {
+        id: 'view',
+        icon: '›',
+        buttonClass: 'btn-action btn-view',
+        title: '檢視詳情',
+        ariaLabel: `檢視 ${favorite.name} 的詳情`
+      }
+    ];
+  }
 
+  // 處理收藏夾操作
+  handleFavoriteAction(event: { actionId: string; event: Event }, favorite: Favorite): void {
+    switch (event.actionId) {
+      case 'delete':
+        this.removeFavoriteByName(favorite.name);
+        break;
+      case 'view':
+        this.viewFavoriteDetailsByName(favorite.name);
+        break;
+    }
+  }
 } 

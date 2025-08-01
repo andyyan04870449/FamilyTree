@@ -1,0 +1,121 @@
+// 按鈕基礎樣式
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+  white-space: nowrap;
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  &:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: 2px;
+  }
+}
+
+// 按鈕變體
+.btn--primary {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+  
+  &:hover:not(:disabled) {
+    background-color: #0056b3;
+    border-color: #004085;
+  }
+  
+  &:active:not(:disabled) {
+    background-color: #004085;
+  }
+}
+
+.btn--secondary {
+  background-color: #6c757d;
+  color: white;
+  border-color: #6c757d;
+  
+  &:hover:not(:disabled) {
+    background-color: #5a6268;
+    border-color: #545b62;
+  }
+}
+
+.btn--danger {
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
+  
+  &:hover:not(:disabled) {
+    background-color: #c82333;
+    border-color: #bd2130;
+  }
+}
+
+.btn--outline {
+  background-color: transparent;
+  color: #007bff;
+  border-color: #007bff;
+  
+  &:hover:not(:disabled) {
+    background-color: #007bff;
+    color: white;
+  }
+}
+
+.btn--export {
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+  
+  &:hover:not(:disabled) {
+    background-color: #218838;
+    border-color: #1e7e34;
+  }
+}
+
+// 按鈕尺寸
+.btn--small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.btn--large {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+// 圖標按鈕
+.btn--icon {
+  padding: 0.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  
+  &.btn--small {
+    padding: 0.25rem;
+    min-width: 2rem;
+    min-height: 2rem;
+  }
+}
+
+// 按鈕子元素
+.btn__icon {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.btn__text {
+  font-weight: inherit;
+}

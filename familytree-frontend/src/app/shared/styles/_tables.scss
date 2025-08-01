@@ -1,0 +1,95 @@
+// 表格基礎樣式
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  font-size: 0.875rem;
+}
+
+.table__header {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.table__body {
+  background-color: white;
+}
+
+.table__row {
+  border-bottom: 1px solid #dee2e6;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: #f8f9fa;
+  }
+}
+
+.table__cell {
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: middle;
+  
+  &--center {
+    text-align: center;
+  }
+  
+  &--right {
+    text-align: right;
+  }
+  
+  &--nowrap {
+    white-space: nowrap;
+  }
+  
+  &--actions {
+    width: 1%;
+    white-space: nowrap;
+  }
+  
+  &--photo {
+    width: 60px;
+    text-align: center;
+  }
+}
+
+// 表格變體
+.table--striped {
+  .table__body .table__row:nth-child(odd) {
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+}
+
+.table--bordered {
+  border: 1px solid #dee2e6;
+  
+  .table__cell {
+    border: 1px solid #dee2e6;
+  }
+}
+
+.table--hover {
+  .table__body .table__row:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+    cursor: pointer;
+  }
+}
+
+// 表格操作按鈕組
+.table__actions {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+// 響應式表格
+@media (max-width: 768px) {
+  .table--responsive {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    
+    .table {
+      min-width: 600px;
+    }
+  }
+}

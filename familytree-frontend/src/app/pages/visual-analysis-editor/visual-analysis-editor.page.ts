@@ -22,11 +22,13 @@ import { RelationshipGraphComponent } from '../../components/relationship-graph/
 import { GraphData, GraphNode, GraphLink } from '../../services/relationship-graph.service';
 import { PersonDetailDialogComponent } from '../../components/person-detail-dialog/person-detail-dialog.component';
 import { LogService } from '../../services/log.service';
+import { ProjectTreeComponent, ProjectGroup } from '../../shared/components/project-tree/project-tree.component';
+import { PersonItem } from '../../shared/components/person-item/person-item.component';
 
 @Component({
   selector: 'app-visual-analysis-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RelationshipGraphComponent, PersonDetailDialogComponent],
+  imports: [CommonModule, FormsModule, RelationshipGraphComponent, PersonDetailDialogComponent, ProjectTreeComponent],
   templateUrl: './visual-analysis-editor.page.html',
   styleUrls: ['./visual-analysis-editor.page.scss']
 })
@@ -194,6 +196,43 @@ export class VisualAnalysisEditorComponent implements OnInit, OnDestroy {
       .filter(project => project.persons.length > 0);
   }
 
+  // 轉換為 ProjectTree 組件所需的格式
+  getProjectTreeData(): ProjectGroup[] {
+    const projects = this.getFilteredProjects();
+    
+    return projects.map(project => ({
+      projectId: parseInt(project.projectId),
+      projectName: project.projectName,
+      projectColor: this.getProjectColor(project.projectId),
+      isExpanded: true,
+      isSelected: project.persons.every(p => p.isVisible),
+      persons: project.persons.map(person => ({
+        personId: person.personId,
+        name: person.name,
+        isVisible: person.isVisible,
+        projectId: parseInt(project.projectId),
+        avatarColor: this.getProjectColor(project.projectId)
+      } as PersonItem))
+    }));
+  }
+
+  // 處理專案樹的可見性變更
+  onProjectTreeVisibilityChange(event: { projectId: number; personId: number; isVisible: boolean }): void {
+    this.onNodeVisibilityChange(event.projectId.toString(), event.personId, event.isVisible);
+  }
+
+  // 切換所有節點
+  toggleAllNodes(event: Event): void {
+    const checkbox = event.target as HTMLInputElement;
+    const isChecked = checkbox.checked;
+
+    if (isChecked) {
+      this.showAllNodes();
+    } else {
+      this.hideAllNodes();
+    }
+  }
+
   // 節點可見性變更
   onNodeVisibilityChange(projectId: string, personId: number, isVisible: boolean): void {
     this.logService.info('VisualAnalysisEditorComponent', '節點可見性變更', {
@@ -259,6 +298,38 @@ export class VisualAnalysisEditorComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.logService.error('VisualAnalysisEditorComponent', '顯示全部節點失敗', error);
+      }
+    });
+    this.subscriptions.push(subscription);
+  }
+
+  // 隱藏全部節點
+  hideAllNodes(): void {
+    if (!this.editorData) return;
+
+    this.logService.info('VisualAnalysisEditorComponent', '隱藏全部節點');
+
+    const updates = this.editorData.projectGroups.flatMap(project =>
+      project.persons.map(person => ({
+        projectId: project.projectId,
+        personId: person.personId,
+        isVisible: false
+      }))
+    );
+
+    const request: UpdateNodeVisibilityRequest = { updates };
+
+    const subscription = this.visualAnalysisService.updateNodeVisibility(this.graphId, request).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.logService.info('VisualAnalysisEditorComponent', '全部節點隱藏成功');
+          this.loadEditorData();
+        } else {
+          this.logService.error('VisualAnalysisEditorComponent', '隱藏全部節點失敗', { message: response.message });
+        }
+      },
+      error: (error) => {
+        this.logService.error('VisualAnalysisEditorComponent', '隱藏全部節點失敗', error);
       }
     });
     this.subscriptions.push(subscription);

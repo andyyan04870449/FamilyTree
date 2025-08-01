@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PersonDataService, PersonDataModel, PersonDataRequest } from '../../services/person-data.service';
 import { PersonPhotoComponent } from '../person-photo/person-photo.component';
+import { InfoFieldComponent } from '../../shared/components/info-field/info-field.component';
 
 interface RelationshipItem {
   index: number;
@@ -49,7 +50,7 @@ interface TravelRecordItem {
   templateUrl: './person-detail-dialog.component.html',
   styleUrls: ['./person-detail-dialog.component.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, PersonPhotoComponent]
+  imports: [CommonModule, FormsModule, PersonPhotoComponent, InfoFieldComponent]
 })
 export class PersonDetailDialogComponent implements OnChanges {
   @Input() personId: number | null = null;

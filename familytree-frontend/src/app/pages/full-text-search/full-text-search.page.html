@@ -1,115 +1,132 @@
 <!-- 關鍵字檢索頁面 -->
-<div class="keyword-search-page">
+<div class="page-full-text-search">
   <!-- 整合的頁面標題和搜尋區域 -->
-  <div class="page-header">
-    <div class="header-top">
-      <div class="header-left">
-        <h1>關鍵字檢索</h1>
-        <div class="page-subtitle">搜尋人員資料和管理收藏</div>
+  <header class="page-full-text-search__header">
+    <div class="page-full-text-search__header-content">
+      <div class="page-full-text-search__header-left">
+        <h1 class="page-full-text-search__title">關鍵字檢索</h1>
+        <p class="page-full-text-search__subtitle">搜尋人員資料和管理收藏</p>
       </div>
-      <div class="header-right">
+      <div class="page-full-text-search__header-right">
         <button 
           *ngIf="searchResults.length > 0"
-          class="btn-export"
+          class="btn btn--export"
           (click)="exportResults()"
+          aria-label="匯出搜尋結果"
         >
           匯出
         </button>
       </div>
     </div>
     
-    <div class="search-filter-section">
-      <div class="search-row">
-        <div class="search-group">
-          <label>關鍵字<span class="required">*</span></label>
+    <div class="page-full-text-search__filter">
+      <form class="search-form search-form--horizontal" role="search" (ngSubmit)="performSearch()">
+        <div class="search-form__group">
+          <label for="search-keyword" class="search-form__label">關鍵字<span class="search-form__required" aria-label="必填欄位">*</span></label>
           <input 
+            id="search-keyword"
             type="text" 
-            class="search-input" 
+            class="search-form__input" 
             placeholder="請輸入關鍵字"
             [(ngModel)]="searchKeyword"
             (keyup.enter)="performSearch()"
+            required
+            aria-required="true"
+            [attr.aria-invalid]="!searchKeyword.trim() ? 'true' : 'false'"
           >
         </div>
-        <div class="search-group search-type-group">
-          <label>查詢方式</label>
-          <div class="radio-group">
-            <label class="radio-label">
+        <fieldset class="search-form__group search-form__group--radio">
+          <legend class="search-form__legend">查詢方式</legend>
+          <div class="search-form__radio-group" role="radiogroup" aria-label="選擇查詢方式">
+            <label class="search-form__radio-label" for="search-exact">
               <input 
+                id="search-exact"
                 type="radio" 
                 name="searchType" 
                 value="exact" 
                 [(ngModel)]="searchType"
+                [attr.aria-checked]="searchType === 'exact' ? 'true' : 'false'"
+                class="search-form__radio"
               >
-              <span>精準</span>
+              <span class="search-form__radio-text">精準</span>
             </label>
-            <label class="radio-label">
+            <label class="search-form__radio-label" for="search-fuzzy">
               <input 
+                id="search-fuzzy"
                 type="radio" 
                 name="searchType" 
                 value="fuzzy" 
                 [(ngModel)]="searchType"
+                [attr.aria-checked]="searchType === 'fuzzy' ? 'true' : 'false'"
+                class="search-form__radio"
               >
-              <span>模糊</span>
+              <span class="search-form__radio-text">模糊</span>
             </label>
           </div>
+        </fieldset>
+        <div class="search-form__actions">
+          <button 
+            type="submit"
+            class="btn btn--primary" 
+            [disabled]="loading || !searchKeyword.trim()"
+            aria-label="執行搜尋"
+          >搜尋</button>
+          <button 
+            type="button"
+            class="btn btn--secondary" 
+            (click)="resetSearch()" 
+            [disabled]="loading"
+            aria-label="重置搜尋條件"
+          >重置</button>
         </div>
-        <div class="search-actions">
-          <button class="btn-search" (click)="performSearch()" [disabled]="loading || !searchKeyword.trim()">搜尋</button>
-          <button class="btn-reset" (click)="resetSearch()" [disabled]="loading">重置</button>
-        </div>
-      </div>
+      </form>
       
       <!-- 歷史紀錄和熱門關鍵字 -->
       <div class="keyword-suggestions">
-        <div class="history-section">
-          <label>歷史紀錄：</label>
-          <div class="history-tags">
-            <span class="history-tag" (click)="useHistoryKeyword('台科大')">台科大</span>
-            <span class="history-tag" (click)="useHistoryKeyword('上海市')">上海市</span>
-            <span class="history-tag" (click)="useHistoryKeyword('煙台大學')">煙台大學</span>
-            <span class="history-tag" (click)="useHistoryKeyword('東京華僑')">東京華僑</span>
-            <span class="history-tag" (click)="useHistoryKeyword('中國總商會')">中國總商會</span>
+        <div class="keyword-suggestions__history">
+          <span class="keyword-suggestions__label">歷史紀錄：</span>
+          <div class="keyword-suggestions__tags">
+            <button class="tag tag--history" (click)="useHistoryKeyword('台科大')" aria-label="使用歷史關鍵字：台科大">台科大</button>
+            <button class="tag tag--history" (click)="useHistoryKeyword('上海市')" aria-label="使用歷史關鍵字：上海市">上海市</button>
+            <button class="tag tag--history" (click)="useHistoryKeyword('煙台大學')" aria-label="使用歷史關鍵字：煙台大學">煙台大學</button>
+            <button class="tag tag--history" (click)="useHistoryKeyword('東京華僑')" aria-label="使用歷史關鍵字：東京華僑">東京華僑</button>
+            <button class="tag tag--history" (click)="useHistoryKeyword('中國總商會')" aria-label="使用歷史關鍵字：中國總商會">中國總商會</button>
           </div>
         </div>
-        <div class="popular-keywords-section">
-          <label>熱門關鍵字：</label>
-          <div class="popular-tags">
-            <button class="popular-tag" (click)="usePopularKeyword('中華民國')">中華民國</button>
-            <button class="popular-tag" (click)="usePopularKeyword('台灣大學')">台灣大學</button>
-            <button class="popular-tag" (click)="usePopularKeyword('北大')">北大</button>
-            <button class="popular-tag" (click)="usePopularKeyword('上海浦東')">上海浦東</button>
-            <button class="popular-tag" (click)="usePopularKeyword('台北101')">台北101</button>
+        <div class="keyword-suggestions__popular">
+          <span class="keyword-suggestions__label">熱門關鍵字：</span>
+          <div class="keyword-suggestions__tags">
+            <button class="tag tag--popular" (click)="usePopularKeyword('中華民國')">中華民國</button>
+            <button class="tag tag--popular" (click)="usePopularKeyword('台灣大學')">台灣大學</button>
+            <button class="tag tag--popular" (click)="usePopularKeyword('北大')">北大</button>
+            <button class="tag tag--popular" (click)="usePopularKeyword('上海浦東')">上海浦東</button>
+            <button class="tag tag--popular" (click)="usePopularKeyword('台北101')">台北101</button>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </header>
 
   <!-- 主要內容區域 -->
-  <div class="main-content">
+  <main class="page-full-text-search__main">
     <!-- 左側搜索和結果區域 -->
-    <div class="left-panel">
+    <section class="page-full-text-search__results" aria-label="搜尋結果">
 
       <!-- 結果列表區域 -->
-      <div class="table-section">
+      <section class="table-section">
         <div class="table-header">
           <span class="table-title">結果列表({{ totalResults }})</span>
         </div>
 
         <!-- 載入中 -->
-        <div *ngIf="loading" class="loading-container">
-          <div class="loading-spinner"></div>
-          <p>搜尋中...</p>
-        </div>
+        <app-loading *ngIf="loading" [message]="'搜尋中...'"></app-loading>
 
         <!-- 錯誤訊息 -->
-        <div *ngIf="error && !loading" class="error-message">
-          <span class="error-icon">❌</span>
-          <p>{{ error }}</p>
-        </div>
+        <app-error *ngIf="error && !loading" [message]="error"></app-error>
 
         <!-- 結果表格 -->
         <table class="case-table" *ngIf="!loading && !error && searchResults.length > 0">
+          <caption class="sr-only">搜尋結果列表，包含姓名、符合欄位、資料來源等資訊</caption>
             <thead>
               <tr>
                 <th class="checkbox-col">
@@ -134,32 +151,19 @@
                 <td class="source-cell">{{ result.source }}</td>
                 <td class="date-cell">{{ formatDate(result.createdAt) }}</td>
                 <td class="col-actions">
-                  <div class="action-buttons">
-                    <button 
-                      class="btn-action btn-view"
-                      (click)="viewDetails(result)"
-                      title="檢視"
-                    >
-                      檢視
-                    </button>
-                    <button 
-                      class="btn-action btn-favorite"
-                      [class.favorited]="result.isFavorited"
-                      (click)="toggleFavorite(result)"
-                      [title]="result.isFavorited ? '取消收藏' : '加入收藏'"
-                    >
-                      收藏
-                    </button>
-                  </div>
+                  <app-action-button-group
+                    [actions]="getActionButtons(result)"
+                    (actionClicked)="handleActionClick($event, result)"
+                  ></app-action-button-group>
                 </td>
               </tr>
             </tbody>
           </table>
 
-      </div>
+      </section>
 
       <!-- 分頁控制 -->
-      <div *ngIf="totalPages > 1" class="pagination-section">
+      <nav *ngIf="totalPages > 1" class="pagination-section" aria-label="分頁導航">
         <div class="pagination-info">
           顯示 {{ (currentPage - 1) * pageSize + 1 }} 至 {{ Math.min(currentPage * pageSize, totalResults) }} 筆，共 {{ totalResults }} 筆資料
         </div>
@@ -210,44 +214,53 @@
             <option value="50">50</option>
           </select>
         </div>
-      </div>
+      </nav>
 
       <!-- 空結果 -->
-      <div *ngIf="!loading && !error && hasSearched && searchResults.length === 0" class="empty-state">
-        <div class="empty-icon">🔍</div>
-        <h3>沒有找到相關結果</h3>
-        <p>請嘗試使用不同的關鍵字或查詢方式</p>
-      </div>
+      <app-empty-state 
+        *ngIf="!loading && !error && hasSearched && searchResults.length === 0"
+        [icon]="'🔍'"
+        [title]="'沒有找到相關結果'"
+        [description]="'請嘗試使用不同的關鍵字或查詢方式'">
+      </app-empty-state>
 
-    </div>
+    </section>
 
     <!-- 右側收藏夾區域 -->
-    <div class="right-panel">
+    <aside class="page-full-text-search__sidebar" aria-label="收藏夾">
       <!-- 收藏夾 -->
       <div class="favorites-card">
-        <div class="favorites-header">
-          <h3>收藏夾</h3>
-        </div>
+        <header class="favorites-card__header">
+          <h3 class="favorites-card__title">收藏夾</h3>
+        </header>
 
         <!-- 收藏列表 -->
         <div class="favorites-list">
           <!-- 動態收藏列表 -->
-          <div *ngFor="let favorite of favorites" class="favorite-item">
-            <span class="favorite-name" (click)="viewFavoriteDetailsByName(favorite.name)">{{ favorite.name }}</span>
-            <div class="favorite-actions">
-              <button class="btn-delete" (click)="removeFavoriteByName(favorite.name)" title="刪除收藏">🗑️</button>
-              <button class="btn-view" (click)="viewFavoriteDetailsByName(favorite.name)" title="檢視詳情">›</button>
-            </div>
-          </div>
+          <ul class="favorites-list-items">
+            <li *ngFor="let favorite of favorites" class="favorite-item">
+              <button 
+                class="favorite-name" 
+                (click)="viewFavoriteDetailsByName(favorite.name)"
+                [attr.aria-label]="'檢視 ' + favorite.name + ' 的詳細資料'"
+              >
+                {{ favorite.name }}
+              </button>
+              <app-action-button-group
+                [actions]="getFavoriteActions(favorite)"
+                (actionClicked)="handleFavoriteAction($event, favorite)"
+              ></app-action-button-group>
+            </li>
+          </ul>
           
           <!-- 空狀態 -->
-          <div *ngIf="favorites.length === 0" class="empty-favorites">
+          <div *ngIf="favorites.length === 0" class="empty-favorites" role="status">
             <p>尚無收藏項目</p>
           </div>
         </div>
       </div>
-    </div>
-  </div>
+    </aside>
+  </main>
 
   <!-- 人員詳細資料對話框 -->
   <app-person-detail-dialog

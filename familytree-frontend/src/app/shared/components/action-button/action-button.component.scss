@@ -1,0 +1,89 @@
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  position: relative;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.5);
+  }
+
+  // 預設樣式 (btn-action)
+  &.btn-action {
+    background-color: #f0f0f0;
+    color: #333;
+    border-color: #ddd;
+
+    &:hover:not(:disabled) {
+      background-color: #e0e0e0;
+      border-color: #ccc;
+    }
+
+    &:active:not(:disabled) {
+      background-color: #d0d0d0;
+    }
+  }
+
+  // 檢視按鈕
+  &.btn-view {
+    background-color: #3498db;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background-color: #2980b9;
+    }
+  }
+
+  // 收藏按鈕
+  &.btn-favorite {
+    background-color: #f39c12;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background-color: #e67e22;
+    }
+
+    &.is-active {
+      background-color: #e74c3c;
+
+      &:hover:not(:disabled) {
+        background-color: #c0392b;
+      }
+    }
+  }
+
+  // 刪除按鈕
+  &.btn-delete {
+    background-color: #e74c3c;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background-color: #c0392b;
+    }
+  }
+}
+
+.action-button {
+  &__icon {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  &__label {
+    white-space: nowrap;
+  }
+}

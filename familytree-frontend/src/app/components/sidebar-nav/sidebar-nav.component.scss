@@ -23,7 +23,7 @@
     flex-direction: column;
     justify-content: space-between;
 
-    span {
+    .hamburger__line {
       display: block;
       width: 100%;
       height: 2px;
@@ -140,6 +140,16 @@
     display: flex;
     flex-direction: column;
     gap: 0px;
+
+    // 移除 ul 預設樣式
+    .nav-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0px;
+    }
 
     .nav-item {
       margin: 0;

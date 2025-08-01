@@ -7,13 +7,24 @@ import { Subscription } from 'rxjs';
 import { PersonDataService, PersonDataModel } from '../../services/person-data.service';
 import { PersonDetailDialogComponent } from '../../components/person-detail-dialog/person-detail-dialog.component';
 import { PersonPhotoComponent } from '../../components/person-photo/person-photo.component';
+import { LoadingComponent } from '../../shared/components/loading/loading.component';
+import { ErrorComponent } from '../../shared/components/error/error.component';
+import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 
 @Component({
   selector: 'app-person-list',
   templateUrl: './person-list.page.html',
-  styleUrls: ['./person-list.page.scss'],
+  styleUrls: ['./person-list-bem.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, PersonDetailDialogComponent, PersonPhotoComponent]
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    PersonDetailDialogComponent, 
+    PersonPhotoComponent,
+    LoadingComponent,
+    ErrorComponent,
+    EmptyStateComponent
+  ]
 })
 export class PersonListComponent implements OnInit, OnDestroy {
   personDataList: PersonDataModel[] = [];

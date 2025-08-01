@@ -65,244 +65,179 @@
             </div>
             <div class="section-content">
               <div class="info-grid">
-                
-                <!-- 第一行：姓名、性別 -->
-                <div class="info-row">
-                  <div class="info-item">
-                    <label>姓名 <span *ngIf="isEditMode" class="required">*</span></label>
-                    <input 
-                      *ngIf="isEditMode" 
-                      type="text" 
-                      [(ngModel)]="editData.name" 
-                      required
-                      class="edit-input"
-                    >
-                    <span *ngIf="!isEditMode">{{ personData.name || '--' }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>性別</label>
-                    <select 
-                      *ngIf="isEditMode" 
-                      [(ngModel)]="editData.gender" 
-                      class="edit-select"
-                    >
-                      <option value="">請選擇</option>
-                      <option value="男">男</option>
-                      <option value="女">女</option>
-                    </select>
-                    <span *ngIf="!isEditMode">{{ personData.gender || '--' }}</span>
-                  </div>
-                </div>
+                <!-- 使用 InfoFieldComponent 簡化結構 -->
+                <app-info-field
+                  label="姓名"
+                  [value]="isEditMode ? editData.name : personData.name"
+                  (valueChange)="editData.name = $event"
+                  type="text"
+                  [isEditMode]="isEditMode"
+                  [required]="true"
+                  fieldId="person-name"
+                ></app-info-field>
 
-                <!-- 第二行：生日、出生地 -->
-                <div class="info-row">
-                  <div class="info-item">
-                    <label>生日</label>
-                    <input 
-                      *ngIf="isEditMode" 
-                      type="date" 
-                      [(ngModel)]="editData.birthday" 
-                      class="edit-input"
-                    >
-                    <span *ngIf="!isEditMode">{{ formatDate(personData.birthday) }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>出生地（父母戶籍所在地）</label>
-                    <input 
-                      *ngIf="isEditMode" 
-                      type="text" 
-                      [(ngModel)]="editData.birthplace" 
-                      class="edit-input"
-                    >
-                    <span *ngIf="!isEditMode">{{ personData.birthplace || '--' }}</span>
-                  </div>
-                </div>
+                <app-info-field
+                  label="性別"
+                  [value]="isEditMode ? editData.gender : personData.gender"
+                  (valueChange)="editData.gender = $event"
+                  type="select"
+                  [isEditMode]="isEditMode"
+                  [options]="[{value: '男', label: '男'}, {value: '女', label: '女'}]"
+                ></app-info-field>
 
-                <!-- 第三行：國籍、民族 -->
-                <div class="info-row">
-                  <div class="info-item">
-                    <label>國籍</label>
-                    <input 
-                      *ngIf="isEditMode" 
-                      type="text" 
-                      [(ngModel)]="editData.nationality" 
-                      class="edit-input"
-                    >
-                    <span *ngIf="!isEditMode">{{ personData.nationality || '--' }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>民族</label>
-                    <input 
-                      *ngIf="isEditMode" 
-                      type="text" 
-                      [(ngModel)]="editData.ethnicity" 
-                      class="edit-input"
-                    >
-                    <span *ngIf="!isEditMode">{{ personData.ethnicity || '--' }}</span>
-                  </div>
-                </div>
+                <app-info-field
+                  label="生日"
+                  [value]="isEditMode ? editData.birthday : personData.birthday"
+                  (valueChange)="editData.birthday = $event"
+                  [displayValue]="!isEditMode ? formatDate(personData.birthday) : undefined"
+                  type="date"
+                  [isEditMode]="isEditMode"
+                ></app-info-field>
 
-                <!-- 第四行：籍貫、黨派 -->
-                <div class="info-row">
-                  <div class="info-item">
-                    <label>籍貫（祖父戶籍所在地）</label>
-                    <input 
-                      *ngIf="isEditMode" 
-                      type="text" 
-                      [(ngModel)]="editData.ancestralHome" 
-                      class="edit-input"
-                    >
-                    <span *ngIf="!isEditMode">{{ personData.ancestralHome || '--' }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>黨派</label>
-                    <input 
-                      *ngIf="isEditMode" 
-                      type="text" 
-                      [(ngModel)]="editData.politicalParty" 
-                      class="edit-input"
-                    >
-                    <span *ngIf="!isEditMode">{{ personData.politicalParty || '--' }}</span>
-                  </div>
-                </div>
+                <app-info-field
+                  label="出生地（父母戶籍所在地）"
+                  [value]="isEditMode ? editData.birthplace : personData.birthplace"
+                  (valueChange)="editData.birthplace = $event"
+                  type="text"
+                  [isEditMode]="isEditMode"
+                ></app-info-field>
 
-                <!-- 第五行：身分證號碼、護照號碼 -->
-                <div class="info-row">
-                  <div class="info-item">
-                    <label>身分證號碼</label>
-                    <input 
-                      *ngIf="isEditMode" 
-                      type="text" 
-                      [(ngModel)]="editData.idNumber" 
-                      class="edit-input"
-                    >
-                    <span *ngIf="!isEditMode">{{ personData.idNumber || '--' }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>護照號碼</label>
-                    <input 
-                      *ngIf="isEditMode" 
-                      type="text" 
-                      [(ngModel)]="editData.passportNumber" 
-                      class="edit-input"
-                    >
-                    <span *ngIf="!isEditMode">{{ personData.passportNumber || '--' }}</span>
-                  </div>
-                </div>
+                <app-info-field
+                  label="國籍"
+                  [value]="isEditMode ? editData.nationality : personData.nationality"
+                  (valueChange)="editData.nationality = $event"
+                  type="text"
+                  [isEditMode]="isEditMode"
+                ></app-info-field>
 
-                <!-- 第六行：電話、行動電話 -->
-                <div class="info-row">
-                  <div class="info-item">
-                    <label>電話</label>
-                    <input 
-                      *ngIf="isEditMode" 
-                      type="tel" 
-                      [(ngModel)]="editData.phone" 
-                      class="edit-input"
-                    >
-                    <span *ngIf="!isEditMode">{{ personData.phone || '--' }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>行動電話</label>
-                    <input 
-                      *ngIf="isEditMode" 
-                      type="tel" 
-                      [(ngModel)]="editData.mobile" 
-                      class="edit-input"
-                    >
-                    <span *ngIf="!isEditMode">{{ personData.mobile || '--' }}</span>
-                  </div>
-                </div>
+                <app-info-field
+                  label="民族"
+                  [value]="isEditMode ? editData.ethnicity : personData.ethnicity"
+                  (valueChange)="editData.ethnicity = $event"
+                  type="text"
+                  [isEditMode]="isEditMode"
+                ></app-info-field>
 
-                <!-- 第七行：電子信箱、現職單位 -->
-                <div class="info-row">
-                  <div class="info-item">
-                    <label>電子信箱</label>
-                    <input 
-                      *ngIf="isEditMode" 
-                      type="email" 
-                      [(ngModel)]="editData.email" 
-                      class="edit-input"
-                    >
-                    <span *ngIf="!isEditMode">{{ personData.email || '--' }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>現職單位</label>
-                    <input 
-                      *ngIf="isEditMode" 
-                      type="text" 
-                      [(ngModel)]="editData.currentWorkplace" 
-                      class="edit-input"
-                    >
-                    <span *ngIf="!isEditMode">{{ personData.currentWorkplace || '--' }}</span>
-                  </div>
-                </div>
+                <app-info-field
+                  label="籍貫（祖父戶籍所在地）"
+                  [value]="isEditMode ? editData.ancestralHome : personData.ancestralHome"
+                  (valueChange)="editData.ancestralHome = $event"
+                  type="text"
+                  [isEditMode]="isEditMode"
+                ></app-info-field>
 
-                <!-- 第八行：現居地址（全寬） -->
-                <div class="info-row full-width">
-                  <div class="info-item full-width">
-                    <label>現居地址</label>
-                    <textarea 
-                      *ngIf="isEditMode" 
-                      [(ngModel)]="editData.currentAddress" 
-                      rows="2"
-                      class="edit-textarea"
-                    ></textarea>
-                    <span *ngIf="!isEditMode">{{ personData.currentAddress || '--' }}</span>
-                  </div>
-                </div>
+                <app-info-field
+                  label="黨派"
+                  [value]="isEditMode ? editData.politicalParty : personData.politicalParty"
+                  (valueChange)="editData.politicalParty = $event"
+                  type="text"
+                  [isEditMode]="isEditMode"
+                ></app-info-field>
 
-                <!-- 第九行：通訊地址（全寬） -->
-                <div class="info-row full-width">
-                  <div class="info-item full-width">
-                    <label>通訊地址</label>
-                    <textarea 
-                      *ngIf="isEditMode" 
-                      [(ngModel)]="editData.mailingAddress" 
-                      rows="2"
-                      class="edit-textarea"
-                    ></textarea>
-                    <span *ngIf="!isEditMode">{{ personData.mailingAddress || '--' }}</span>
-                  </div>
-                </div>
+                <app-info-field
+                  label="身分證號碼"
+                  [value]="isEditMode ? editData.idNumber : personData.idNumber"
+                  (valueChange)="editData.idNumber = $event"
+                  type="text"
+                  [isEditMode]="isEditMode"
+                ></app-info-field>
 
-                <!-- 第十行：發掘經過（全寬） -->
-                <div class="info-row full-width">
-                  <div class="info-item full-width">
-                    <label>發掘經過</label>
-                    <textarea 
-                      *ngIf="isEditMode" 
-                      [(ngModel)]="editData.discoveryProcess" 
-                      rows="3"
-                      class="edit-textarea"
-                    ></textarea>
-                    <span *ngIf="!isEditMode">{{ personData.discoveryProcess || '--' }}</span>
-                  </div>
-                </div>
+                <app-info-field
+                  label="護照號碼"
+                  [value]="isEditMode ? editData.passportNumber : personData.passportNumber"
+                  (valueChange)="editData.passportNumber = $event"
+                  type="text"
+                  [isEditMode]="isEditMode"
+                ></app-info-field>
 
-                <!-- 系統資訊行：建檔時間、建檔人 -->
-                <div class="info-row">
-                  <div class="info-item">
-                    <label>建檔時間</label>
-                    <span>{{ formatDateTime(personData.createdAt) }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>建檔人</label>
-                    <span>{{ personData.createdBy || '--' }}</span>
-                  </div>
-                </div>
+                <app-info-field
+                  label="電話"
+                  [value]="isEditMode ? editData.phone : personData.phone"
+                  (valueChange)="editData.phone = $event"
+                  type="tel"
+                  [isEditMode]="isEditMode"
+                ></app-info-field>
 
-                <!-- 系統資訊行：最後更新時間、最後更新人 -->
-                <div class="info-row">
-                  <div class="info-item">
-                    <label>最後更新時間</label>
-                    <span>{{ formatDateTime(personData.updatedAt) }}</span>
-                  </div>
-                  <div class="info-item">
-                    <label>最後更新人</label>
-                    <span>{{ personData.updatedBy || '--' }}</span>
-                  </div>
-                </div>
+                <app-info-field
+                  label="行動電話"
+                  [value]="isEditMode ? editData.mobile : personData.mobile"
+                  (valueChange)="editData.mobile = $event"
+                  type="tel"
+                  [isEditMode]="isEditMode"
+                ></app-info-field>
+
+                <app-info-field
+                  label="電子信箱"
+                  [value]="isEditMode ? editData.email : personData.email"
+                  (valueChange)="editData.email = $event"
+                  type="email"
+                  [isEditMode]="isEditMode"
+                ></app-info-field>
+
+                <app-info-field
+                  label="現職單位"
+                  [value]="isEditMode ? editData.currentWorkplace : personData.currentWorkplace"
+                  (valueChange)="editData.currentWorkplace = $event"
+                  type="text"
+                  [isEditMode]="isEditMode"
+                ></app-info-field>
+
+                <app-info-field
+                  label="現居地址"
+                  [value]="isEditMode ? editData.currentAddress : personData.currentAddress"
+                  (valueChange)="editData.currentAddress = $event"
+                  type="textarea"
+                  [isEditMode]="isEditMode"
+                  [fullWidth]="true"
+                  [rows]="2"
+                ></app-info-field>
+
+                <app-info-field
+                  label="通訊地址"
+                  [value]="isEditMode ? editData.mailingAddress : personData.mailingAddress"
+                  (valueChange)="editData.mailingAddress = $event"
+                  type="textarea"
+                  [isEditMode]="isEditMode"
+                  [fullWidth]="true"
+                  [rows]="2"
+                ></app-info-field>
+
+                <app-info-field
+                  label="發掘經過"
+                  [value]="isEditMode ? editData.discoveryProcess : personData.discoveryProcess"
+                  (valueChange)="editData.discoveryProcess = $event"
+                  type="textarea"
+                  [isEditMode]="isEditMode"
+                  [fullWidth]="true"
+                  [rows]="3"
+                ></app-info-field>
+
+                <!-- 系統資訊（唯讀） -->
+                <app-info-field
+                  label="建檔時間"
+                  [value]="personData.createdAt"
+                  [displayValue]="formatDateTime(personData.createdAt)"
+                  [isEditMode]="false"
+                ></app-info-field>
+
+                <app-info-field
+                  label="建檔人"
+                  [value]="personData.createdBy"
+                  [isEditMode]="false"
+                ></app-info-field>
+
+                <app-info-field
+                  label="最後更新時間"
+                  [value]="personData.updatedAt"
+                  [displayValue]="formatDateTime(personData.updatedAt)"
+                  [isEditMode]="false"
+                ></app-info-field>
+
+                <app-info-field
+                  label="最後更新人"
+                  [value]="personData.updatedBy"
+                  [isEditMode]="false"
+                ></app-info-field>
 
               </div>
             </div>
