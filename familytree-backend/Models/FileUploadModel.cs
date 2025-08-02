@@ -1,8 +1,10 @@
-// 檔案上傳模型 - 定義檔案上傳相關的資料結構
+// 檔案上傳模型 - 定義檔案上傳相關的資料結構 (舊版，已棄用)
+// ⚠️ 已棄用：請使用新的 FileModel，此模型將在 v2.1 中移除
 using System.ComponentModel.DataAnnotations;
 
 namespace familytree_backend.Models
 {
+    [Obsolete("請使用新的 FileModel。此模型使用舊的 project_id 命名模式，將在 v2.1 中移除。", false)]
     public class FileUploadModel
     {
         public int Id { get; set; }

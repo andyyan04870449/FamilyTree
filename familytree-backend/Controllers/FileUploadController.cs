@@ -11,10 +11,12 @@ using FamilyTree.Attributes;
 namespace familytree_backend.Controllers
 {
     /// <summary>
-    /// 檔案上傳控制器
+    /// 檔案上傳控制器 (舊版，已棄用)
     /// 職責：處理檔案上傳、查詢、刪除相關的 HTTP 請求
+    /// ⚠️ 已棄用：請使用新的 /api/file 端點，此控制器將在 v2.1 中移除
     /// 設計改善：使用統一的資料存取服務，移除重複的 SQL 查詢邏輯
     /// </summary>
+    [Obsolete("請使用新的 FileController (/api/file) 端點。此控制器使用舊的 project_id 命名模式，將在 v2.1 中移除。", false)]
     [Route("api/[controller]")]
     [Authorize]
     public class FileUploadController : BaseController

@@ -19,7 +19,7 @@ namespace familytree_backend.Controllers
     [Authorize]
     public class PersonDataController : BaseController
     {
-        private readonly IDataAccessService _dataAccessService;
+        private readonly IDataAccessServiceV2 _dataAccessService;
         private readonly PaginationConfiguration _paginationConfig;
 
         /// <summary>
@@ -29,7 +29,7 @@ namespace familytree_backend.Controllers
         public PersonDataController(
             ILogger<PersonDataController> logger,
             IConfigurationService configurationService,
-            IDataAccessService dataAccessService,
+            IDataAccessServiceV2 dataAccessService,
             IValidationService validationService,
             IAccessControlService accessControlService,
             ILoggingService loggingService) 
@@ -45,7 +45,6 @@ namespace familytree_backend.Controllers
         /// </summary>
         /// <param name="page">頁碼</param>
         /// <param name="pageSize">頁面大小</param>
-        /// <param name="project_id">專案 ID</param>
         /// <param name="keyword">搜尋關鍵字</param>
         /// <param name="sortBy">排序欄位</param>
         /// <param name="sortOrder">排序方向（asc/desc）</param>
@@ -55,35 +54,29 @@ namespace familytree_backend.Controllers
         public async Task<IActionResult> GetPersonDataList(
             [FromQuery] int page = 1, 
             [FromQuery] int pageSize = 0, 
-            [FromQuery] string? project_id = null,
             [FromQuery] string? keyword = null,
             [FromQuery] string? sortBy = "id",
             [FromQuery] string? sortOrder = "desc")
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
+                var (userId, userRole) = GetUserInfo();
+                
                 LogRequestStart("獲取人員資料列表", new { 
-                    Page = page, PageSize = pageSize, ProjectId = project_id, 
+                    UserId = userId, Page = page, PageSize = pageSize, 
                     Keyword = keyword, SortBy = sortBy, SortOrder = sortOrder 
                 });
-
-                // 步驟 1：驗證專案 ID
-                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
-                if (projectValidationResult != null)
-                {
-                    return projectValidationResult;
-                }
-
-                // 步驟 2：正規化分頁參數（使用配置而非硬編碼）
+                
+                // 步驟 1：正規化分頁參數（使用配置而非硬編碼）
                 if (pageSize <= 0) pageSize = _paginationConfig.DefaultPageSize;
                 var (normalizedPage, normalizedPageSize) = ValidateAndNormalizePagination(page, pageSize);
 
-                // 步驟 3：使用統一的資料存取服務查詢資料
+                // 步驟 2：使用統一的資料存取服務查詢資料（基於 user_id 隔離）
                 var (personDataList, totalCount) = await _dataAccessService.GetPersonDataListAsync(
-                    project_id!, normalizedPage, normalizedPageSize, keyword, sortBy, sortOrder);
+                    userId, userRole, normalizedPage, normalizedPageSize, keyword, sortBy, sortOrder);
 
-                Logger.LogInformation("人員資料查詢統計：專案 {ProjectId}，總筆數 {TotalCount}，查詢關鍵字 '{Keyword}'", 
-                    project_id, totalCount, keyword ?? "無");
+                Logger.LogInformation("人員資料查詢統計：使用者 {UserId}，總筆數 {TotalCount}，查詢關鍵字 '{Keyword}'", 
+                    userId, totalCount, keyword ?? "無");
 
                 // 步驟 4：建立回應資料
                 var response = new PersonDataListResponse
@@ -114,38 +107,12 @@ namespace familytree_backend.Controllers
             return Ok(new { message = "PersonDataController 測試成功", timestamp = DateTime.UtcNow });
         }
 
-        /// <summary>
-        /// 修復專案 ID（臨時功能）
-        /// </summary>
-        [HttpGet("repair/{project_id}")]
-        public async Task<IActionResult> RepairProjectIds(string project_id)
-        {
-            return await ExecuteWithExceptionHandling(async () =>
-            {
-                LogRequestStart("修復專案ID", new { ProjectId = project_id });
-
-                // 驗證專案 ID
-                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
-                if (projectValidationResult != null)
-                {
-                    return projectValidationResult;
-                }
-
-                // 使用統一的資料存取服務進行修復操作
-                // 注意：此功能需要特殊處理，暫時保留原有邏輯
-                Logger.LogWarning("專案ID修復功能需要特殊處理，暫時跳過");
-
-                LogRequestComplete("修復專案ID");
-                return Ok(new { message = "專案ID修復功能已停用", project_id });
-            }, "修復專案ID");
-        }
 
         /// <summary>
         /// 搜尋人員資料 API
         /// 設計改善：使用統一的資料存取服務，簡化搜尋邏輯
         /// </summary>
         /// <param name="query">搜尋查詢</param>
-        /// <param name="project_id">專案 ID</param>
         /// <param name="page">頁碼</param>
         /// <param name="pageSize">頁面大小</param>
         /// <returns>搜尋結果</returns>
@@ -153,14 +120,15 @@ namespace familytree_backend.Controllers
         [RequirePermission("person:read")]
         public async Task<IActionResult> SearchPersonData(
             [FromQuery] string query,
-            [FromQuery] string? project_id = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 0)
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
+                var (userId, userRole) = GetUserInfo();
+                
                 LogRequestStart("搜尋人員資料", new { 
-                    Query = query, ProjectId = project_id, Page = page, PageSize = pageSize 
+                    Query = query, UserId = userId, Page = page, PageSize = pageSize 
                 });
 
                 // 驗證參數
@@ -169,35 +137,46 @@ namespace familytree_backend.Controllers
                     return CreateErrorResponse("搜尋查詢不能為空");
                 }
 
-                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
-                if (projectValidationResult != null)
-                {
-                    return projectValidationResult;
-                }
-
                 // 正規化分頁參數
                 if (pageSize <= 0) pageSize = _paginationConfig.DefaultPageSize;
                 var (normalizedPage, normalizedPageSize) = ValidateAndNormalizePagination(page, pageSize);
 
-                // 使用統一的資料存取服務進行搜尋
+                // 使用統一的資料存取服務進行搜尋（基於 user_id 隔離）
                 var searchRequest = new SearchRequest
                 {
                     Keyword = query,
-                    ProjectId = project_id,
                     Page = normalizedPage,
                     PageSize = normalizedPageSize,
                     SearchType = ApplicationConstants.Search.Types.Fuzzy
                 };
 
-                var (searchResults, totalCount) = await _dataAccessService.SearchPersonDataAsync(searchRequest);
+                var searchResultsRaw = await _dataAccessService.SearchPersonsAsync(userId, userRole, searchRequest);
+                var totalCount = searchResultsRaw.Count();
 
-                Logger.LogInformation("搜尋完成：查詢 '{Query}'，找到 {ResultCount} 筆結果", query, searchResults.Count());
+                // 轉換為 PersonSearchResult 格式
+                var searchResults = searchResultsRaw.Select(p => new PersonSearchResult
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Gender = p.Gender,
+                    Birthday = p.Birthday,
+                    Nationality = p.Nationality,
+                    Mobile = p.Mobile,
+                    Phone = p.Phone,
+                    Email = p.Email,
+                    Address = p.CurrentAddress,
+                    ProjectId = p.ProjectId,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt
+                }).ToList();
+
+                Logger.LogInformation("搜尋完成：查詢 '{Query}'，找到 {ResultCount} 筆結果", query, totalCount);
 
                 var response = new PersonSearchResponse
                 {
                     Success = true,
                     Message = $"搜尋完成，找到 {totalCount} 筆結果",
-                    SearchResults = searchResults.ToList(),
+                    SearchResults = searchResults,
                     Pagination = new PaginationInfo
                     {
                         CurrentPage = normalizedPage,
@@ -216,26 +195,20 @@ namespace familytree_backend.Controllers
         /// 獲取人員資料統計 API
         /// 設計改善：使用統一的資料存取服務，簡化統計邏輯
         /// </summary>
-        /// <param name="project_id">專案 ID</param>
         /// <returns>統計資料</returns>
         [HttpGet("statistics")]
         [RequirePermission("person:read")]
-        public async Task<IActionResult> GetPersonDataStatistics([FromQuery] string? project_id = null)
+        public async Task<IActionResult> GetPersonDataStatistics()
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
-                LogRequestStart("獲取人員資料統計", new { ProjectId = project_id });
+                var (userId, userRole) = GetUserInfo();
+                
+                LogRequestStart("獲取人員資料統計", new { UserId = userId });
 
-                // 驗證專案 ID
-                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
-                if (projectValidationResult != null)
-                {
-                    return projectValidationResult;
-                }
-
-                // 使用統一的資料存取服務獲取統計資料
+                // 使用統一的資料存取服務獲取統計資料（基於 user_id 隔離）
                 var (personDataList, totalCount) = await _dataAccessService.GetPersonDataListAsync(
-                    project_id!, 1, int.MaxValue);
+                    userId, userRole, 1, int.MaxValue);
 
                 var statistics = new PersonDataStatistics
                 {
@@ -247,7 +220,7 @@ namespace familytree_backend.Controllers
                     HasContactInfoCount = personDataList.Count(p => !string.IsNullOrEmpty(p.Mobile) || !string.IsNullOrEmpty(p.Phone) || !string.IsNullOrEmpty(p.Email))
                 };
 
-                Logger.LogInformation("統計完成：專案 {ProjectId}，總人數 {TotalCount}", project_id, totalCount);
+                Logger.LogInformation("統計完成：使用者 {UserId}，總人數 {TotalCount}", userId, totalCount);
 
                 var response = new PersonStatisticsResponse
                 {
@@ -266,25 +239,19 @@ namespace familytree_backend.Controllers
         /// 設計改善：使用統一的資料存取服務，簡化查詢邏輯
         /// </summary>
         /// <param name="id">人員 ID</param>
-        /// <param name="project_id">專案 ID</param>
         /// <returns>人員詳細資料</returns>
         [HttpGet("{id}")]
         [RequirePermission("person:read")]
-        public async Task<IActionResult> GetPerson(int id, [FromQuery] string? project_id = null)
+        public async Task<IActionResult> GetPerson(int id)
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
-                LogRequestStart("獲取人員資料", new { Id = id, ProjectId = project_id });
+                var (userId, userRole) = GetUserInfo();
+                
+                LogRequestStart("獲取人員資料", new { Id = id, UserId = userId });
 
-                // 驗證專案 ID
-                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
-                if (projectValidationResult != null)
-                {
-                    return projectValidationResult;
-                }
-
-                // 使用統一的資料存取服務查詢人員資料
-                var personData = await _dataAccessService.GetPersonDataByIdAsync(id, project_id!);
+                // 使用統一的資料存取服務查詢人員資料（基於 user_id 隔離）
+                var personData = await _dataAccessService.GetPersonDataByIdAsync(id, userId, userRole);
 
                 if (personData == null)
                 {
@@ -317,7 +284,9 @@ namespace familytree_backend.Controllers
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
-                LogRequestStart("建立人員資料", new { Name = person.Name, ProjectId = person.ProjectId });
+                var (userId, userRole) = GetUserInfo();
+                
+                LogRequestStart("建立人員資料", new { Name = person.Name, UserId = userId });
 
                 // 驗證人員資料
                 var validationResult = ValidatePersonData(person);
@@ -326,19 +295,13 @@ namespace familytree_backend.Controllers
                     return validationResult;
                 }
 
-                // 驗證專案 ID
-                var projectValidationResult = ValidateProjectId(person.ProjectId, allowNull: false);
-                if (projectValidationResult != null)
-                {
-                    return projectValidationResult;
-                }
-
-                // 設定建立時間
+                // 設定建立時間和使用者 ID
+                person.UserId = userId;
                 person.CreatedAt = DateTime.UtcNow;
                 person.UpdatedAt = DateTime.UtcNow;
 
-                // 使用統一的資料存取服務建立人員資料
-                var newId = await _dataAccessService.CreatePersonDataAsync(person);
+                // 使用統一的資料存取服務建立人員資料（基於 user_id 隔離）
+                var newId = await _dataAccessService.AddPersonAsync(person, userId);
 
                 Logger.LogInformation("人員資料建立成功：ID {Id}，姓名 {Name}", newId, person.Name);
 
@@ -360,15 +323,16 @@ namespace familytree_backend.Controllers
         /// </summary>
         /// <param name="id">人員 ID</param>
         /// <param name="person">更新的人員資料</param>
-        /// <param name="project_id">專案 ID</param>
         /// <returns>更新結果</returns>
         [HttpPut("{id}")]
         [RequirePermission("person:update")]
-        public async Task<IActionResult> UpdatePerson(int id, [FromBody] PersonDataModel person, [FromQuery] string? project_id = null)
+        public async Task<IActionResult> UpdatePerson(int id, [FromBody] PersonDataModel person)
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
-                LogRequestStart("更新人員資料", new { Id = id, Name = person.Name, ProjectId = project_id });
+                var (userId, userRole) = GetUserInfo();
+                
+                LogRequestStart("更新人員資料", new { Id = id, Name = person.Name, UserId = userId });
 
                 // 驗證人員資料
                 var validationResult = ValidatePersonData(person);
@@ -377,27 +341,20 @@ namespace familytree_backend.Controllers
                     return validationResult;
                 }
 
-                // 驗證專案 ID
-                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
-                if (projectValidationResult != null)
-                {
-                    return projectValidationResult;
-                }
-
                 // 檢查人員是否存在
-                var existingPerson = await _dataAccessService.GetPersonDataByIdAsync(id, project_id!);
+                var existingPerson = await _dataAccessService.GetPersonDataByIdAsync(id, userId, userRole);
                 if (existingPerson == null)
                 {
                     return CreateNotFoundResponse("人員資料", id);
                 }
 
-                // 設定更新時間和專案 ID
+                // 設定更新時間和使用者 ID
                 person.Id = id;
-                person.ProjectId = project_id;
+                person.UserId = userId;
                 person.UpdatedAt = DateTime.UtcNow;
 
-                // 使用統一的資料存取服務更新人員資料
-                var success = await _dataAccessService.UpdatePersonDataAsync(person);
+                // 使用統一的資料存取服務更新人員資料（基於 user_id 隔離）
+                var success = await _dataAccessService.UpdatePersonAsync(id, person, userId, userRole);
 
                 if (!success)
                 {
@@ -423,32 +380,26 @@ namespace familytree_backend.Controllers
         /// 設計改善：使用統一的資料存取服務，簡化刪除邏輯
         /// </summary>
         /// <param name="id">人員 ID</param>
-        /// <param name="project_id">專案 ID</param>
         /// <returns>刪除結果</returns>
         [HttpDelete("{id}")]
         [RequirePermission("person:delete")]
-        public async Task<IActionResult> DeletePerson(int id, [FromQuery] string? project_id = null)
+        public async Task<IActionResult> DeletePerson(int id)
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
-                LogRequestStart("刪除人員資料", new { Id = id, ProjectId = project_id });
-
-                // 驗證專案 ID
-                var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
-                if (projectValidationResult != null)
-                {
-                    return projectValidationResult;
-                }
+                var (userId, userRole) = GetUserInfo();
+                
+                LogRequestStart("刪除人員資料", new { Id = id, UserId = userId });
 
                 // 檢查人員是否存在
-                var existingPerson = await _dataAccessService.GetPersonDataByIdAsync(id, project_id!);
+                var existingPerson = await _dataAccessService.GetPersonDataByIdAsync(id, userId, userRole);
                 if (existingPerson == null)
                 {
                     return CreateNotFoundResponse("人員資料", id);
                 }
 
-                // 使用統一的資料存取服務刪除人員資料
-                var success = await _dataAccessService.DeletePersonDataAsync(id, project_id!);
+                // 使用統一的資料存取服務刪除人員資料（基於 user_id 隔離）
+                var success = await _dataAccessService.DeletePersonAsync(id, userId, userRole);
 
                 if (!success)
                 {

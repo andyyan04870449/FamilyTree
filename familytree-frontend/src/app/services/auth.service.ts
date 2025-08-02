@@ -15,7 +15,8 @@ export interface LoginResponse {
   data?: {
     accessToken: string;
     refreshToken: string;
-    expiresIn: number;
+    expiresIn?: number;  // 保留以便向後相容
+    expiresAt?: string;  // 後端實際返回的是這個
     user: UserInfo;
   };
 }
@@ -41,6 +42,11 @@ export class AuthService {
   public currentUser: Observable<UserInfo | null>;
   private refreshTokenTimeout?: any;
   
+  // Token 過期時間追蹤
+  private tokenExpirationSubject = new BehaviorSubject<number>(0);
+  public tokenExpiration$ = this.tokenExpirationSubject.asObservable();
+  private tokenExpirationTime: number = 0;
+  
   // 事件通知
   private loginSuccessSubject = new Subject<UserInfo>();
   private logoutSubject = new Subject<void>();
@@ -55,6 +61,13 @@ export class AuthService {
     const storedUser = this.getStoredUser();
     this.currentUserSubject = new BehaviorSubject<UserInfo | null>(storedUser);
     this.currentUser = this.currentUserSubject.asObservable();
+    
+    // 恢復過期時間
+    const storedExpiration = localStorage.getItem('token_expiration');
+    if (storedExpiration) {
+      this.tokenExpirationTime = parseInt(storedExpiration);
+      this.tokenExpirationSubject.next(this.tokenExpirationTime);
+    }
     
     // 如果有儲存的 token，設定自動更新
     if (this.getAccessToken()) {
@@ -138,8 +151,7 @@ export class AuthService {
       .pipe(
         tap(response => {
           if (response.success && response.data) {
-            this.storeTokens(response.data.accessToken, response.data.refreshToken);
-            this.startRefreshTokenTimer();
+            this.handleLoginSuccess(response.data);
           }
         }),
         catchError(error => {
@@ -188,6 +200,17 @@ export class AuthService {
   }
 
   /**
+   * 取得 Token 剩餘秒數
+   */
+  getTokenRemainingSeconds(): number {
+    const expiration = this.tokenExpirationTime || parseInt(localStorage.getItem('token_expiration') || '0');
+    if (!expiration) return 0;
+    
+    const remaining = Math.floor((expiration - Date.now()) / 1000);
+    return Math.max(remaining, 0);
+  }
+
+  /**
    * 取得 Authorization Header
    */
   getAuthorizationHeader(): HttpHeaders {
@@ -209,8 +232,35 @@ export class AuthService {
     this.storeUser(data.user);
     this.currentUserSubject.next(data.user);
     
+    // 計算並儲存過期時間
+    let expirationTime: number;
+    let expiresInSeconds: number;
+    
+    if (data.expiresAt) {
+      // 如果後端返回 expiresAt (ISO date string)
+      console.log('後端返回的 expiresAt:', data.expiresAt);
+      expirationTime = new Date(data.expiresAt).getTime();
+      expiresInSeconds = Math.floor((expirationTime - Date.now()) / 1000);
+      console.log('計算後的過期時間戳:', expirationTime);
+      console.log('剩餘秒數:', expiresInSeconds);
+    } else if (data.expiresIn) {
+      // 如果後端返回 expiresIn (秒數)
+      console.log('後端返回的 expiresIn:', data.expiresIn);
+      expiresInSeconds = data.expiresIn;
+      expirationTime = Date.now() + (data.expiresIn * 1000);
+    } else {
+      // 預設 15 分鐘
+      console.warn('後端未返回過期時間，使用預設 15 分鐘');
+      expiresInSeconds = 900;
+      expirationTime = Date.now() + (900 * 1000);
+    }
+    
+    this.tokenExpirationTime = expirationTime;
+    localStorage.setItem('token_expiration', expirationTime.toString());
+    this.tokenExpirationSubject.next(expirationTime);
+    
     // 設定自動更新 timer
-    this.startRefreshTokenTimer();
+    this.startRefreshTokenTimer(expiresInSeconds);
     
     // 發送登入成功事件
     this.loginSuccessSubject.next(data.user);
@@ -219,12 +269,26 @@ export class AuthService {
   /**
    * 開始 Refresh Token Timer
    */
-  private startRefreshTokenTimer(): void {
+  private startRefreshTokenTimer(expiresIn?: number): void {
     // 清除現有的 timer
     this.stopRefreshTokenTimer();
     
+    // 如果沒有提供過期時間，嘗試從儲存中獲取
+    if (!expiresIn) {
+      const storedExpiration = localStorage.getItem('token_expiration');
+      if (storedExpiration) {
+        const remainingTime = parseInt(storedExpiration) - Date.now();
+        if (remainingTime > 0) {
+          expiresIn = Math.floor(remainingTime / 1000);
+        }
+      }
+    }
+    
+    // 預設 15 分鐘
+    const expirationSeconds = expiresIn || 900;
+    
     // 在 token 過期前 1 分鐘更新
-    const timeout = 14 * 60 * 1000; // 14 分鐘
+    const timeout = Math.max((expirationSeconds - 60) * 1000, 0);
     
     this.refreshTokenTimeout = setTimeout(() => {
       this.refreshToken().subscribe();
@@ -285,7 +349,10 @@ export class AuthService {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('current_user');
+    localStorage.removeItem('token_expiration');
     this.currentUserSubject.next(null);
+    this.tokenExpirationSubject.next(0);
+    this.tokenExpirationTime = 0;
     this.stopRefreshTokenTimer();
     
     // 發送登出事件

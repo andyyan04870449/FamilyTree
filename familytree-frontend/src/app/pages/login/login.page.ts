@@ -70,6 +70,7 @@ export class LoginPage implements OnDestroy {
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (response) => {
+        console.log('登入 API 回應:', response);
         if (response.success) {
           // 登入成功，導航到原本要去的頁面或首頁
           this.toastService.success('登入成功');
