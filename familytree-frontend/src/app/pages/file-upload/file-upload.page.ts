@@ -8,6 +8,8 @@ import { FileUploadService, FileModel, UploadProgress } from '../../services/fil
 import { PhotoUploadService, PhotoUploadProgress, PhotoUploadResponse } from '../../services/photo-upload.service';
 import { ProjectService } from '../../services/project.service';
 import { AppConstants } from '../../constants/app.constants';
+import { ButtonComponent } from '../../components/ui/button/button.component';
+import { cn } from '../../utils/cn';
 
 // 檔案記錄統一介面
 interface UnifiedFileRecord {
@@ -26,10 +28,249 @@ interface UnifiedFileRecord {
 
 @Component({
   selector: 'app-file-upload',
-  templateUrl: './file-upload.page.html',
-  styleUrls: ['./file-upload.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, ButtonComponent],
+  template: `
+    <div class="min-h-screen bg-gray-50 p-6">
+      <div class="max-w-6xl mx-auto space-y-6">
+        <!-- Page Header -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900">檔案上傳</h1>
+              <p class="text-gray-600">智能檔案上傳 - 自動識別檔案類型並選擇最佳處理方式</p>
+            </div>
+          </div>
+          
+          <!-- Current Project Info -->
+          <div *ngIf="getCurrentProject()" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-center gap-2 text-blue-700">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+              <span class="font-medium">當前案件名稱：</span>
+              <span class="font-semibold">{{ getCurrentProject()?.projectName }}</span>
+            </div>
+          </div>
+          
+          <div *ngIf="!getCurrentProject()" class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div class="flex items-center gap-2 text-amber-700">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+              </svg>
+              <span class="font-medium">請先從案件管理頁面選擇一個案件</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div *ngIf="getCurrentProject()" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">上傳檔案</h2>
+          
+          <!-- Upload Area -->
+          <div 
+            class="border-2 border-dashed rounded-lg transition-all duration-200"
+            [class]="cn(
+              'border-gray-300 bg-gray-50',
+              dragOver ? 'border-blue-500 bg-blue-50' : '',
+              selectedFile ? 'border-green-500 bg-green-50' : ''
+            )"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+          >
+            <!-- Upload Placeholder -->
+            <div *ngIf="!selectedFile" class="p-8 text-center">
+              <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+              </svg>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">拖拽檔案到此處或點擊上傳</h3>
+              <p class="text-gray-600 mb-4">{{ getSupportedFormats() }}</p>
+              
+              <!-- Format Examples -->
+              <div class="flex flex-wrap justify-center gap-4 mb-6">
+                <div class="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-gray-200">
+                  <span class="text-xl">📊</span>
+                  <span class="text-sm text-gray-700">Excel 資料：.xls, .xlsx</span>
+                </div>
+                <div class="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-gray-200">
+                  <span class="text-xl">📸</span>
+                  <span class="text-sm text-gray-700">照片檔案：.jpg, .png, .zip, .7z</span>
+                </div>
+              </div>
+              
+              <input 
+                type="file" 
+                #fileInput 
+                [accept]="getAcceptAttribute()" 
+                (change)="onFileSelected($event)" 
+                class="hidden"
+              >
+              <app-button
+                variant="primary"
+                size="lg"
+                label="選擇檔案"
+                icon="📎"
+                (clicked)="fileInput.click()"
+              ></app-button>
+            </div>
+            
+            <!-- Selected File -->
+            <div *ngIf="selectedFile" class="p-6">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                  <div class="text-4xl">{{ getFileTypeIcon() }}</div>
+                  <div>
+                    <h4 class="text-lg font-medium text-gray-900">{{ selectedFile.name }}</h4>
+                    <p class="text-gray-600">{{ formatFileSize(selectedFile.size) }} • {{ getFileTypeText() }}</p>
+                    <div *ngIf="detectedFileType !== 'unknown'" class="flex items-center gap-2 mt-1 text-sm text-green-600">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      <span>已自動識別為{{ getFileTypeText() }}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="flex gap-2">
+                  <app-button
+                    variant="primary"
+                    size="md"
+                    label="開始上傳"
+                    loadingText="上傳中..."
+                    [loading]="isUploading"
+                    [disabled]="isUploading || detectedFileType === 'unknown'"
+                    (clicked)="uploadFile()"
+                  ></app-button>
+                  <app-button
+                    variant="secondary"
+                    size="md"
+                    label="重新選擇"
+                    [disabled]="isUploading"
+                    (clicked)="clearSelection()"
+                  ></app-button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Upload Progress -->
+          <div *ngIf="isUploading || uploadProgress > 0" class="mt-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium text-gray-700">上傳進度</span>
+              <span class="text-sm font-medium text-gray-700">{{ uploadProgress }}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                [style.width.%]="uploadProgress"
+              ></div>
+            </div>
+          </div>
+          
+          <!-- Upload Message -->
+          <div *ngIf="uploadMessage" class="mt-4">
+            <div 
+              class="p-4 rounded-lg border"
+              [class]="cn(
+                uploadMessage.includes('❌') ? 'bg-red-50 border-red-200 text-red-700' : '',
+                uploadMessage.includes('✅') ? 'bg-green-50 border-green-200 text-green-700' : '',
+                !uploadMessage.includes('❌') && !uploadMessage.includes('✅') ? 'bg-blue-50 border-blue-200 text-blue-700' : ''
+              )"
+            >
+              <p class="text-sm font-medium">{{ uploadMessage }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- File List Section -->
+        <div *ngIf="getCurrentProject()" class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div class="p-6 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              📋 檔案記錄
+              <span class="bg-gray-100 text-gray-600 text-sm px-2 py-1 rounded-full">{{ allFileRecords.length }}</span>
+            </h2>
+          </div>
+          
+          <div class="p-6">
+            <!-- File Grid -->
+            <div *ngIf="allFileRecords.length > 0" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div 
+                *ngFor="let record of allFileRecords"
+                class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+              >
+                <div class="flex items-start justify-between">
+                  <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <div class="text-2xl flex-shrink-0">{{ getFileTypeIcon(record.fileType) }}</div>
+                    <div class="flex-1 min-w-0">
+                      <h4 class="text-sm font-medium text-gray-900 truncate">{{ record.originalName }}</h4>
+                      <p class="text-xs text-gray-500 mt-1">
+                        {{ formatFileSize(record.fileSize) }} • {{ formatUploadTime(record.uploadTime) }}
+                      </p>
+                      <div *ngIf="record.fileType === 'excel' && record.relatedPersonsCount !== undefined" 
+                           class="flex items-center gap-1 mt-1 text-xs text-gray-600">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <span>{{ record.relatedPersonsCount }} 人</span>
+                      </div>
+                      <div *ngIf="record.savedName && record.savedName !== record.originalName" 
+                           class="text-xs text-gray-500 mt-1">
+                        儲存為: {{ record.savedName }}
+                      </div>
+                      <div class="flex gap-2 mt-2">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                              [class]="cn(
+                                record.fileType === 'excel' ? 'bg-green-100 text-green-800' : '',
+                                record.fileType === 'photo' ? 'bg-blue-100 text-blue-800' : '',
+                                record.fileType === 'image' ? 'bg-purple-100 text-purple-800' : '',
+                                record.fileType === 'archive' ? 'bg-orange-100 text-orange-800' : ''
+                              )">
+                          {{ getFileTypeText(record.fileType) }}
+                        </span>
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                              [class]="cn(
+                                getFileStatusText(record) === '已處理' ? 'bg-green-100 text-green-800' : '',
+                                getFileStatusText(record) === '已上傳' ? 'bg-gray-100 text-gray-800' : '',
+                                getFileStatusText(record) === '處理中' ? 'bg-yellow-100 text-yellow-800' : '',
+                                getFileStatusText(record) === '失敗' ? 'bg-red-100 text-red-800' : ''
+                              )">
+                          {{ getFileStatusText(record) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <app-button
+                    variant="danger"
+                    size="sm"
+                    icon="🗑️"
+                    title="刪除檔案"
+                    [loading]="isDeleting"
+                    loadingText="刪除中..."
+                    [disabled]="isDeleting"
+                    (clicked)="deleteFile(record)"
+                  ></app-button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Empty State -->
+            <div *ngIf="allFileRecords.length === 0" class="text-center py-12">
+              <div class="text-gray-400 text-6xl mb-4">📂</div>
+              <h4 class="text-lg font-medium text-gray-900 mb-2">尚未上傳任何檔案</h4>
+              <p class="text-gray-600">上傳第一個檔案開始管理您的專案資料</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
 })
 export class FileUploadComponent implements OnInit, OnDestroy {
   selectedFile: File | null = null;
@@ -46,6 +287,9 @@ export class FileUploadComponent implements OnInit, OnDestroy {
   isDeleting = false;
   
   private subscription = new Subscription();
+  
+  // Utility function for class names
+  cn = cn;
 
   constructor(
     private fileUploadService: FileUploadService,
@@ -543,4 +787,4 @@ export class FileUploadComponent implements OnInit, OnDestroy {
       })
     );
   }
-} 
+}

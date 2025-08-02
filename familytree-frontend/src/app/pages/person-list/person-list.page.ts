@@ -7,26 +7,282 @@ import { Subscription } from 'rxjs';
 import { PersonDataService, PersonDataModel } from '../../services/person-data.service';
 import { PersonDetailDialogComponent } from '../../components/person-detail-dialog/person-detail-dialog.component';
 import { PersonPhotoComponent } from '../../components/person-photo/person-photo.component';
-import { LoadingComponent } from '../../shared/components/loading/loading.component';
-import { ErrorComponent } from '../../shared/components/error/error.component';
-import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { ButtonComponent } from '../../components/ui/button/button.component';
+import { LoadingComponent } from '../../components/ui/loading/loading.component';
+import { cn } from '../../utils/cn';
 
 @Component({
   selector: 'app-person-list',
-  templateUrl: './person-list.page.html',
-  styleUrls: ['./person-list-bem.scss'],
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
-    PersonDetailDialogComponent, 
-    PersonPhotoComponent,
+    CommonModule,
+    FormsModule,
+    ButtonComponent,
     LoadingComponent,
-    ErrorComponent,
-    EmptyStateComponent
-  ]
+    PersonDetailDialogComponent,
+    PersonPhotoComponent
+  ],
+  template: `
+    <div class="min-h-screen bg-gray-50 p-6">
+      <div class="max-w-7xl mx-auto space-y-6">
+        <!-- 頁面標題 -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                  </svg>
+                </div>
+                人員列表
+              </h1>
+              <p class="text-gray-600 mt-1">管理所有資料庫中的人員資料</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 搜尋區域 -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+              <label for="search-name" class="block text-sm font-medium text-gray-700 mb-2">搜尋姓名</label>
+              <input 
+                id="search-name"
+                type="text" 
+                [(ngModel)]="searchName" 
+                placeholder="輸入姓名進行搜尋..." 
+                (keyup.enter)="searchPersonData()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                aria-label="輸入姓名進行搜尋"
+              />
+            </div>
+            <div class="flex gap-3 md:items-end">
+              <app-button
+                variant="primary"
+                size="md"
+                label="搜尋"
+                icon="🔍"
+                [disabled]="loading"
+                (clicked)="searchPersonData()"
+              ></app-button>
+              <app-button
+                variant="secondary"
+                size="md"
+                label="清除"
+                icon="🗑️"
+                [disabled]="loading"
+                (clicked)="clearSearch()"
+              ></app-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 統計資訊 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                <span class="text-blue-600 text-lg">👥</span>
+              </div>
+              <div>
+                <p class="text-2xl font-semibold text-gray-900">{{ totalCount }}</p>
+                <p class="text-sm text-gray-600">總人數</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                <span class="text-green-600 text-lg">📄</span>
+              </div>
+              <div>
+                <p class="text-2xl font-semibold text-gray-900">{{ currentPage }}</p>
+                <p class="text-sm text-gray-600">當前頁面</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                <span class="text-purple-600 text-lg">📚</span>
+              </div>
+              <div>
+                <p class="text-2xl font-semibold text-gray-900">{{ totalPages }}</p>
+                <p class="text-sm text-gray-600">總頁數</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 載入中 -->
+        <div *ngIf="loading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+          <app-loading 
+            variant="spinner" 
+            size="lg"
+            message="載入人員資料中..."
+          ></app-loading>
+        </div>
+
+        <!-- 錯誤訊息 -->
+        <div *ngIf="error && !loading" class="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="text-red-600 text-2xl mr-3">⚠️</div>
+            <div>
+              <h3 class="text-lg font-medium text-red-800">載入失敗</h3>
+              <p class="text-red-700">{{ error }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 人員列表 -->
+        <div *ngIf="!loading && !error" class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div class="p-6 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              👥 人員資料
+              <span class="bg-gray-100 text-gray-600 text-sm px-2 py-1 rounded-full">{{ totalCount }}</span>
+            </h2>
+          </div>
+          
+          <!-- 空狀態 -->
+          <div *ngIf="!personDataList || personDataList.length === 0" class="text-center py-12">
+            <div class="text-gray-400 text-6xl mb-4">👥</div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">目前沒有人員資料</h3>
+            <p class="text-gray-600">上傳Excel檔案或手動新增人員資料</p>
+          </div>
+          
+          <!-- 人員資料表格 -->
+          <div *ngIf="personDataList && personDataList.length > 0" class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">序號</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">照片</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">性別</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">來源</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">建立日期</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">功能</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr *ngFor="let person of personDataList; let i = index" class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ (currentPage - 1) * pageSize + i + 1 }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <app-person-photo
+                      [photoIndex]="person.photo"
+                      [personName]="person.name"
+                      size="medium"
+                      shape="rounded"
+                    ></app-person-photo>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">{{ person.name }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                          [class]="cn(
+                            person.gender === 'M' ? 'bg-blue-100 text-blue-800' :
+                            person.gender === 'F' ? 'bg-pink-100 text-pink-800' :
+                            'bg-gray-100 text-gray-800'
+                          )">
+                      {{ getGenderText(person.gender) }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                          [class]="cn(
+                            person.fileMd5 ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                          )">
+                      {{ getSourceText(person) }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ formatDate(person.createdAt) }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <div class="flex gap-2">
+                      <app-button
+                        variant="view"
+                        size="sm"
+                        label="檢視"
+                        (clicked)="editPersonData(person)"
+                        [attr.aria-label]="'檢視 ' + person.name + ' 的資料'"
+                      ></app-button>
+                      <app-button
+                        variant="danger"
+                        size="sm"
+                        label="刪除"
+                        (clicked)="deletePersonData(person)"
+                        [attr.aria-label]="'刪除 ' + person.name + ' 的資料'"
+                      ></app-button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 分頁控制 -->
+        <div *ngIf="!loading && !error && totalPages > 1" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="text-sm text-gray-600">
+              顯示 {{ (currentPage - 1) * pageSize + 1 }}-{{ (currentPage * pageSize > totalCount ? totalCount : currentPage * pageSize) }} 筆，共 {{ totalCount }} 筆
+            </div>
+            
+            <div class="flex items-center gap-2">
+              <app-button
+                variant="secondary"
+                size="sm"
+                label="← 上一頁"
+                [disabled]="currentPage === 1"
+                (clicked)="goToPage(currentPage - 1)"
+              ></app-button>
+              
+              <div class="flex gap-1">
+                <button 
+                  *ngFor="let page of getPageNumbers()" 
+                  class="px-3 py-2 text-sm font-medium rounded-md transition-colors"
+                  [class]="cn(
+                    page === currentPage 
+                      ? 'bg-blue-600 text-white' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                  )"
+                  (click)="goToPage(page)"
+                  [attr.aria-label]="'前往第 ' + page + ' 頁'"
+                  [attr.aria-current]="page === currentPage ? 'page' : null"
+                >
+                  {{ page }}
+                </button>
+              </div>
+              
+              <app-button
+                variant="secondary"
+                size="sm"
+                label="下一頁 →"
+                [disabled]="currentPage === totalPages"
+                (clicked)="goToPage(currentPage + 1)"
+              ></app-button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 個人詳細資料對話框 -->
+    <app-person-detail-dialog
+      [personId]="selectedPersonId"
+      [isVisible]="showDetailDialog"
+      (close)="closeDetailDialog()"
+    ></app-person-detail-dialog>
+  `
 })
 export class PersonListComponent implements OnInit, OnDestroy {
+  // Utility function for class names
+  cn = cn;
   personDataList: PersonDataModel[] = [];
   loading = false;
   error = '';

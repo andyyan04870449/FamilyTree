@@ -5,15 +5,77 @@ import { Subject } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { AppConstants } from '../../constants/app.constants';
 import { AuthService, UserInfo } from '../../services/auth.service';
+import { cn } from '../../utils/cn';
 
 @Component({
   selector: 'app-status-bar',
-  templateUrl: './status-bar.component.html',
-  styleUrls: ['./status-bar.component.scss'],
   standalone: true,
-  imports: [CommonModule]
+  imports: [CommonModule],
+  template: `
+    <div class="fixed top-0 left-0 right-0 w-screen h-20 z-[999]">
+      <!-- 背景 -->
+      <div 
+        class="absolute inset-0 bg-[url('/assets/header-bg.png')] bg-center bg-cover bg-no-repeat"
+        style="background-size: 100% 100%;"
+      ></div>
+      
+      <!-- 內容 -->
+      <div class="relative flex items-center justify-between px-8 h-full max-w-screen-xl mx-auto">
+        <!-- 左側：系統標題 -->
+        <div class="flex-1">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">💻</span>
+            <span class="font-['Noto_Sans_TC'] font-semibold text-xl text-white">
+              雨聲國小人事資料分析系統
+            </span>
+          </div>
+        </div>
+        
+        <!-- 中間：空白區域 -->
+        <div class="flex-1 flex justify-center">
+          <!-- 可在此處添加麵包屑導航 -->
+        </div>
+        
+        <!-- 右側：用戶資訊與操作 -->
+        <div class="flex-1 flex items-center justify-end gap-6">
+          <!-- 用戶資訊 -->
+          <div class="flex items-center gap-2">
+            <span class="text-xl">👤</span>
+            <span class="font-['Noto_Sans_TC'] font-medium text-base text-white">
+              {{ userName }}
+            </span>
+          </div>
+          
+          <!-- 倒數計時 -->
+          <div class="flex items-center gap-2">
+            <span class="font-['Noto_Sans_TC'] font-normal text-sm text-white">
+              倒數：{{ countdownDisplay }}
+            </span>
+            <button 
+              class="bg-white/20 border-none text-white rounded-full w-8 h-8 cursor-pointer text-base transition-all duration-300 backdrop-blur-[10px] hover:bg-white/30 hover:scale-110"
+              (click)="resetCountdown()" 
+              title="重設倒數"
+            >
+              ⟳
+            </button>
+          </div>
+          
+          <!-- 登出按鈕 -->
+          <button 
+            class="bg-red-600 border-none text-white py-2 px-5 rounded-full font-['Noto_Sans_TC'] font-medium text-sm cursor-pointer transition-all duration-300 hover:bg-red-700 hover:-translate-y-px"
+            (click)="logout()"
+          >
+            登出
+          </button>
+        </div>
+      </div>
+    </div>
+  `
 })
 export class StatusBarComponent implements OnInit, OnDestroy {
+  // Utility function for class names
+  cn = cn;
+  
   userName = AppConstants.DEFAULT_USER_NAME;
   countdown = 0;
   timer: any;

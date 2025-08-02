@@ -1,4 +1,7 @@
-// 引入新的設計系統
+// Tailwind CSS 導入
+@import 'app/styles/globals.css';
+
+// 引入舊的設計系統（過渡期間保留）
 @import 'styles/index';
 
 // CSS 變數系統已經在 foundation/css-variables.scss 中定義

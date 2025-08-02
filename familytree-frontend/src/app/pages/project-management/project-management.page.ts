@@ -7,291 +7,358 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProjectService, Project, CreateProjectRequest, ProjectStatistics } from '../../services/project.service';
 import { AuthService } from '../../services/auth.service';
+import { ButtonComponent } from '../../components/ui/button/button.component';
+import { LoadingComponent } from '../../components/ui/loading/loading.component';
+import { ModalComponent } from '../../components/ui/modal/modal.component';
+import { cn } from '../../utils/cn';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-project-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ButtonComponent, LoadingComponent, ModalComponent],
   template: `
-    <div class="project-management-page">
-      <!-- 頁面標題 -->
-      <div class="page-header">
-        <h1>專案管理</h1>
-      </div>
-
-      <!-- 控制欄 -->
-      <div class="controls-section">
-        <div class="search-controls">
-          <input 
-            type="text" 
-            [(ngModel)]="searchTerm" 
-            (input)="onSearch()"
-            placeholder="搜尋專案名稱..." 
-            class="search-input">
-          
-          <select 
-            [(ngModel)]="selectedStatus" 
-            (change)="onFilterChange()" 
-            class="filter-select">
-            <option value="all">全部狀態</option>
-            <option value="active">進行中</option>
-            <option value="completed">已完成</option>
-            <option value="archived">已封存</option>
-          </select>
-
-          <button 
-            (click)="onRefresh()" 
-            class="icon-button"
-            title="重新整理">
-            🔍
-          </button>
-
-          <button 
-            (click)="toggleViewMode()" 
-            class="icon-button"
-            [title]="viewMode === 'grid' ? '切換到列表檢視' : '切換到網格檢視'">
-            {{ viewMode === 'grid' ? '☰' : '▦' }}
-          </button>
+    <div class="min-h-screen bg-gray-50 p-6">
+      <div class="max-w-7xl mx-auto space-y-6">
+        <!-- 頁面標題 -->
+        <div class="text-center mb-8">
+          <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+          </div>
+          <h1 class="text-4xl font-bold text-gray-900 mb-2">專案管理</h1>
+          <p class="text-gray-600">建立和管理您的家族樹專案</p>
         </div>
 
-        <button 
-          (click)="showCreateDialog = true" 
-          class="create-button">
-          + 新增專案
-        </button>
-      </div>
-
-      <!-- 統計資訊 -->
-      <div class="statistics-section" *ngIf="statistics">
-        <div class="stat-card">
-          <div class="stat-number">{{ statistics.totalProjects }}</div>
-          <div class="stat-label">總專案數</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number">{{ statistics.activeProjects }}</div>
-          <div class="stat-label">進行中</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number">{{ statistics.completedProjects }}</div>
-          <div class="stat-label">已完成</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number">{{ statistics.totalMembers }}</div>
-          <div class="stat-label">總成員數</div>
-        </div>
-      </div>
-
-      <!-- 載入中指示器 -->
-      <div *ngIf="loading" class="loading-indicator">
-        <div class="spinner"></div>
-        <p>載入中...</p>
-      </div>
-
-      <!-- 專案列表 -->
-      <div *ngIf="!loading" class="projects-section">
-        <div [class]="'projects-' + viewMode">
-          <div 
-            *ngFor="let project of filteredProjects" 
-            class="project-card"
-            (click)="openProjectDetail(project)">
-            
-            <div class="project-header">
-              <h3>{{ project.projectName }}</h3>
-              <div class="project-actions">
-                <button 
-                  (click)="editProject(project); $event.stopPropagation()" 
-                  class="action-button edit"
-                  title="編輯專案">
-                  ✏️
-                </button>
-                <button 
-                  (click)="deleteProject(project); $event.stopPropagation()" 
-                  class="action-button delete"
-                  title="刪除專案">
-                  🗑️
-                </button>
-              </div>
-            </div>
-
-            <div class="project-content">
-              <p class="project-description">{{ project.projectDescription || '暫無描述' }}</p>
+        <!-- 控制欄 -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="flex flex-col sm:flex-row gap-3 flex-1">
+              <input 
+                type="text" 
+                [(ngModel)]="searchTerm" 
+                (input)="onSearch()"
+                placeholder="搜尋專案名稱..." 
+                class="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
               
-              <div class="project-stats">
-                <span class="stat-item">
-                  👥 {{ project.memberCount }} 成員
-                </span>
-                <span class="stat-item">
-                  🔗 {{ project.relationshipCount }} 關係
-                </span>
-              </div>
-
-              <div class="project-meta">
-                <span class="status-badge" [ngClass]="'status-' + project.status">
-                  {{ formatStatus(project.status) }}
-                </span>
-                <span class="created-date">
-                  {{ formatDate(project.createdAt) }}
-                </span>
-              </div>
-
-              <div class="project-tags">
-                <span 
-                  *ngFor="let tag of project.tags" 
-                  class="tag">
-                  {{ tag }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 空狀態 -->
-        <div *ngIf="filteredProjects.length === 0" class="empty-state">
-          <div class="empty-icon">📋</div>
-          <h3>{{ searchTerm ? '找不到相符的專案' : '還沒有任何專案' }}</h3>
-          <p>{{ searchTerm ? '請試試其他搜尋條件' : '點擊上方的「新增專案」按鈕來建立第一個專案' }}</p>
-          <button 
-            *ngIf="!searchTerm" 
-            (click)="showCreateDialog = true" 
-            class="create-button">
-            + 建立第一個專案
-          </button>
-        </div>
-      </div>
-
-      <!-- 新增專案對話框 -->
-      <div *ngIf="showCreateDialog" class="dialog-overlay" (click)="closeCreateDialog()">
-        <div class="dialog" (click)="$event.stopPropagation()">
-          <div class="dialog-header">
-            <h2>新增專案</h2>
-            <button (click)="closeCreateDialog()" class="close-button">×</button>
-          </div>
-          
-          <div class="dialog-content">
-            <div class="form-group">
-              <label for="projectName">專案名稱 *</label>
-              <input 
-                id="projectName"
-                type="text" 
-                [(ngModel)]="projectForm_name" 
-                placeholder="輸入專案名稱..."
-                class="form-input"
-                maxlength="100">
-            </div>
-            
-            <div class="form-group">
-              <label for="projectDescription">專案描述</label>
-              <textarea 
-                id="projectDescription"
-                [(ngModel)]="projectForm_description" 
-                placeholder="輸入專案描述..."
-                class="form-textarea"
-                rows="3"
-                maxlength="500"></textarea>
-            </div>
-          </div>
-          
-          <div class="dialog-footer">
-            <button (click)="closeCreateDialog()" class="cancel-button">取消</button>
-            <button 
-              (click)="createProject()" 
-              [disabled]="!projectForm_name.trim() || loading"
-              class="create-button">
-              {{ loading ? '建立中...' : '建立專案' }}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 編輯專案對話框 -->
-      <div *ngIf="showEditDialog && editingProject" class="dialog-overlay" (click)="closeEditDialog()">
-        <div class="dialog" (click)="$event.stopPropagation()">
-          <div class="dialog-header">
-            <h2>編輯專案</h2>
-            <button (click)="closeEditDialog()" class="close-button">×</button>
-          </div>
-          
-          <div class="dialog-content">
-            <div class="form-group">
-              <label for="editProjectName">專案名稱 *</label>
-              <input 
-                id="editProjectName"
-                type="text" 
-                [(ngModel)]="projectForm_name" 
-                placeholder="輸入專案名稱..."
-                class="form-input"
-                maxlength="100">
-            </div>
-            
-            <div class="form-group">
-              <label for="editProjectDescription">專案描述</label>
-              <textarea 
-                id="editProjectDescription"
-                [(ngModel)]="projectForm_description" 
-                placeholder="輸入專案描述..."
-                class="form-textarea"
-                rows="3"
-                maxlength="500"></textarea>
-            </div>
-
-            <div class="form-group">
-              <label for="editProjectStatus">專案狀態</label>
               <select 
-                id="editProjectStatus"
-                [(ngModel)]="projectForm_status" 
-                class="form-select">
+                [(ngModel)]="selectedStatus" 
+                (change)="onFilterChange()" 
+                class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-32">
+                <option value="all">全部狀態</option>
                 <option value="active">進行中</option>
                 <option value="completed">已完成</option>
                 <option value="archived">已封存</option>
               </select>
+
+              <div class="flex gap-2">
+                <app-button
+                  variant="secondary"
+                  size="sm"
+                  icon="🔍"
+                  title="重新整理"
+                  (clicked)="onRefresh()"
+                ></app-button>
+
+                <app-button
+                  variant="secondary"
+                  size="sm"
+                  [icon]="viewMode === 'grid' ? '☰' : '▦'"
+                  [title]="viewMode === 'grid' ? '切換到列表檢視' : '切換到網格檢視'"
+                  (clicked)="toggleViewMode()"
+                ></app-button>
+              </div>
             </div>
+
+            <app-button
+              variant="primary"
+              size="md"
+              label="新增專案"
+              icon="➕"
+              (clicked)="showCreateDialog = true"
+            ></app-button>
+          </div>
+        </div>
+
+        <!-- 統計資訊 -->
+        <div *ngIf="statistics" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center hover:shadow-md transition-shadow">
+            <div class="text-3xl font-bold text-blue-600 mb-2">{{ statistics.totalProjects }}</div>
+            <div class="text-sm text-gray-600">總專案數</div>
+          </div>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center hover:shadow-md transition-shadow">
+            <div class="text-3xl font-bold text-green-600 mb-2">{{ statistics.activeProjects }}</div>
+            <div class="text-sm text-gray-600">進行中</div>
+          </div>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center hover:shadow-md transition-shadow">
+            <div class="text-3xl font-bold text-purple-600 mb-2">{{ statistics.completedProjects }}</div>
+            <div class="text-sm text-gray-600">已完成</div>
+          </div>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center hover:shadow-md transition-shadow">
+            <div class="text-3xl font-bold text-orange-600 mb-2">{{ statistics.totalMembers }}</div>
+            <div class="text-sm text-gray-600">總成員數</div>
+          </div>
+        </div>
+
+        <!-- 載入中指示器 -->
+        <div *ngIf="loading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+          <app-loading 
+            variant="spinner" 
+            size="lg"
+            message="載入專案列表中..."
+          ></app-loading>
+        </div>
+
+        <!-- 專案列表 -->
+        <div *ngIf="!loading" class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div class="p-6 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              📋 專案列表
+              <span class="bg-gray-100 text-gray-600 text-sm px-2 py-1 rounded-full">{{ filteredProjects.length }}</span>
+            </h2>
           </div>
           
-          <div class="dialog-footer">
-            <button (click)="closeEditDialog()" class="cancel-button">取消</button>
-            <button 
-              (click)="updateProject()" 
-              [disabled]="!projectForm_name.trim() || loading"
-              class="update-button">
-              {{ loading ? '更新中...' : '更新專案' }}
-            </button>
+          <div class="p-6">
+            <div [class]="cn(
+              viewMode === 'grid' 
+                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+                : 'space-y-4'
+            )">
+              <div 
+                *ngFor="let project of filteredProjects" 
+                class="relative bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                (click)="openProjectDetail(project)">
+                
+                <!-- 專案標題區 -->
+                <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white">
+                  <div class="flex justify-between items-start">
+                    <h3 class="text-lg font-semibold truncate flex-1 mr-2">{{ project.projectName }}</h3>
+                    <div class="flex gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                      <app-button
+                        variant="secondary"
+                        size="sm"
+                        icon="✏️"
+                        title="編輯專案"
+                        (clicked)="editProject(project); $event.stopPropagation()"
+                        class="!bg-white/20 !text-white hover:!bg-white/30"
+                      ></app-button>
+                      <app-button
+                        variant="danger"
+                        size="sm"
+                        icon="🗑️"
+                        title="刪除專案"
+                        (clicked)="deleteProject(project); $event.stopPropagation()"
+                        class="!bg-white/20 !text-white hover:!bg-red-500/50"
+                      ></app-button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 專案內容區 -->
+                <div class="p-4 space-y-4">
+                  <p class="text-gray-600 text-sm line-clamp-2">
+                    {{ project.projectDescription || '暫無描述' }}
+                  </p>
+                  
+                  <div class="flex gap-4 text-sm text-gray-500">
+                    <span class="flex items-center gap-1">
+                      👥 {{ project.memberCount }} 成員
+                    </span>
+                    <span class="flex items-center gap-1">
+                      🔗 {{ project.relationshipCount }} 關係
+                    </span>
+                  </div>
+
+                  <div class="flex justify-between items-center">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                          [class]="cn(
+                            project.status === 'active' ? 'bg-green-100 text-green-800' :
+                            project.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                            project.status === 'archived' ? 'bg-gray-100 text-gray-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          )">
+                      {{ formatStatus(project.status) }}
+                    </span>
+                    <span class="text-xs text-gray-500">
+                      {{ formatDate(project.createdAt) }}
+                    </span>
+                  </div>
+
+                  <div class="flex flex-wrap gap-1" *ngIf="project.tags && project.tags.length > 0">
+                    <span 
+                      *ngFor="let tag of project.tags" 
+                      class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md">
+                      {{ tag }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 空狀態 -->
+            <div *ngIf="filteredProjects.length === 0" class="text-center py-12 col-span-full">
+              <div class="text-gray-400 text-6xl mb-4">📋</div>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">
+                {{ searchTerm ? '找不到相符的專案' : '還沒有任何專案' }}
+              </h3>
+              <p class="text-gray-600 mb-6 max-w-md mx-auto">
+                {{ searchTerm ? '請試試其他搜尋條件' : '點擊上方的「新增專案」按鈕來建立第一個專案' }}
+              </p>
+              <app-button
+                *ngIf="!searchTerm"
+                variant="primary"
+                label="建立第一個專案"
+                icon="➕"
+                (clicked)="showCreateDialog = true"
+              ></app-button>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- 刪除確認對話框 -->
-      <div *ngIf="showDeleteDialog && deletingProject" class="dialog-overlay" (click)="closeDeleteDialog()">
-        <div class="dialog" (click)="$event.stopPropagation()">
-          <div class="dialog-header">
-            <h2>確認刪除</h2>
-            <button (click)="closeDeleteDialog()" class="close-button">×</button>
+      <!-- 新增專案對話框 -->
+      <app-modal
+        [isOpen]="showCreateDialog"
+        title="新增專案"
+        (close)="closeCreateDialog()"
+      >
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">專案名稱 *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="projectForm_name" 
+              placeholder="輸入專案名稱..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              maxlength="100">
           </div>
           
-          <div class="dialog-content">
-            <p>確定要刪除專案「{{ deletingProject.projectName }}」嗎？</p>
-            <p class="warning-text">⚠️ 此操作無法復原，專案中的所有資料將會被移除。</p>
-          </div>
-          
-          <div class="dialog-footer">
-            <button (click)="closeDeleteDialog()" class="cancel-button">取消</button>
-            <button 
-              (click)="confirmDelete()" 
-              [disabled]="loading"
-              class="delete-button">
-              {{ loading ? '刪除中...' : '確認刪除' }}
-            </button>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">專案描述</label>
+            <textarea 
+              [(ngModel)]="projectForm_description" 
+              placeholder="輸入專案描述..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+              rows="3"
+              maxlength="500"></textarea>
           </div>
         </div>
-      </div>
+        
+        <div class="flex justify-end gap-3 mt-6">
+          <app-button
+            variant="secondary"
+            label="取消"
+            (clicked)="closeCreateDialog()"
+          ></app-button>
+          <app-button
+            variant="primary"
+            [label]="loading ? '建立中...' : '建立專案'"
+            [disabled]="!projectForm_name.trim() || loading"
+            [loading]="loading"
+            (clicked)="createProject()"
+          ></app-button>
+        </div>
+      </app-modal>
+
+      <!-- 編輯專案對話框 -->
+      <app-modal
+        [isOpen]="showEditDialog && !!editingProject"
+        title="編輯專案"
+        (close)="closeEditDialog()"
+      >
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">專案名稱 *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="projectForm_name" 
+              placeholder="輸入專案名稱..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              maxlength="100">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">專案描述</label>
+            <textarea 
+              [(ngModel)]="projectForm_description" 
+              placeholder="輸入專案描述..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+              rows="3"
+              maxlength="500"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">專案狀態</label>
+            <select 
+              [(ngModel)]="projectForm_status" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <option value="active">進行中</option>
+              <option value="completed">已完成</option>
+              <option value="archived">已封存</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="flex justify-end gap-3 mt-6">
+          <app-button
+            variant="secondary"
+            label="取消"
+            (clicked)="closeEditDialog()"
+          ></app-button>
+          <app-button
+            variant="primary"
+            [label]="loading ? '更新中...' : '更新專案'"
+            [disabled]="!projectForm_name.trim() || loading"
+            [loading]="loading"
+            (clicked)="updateProject()"
+          ></app-button>
+        </div>
+      </app-modal>
+
+      <!-- 刪除確認對話框 -->
+      <app-modal
+        [isOpen]="showDeleteDialog && !!deletingProject"
+        title="確認刪除"
+        (close)="closeDeleteDialog()"
+      >
+        <div class="space-y-4">
+          <p class="text-gray-700">
+            確定要刪除專案「<strong>{{ deletingProject?.projectName }}</strong>」嗎？
+          </p>
+          <div class="bg-red-50 border border-red-200 rounded-md p-3">
+            <p class="text-red-800 text-sm font-medium flex items-center gap-2">
+              <span>⚠️</span>
+              此操作無法復原，專案中的所有資料將會被移除。
+            </p>
+          </div>
+        </div>
+        
+        <div class="flex justify-end gap-3 mt-6">
+          <app-button
+            variant="secondary"
+            label="取消"
+            (clicked)="closeDeleteDialog()"
+          ></app-button>
+          <app-button
+            variant="danger"
+            [label]="loading ? '刪除中...' : '確認刪除'"
+            [disabled]="loading"
+            [loading]="loading"
+            (clicked)="confirmDelete()"
+          ></app-button>
+        </div>
+      </app-modal>
     </div>
-  `,
-  styleUrls: ['./project-management.page.scss']
+  `
 })
 export class ProjectManagementComponent implements OnInit, OnDestroy {
   
   // 訂閱管理
   private subscriptions = new Subscription();
+  
+  // Utility function for class names
+  cn = cn;
   
   // 狀態管理
   loading = false;

@@ -8,316 +8,411 @@ import { Router } from '@angular/router';
 import { ProjectService, Project, CreateProjectRequest, ProjectStatistics } from '../../services/project.service';
 import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
+import { ButtonComponent } from '../../components/ui/button/button.component';
+import { LoadingComponent } from '../../components/ui/loading/loading.component';
+import { ModalComponent } from '../../components/ui/modal/modal.component';
+import { cn } from '../../utils/cn';
 
 @Component({
   selector: 'app-case-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ButtonComponent,
+    LoadingComponent,
+    ModalComponent
+  ],
   template: `
-    <div class="case-management-page">
-      <!-- 整合的頁面標題和搜尋區域 -->
-      <div class="page-header">
-        <div class="header-top">
-          <div class="header-left">
-            <h1>案件管理</h1>
-            <div class="page-subtitle">管理所有案件和相關資料</div>
-          </div>
-          <div class="header-right">
-            <button class="btn-new-case" (click)="showCreateDialog = true">新增</button>
+    <div class="min-h-screen bg-gray-50 p-6">
+      <div class="max-w-7xl mx-auto space-y-6">
+        <!-- 頁面標題 -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                </div>
+                案件管理
+              </h1>
+              <p class="text-gray-600 mt-1">管理所有案件和相關資料</p>
+            </div>
+            
+            <app-button
+              variant="primary"
+              size="md"
+              label="新增案件"
+              icon="➕"
+              (clicked)="showCreateDialog = true"
+            ></app-button>
           </div>
         </div>
-        
-        <div class="search-filter-section">
-          <div class="search-row">
-            <div class="search-group">
-              <label>案件名稱</label>
+
+        <!-- 搜尋區域 -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">案件名稱</label>
               <input 
                 type="text" 
-                class="search-input" 
                 placeholder="請輸入案件名稱"
                 [(ngModel)]="searchTerm"
                 (input)="onSearch()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
             </div>
-            <div class="search-group">
-              <label>建立人</label>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">建立人</label>
               <input 
                 type="text" 
-                class="search-input" 
                 placeholder="請輸入建立人"
                 [(ngModel)]="creatorFilter"
                 (input)="onSearch()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
             </div>
-            <div class="search-group">
-              <label>相關人數</label>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">相關人數</label>
               <input 
                 type="text" 
-                class="search-input" 
                 placeholder="請輸入人數"
                 [(ngModel)]="memberCountFilter"
                 (input)="onSearch()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
             </div>
-            <div class="search-group">
-              <label>建立時間</label>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">建立時間</label>
               <input 
                 type="text" 
-                class="search-input" 
                 placeholder="請輸入日期關鍵字"
                 [(ngModel)]="dateFilter"
                 (input)="onSearch()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
             </div>
-            <div class="search-actions">
-              <button class="btn-search" (click)="onSearch()">搜尋</button>
+            <div class="flex items-end">
+              <app-button
+                variant="secondary"
+                size="md"
+                label="搜尋"
+                icon="🔍"
+                (clicked)="onSearch()"
+                class="w-full"
+              ></app-button>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 載入中指示器 -->
-      <div *ngIf="loading" class="loading-section">
-        <div class="loading-spinner"></div>
-        <span>載入中...</span>
-      </div>
-
-      <!-- 案件列表 -->
-      <div *ngIf="!loading" class="table-section">
-        <div class="table-header">
-          <span class="table-title">案件列表({{ statistics?.totalProjects || 0 }})</span>
+        <!-- 載入中 -->
+        <div *ngIf="loading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+          <app-loading 
+            variant="spinner" 
+            size="lg"
+            message="載入案件列表中..."
+          ></app-loading>
         </div>
-        <table class="case-table" *ngIf="paginatedCases.length > 0">
-          <thead>
-            <tr>
-              <th class="col-index">項次</th>
-              <th class="col-name">案件名稱</th>
-              <th class="col-creator">建立人</th>
-              <th class="col-members">相關人數</th>
-              <th class="col-date">建立時間</th>
-              <th class="col-actions">功能</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let case of paginatedCases; let i = index" class="case-row">
-              <td class="col-index">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
-              <td class="col-name">
-                <div class="case-name-cell" (click)="openCase(case)">
-                  <span class="case-title">{{ case.projectName }}</span>
-                </div>
-              </td>
-              <td class="col-creator">{{ getCurrentCreator() }}</td>
-              <td class="col-members">{{ case.memberCount }}</td>
-              <td class="col-date">{{ formatDate(case.createdAt) }}</td>
-              <td class="col-actions">
-                <div class="action-buttons">
-                  <button 
-                    class="btn-action btn-edit" 
-                    (click)="editCase(case)"
-                    title="編輯">
-                    編輯
-                  </button>
-                  <button 
-                    class="btn-action btn-upload" 
-                    (click)="openFileUpload(case)"
-                    title="上傳">
-                    上傳
-                  </button>
-                  <button 
-                    class="btn-action btn-analysis" 
-                    (click)="openAnalysis(case)"
-                    title="分析">
-                    分析
-                  </button>
-                  <button 
-                    class="btn-action btn-delete" 
-                    (click)="deleteCase(case)"
-                    title="刪除">
-                    刪除
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
 
-        <!-- 空狀態 -->
-        <div *ngIf="paginatedCases.length === 0" class="empty-state">
-          <div class="empty-icon">📋</div>
-          <h3>{{ searchTerm ? '找不到相符的案件' : '還沒有任何案件' }}</h3>
-          <p>{{ searchTerm ? '請試試其他搜尋條件' : '點擊右上角的「新增」按鈕來建立第一個案件' }}</p>
-        </div>
-      </div>
-
-      <!-- 分頁控制 -->
-      <div class="pagination-section" *ngIf="totalPages > 1">
-        <div class="pagination-info">
-          顯示第 {{ (currentPage - 1) * pageSize + 1 }} 至 {{ Math.min(currentPage * pageSize, filteredCases.length) }} 筆，共 {{ filteredCases.length }} 筆資料
-        </div>
-        
-        <div class="pagination-controls">
-          <button 
-            class="pagination-btn" 
-            [disabled]="currentPage === 1"
-            (click)="goToPage(1)">
-            ≪
-          </button>
-          <button 
-            class="pagination-btn" 
-            [disabled]="currentPage === 1"
-            (click)="goToPage(currentPage - 1)">
-            ‹
-          </button>
-          
-          <span class="page-numbers">
-            <button 
-              *ngFor="let page of getPageNumbers()" 
-              class="pagination-btn page-number"
-              [class.active]="page === currentPage"
-              (click)="goToPage(page)">
-              {{ page }}
-            </button>
-          </span>
-          
-          <button 
-            class="pagination-btn" 
-            [disabled]="currentPage === totalPages"
-            (click)="goToPage(currentPage + 1)">
-            ›
-          </button>
-          <button 
-            class="pagination-btn" 
-            [disabled]="currentPage === totalPages"
-            (click)="goToPage(totalPages)">
-            ≫
-          </button>
-          
-          <select 
-            class="page-selector" 
-            [(ngModel)]="currentPage" 
-            (change)="updatePagination()">
-            <option *ngFor="let page of getAllPageNumbers()" [value]="page">{{ page }}</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- 新增案件對話框 -->
-      <div *ngIf="showCreateDialog" class="dialog-overlay" (click)="closeCreateDialog()">
-        <div class="dialog" (click)="$event.stopPropagation()">
-          <div class="dialog-header">
-            <h3>新增案件</h3>
-            <button (click)="closeCreateDialog()" class="close-btn">×</button>
+        <!-- 案件列表 -->
+        <div *ngIf="!loading" class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div class="p-6 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              📋 案件列表
+              <span class="bg-gray-100 text-gray-600 text-sm px-2 py-1 rounded-full">{{ statistics?.totalProjects || 0 }}</span>
+            </h2>
           </div>
           
-          <div class="dialog-content">
-            <div class="form-group">
-              <label for="caseName">案件名稱 *</label>
-              <input 
-                id="caseName"
-                type="text" 
-                [(ngModel)]="caseForm_name" 
-                placeholder="輸入案件名稱..."
-                class="form-input"
-                maxlength="100">
+          <!-- 案件表格 -->
+          <div *ngIf="paginatedCases.length > 0" class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">項次</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">案件名稱</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">建立人</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">相關人數</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">建立時間</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-80">功能</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr *ngFor="let case of paginatedCases; let i = index" class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ (currentPage - 1) * pageSize + i + 1 }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <button 
+                      class="text-sm font-medium text-indigo-600 hover:text-indigo-900 transition-colors text-left"
+                      (click)="openCase(case)"
+                    >
+                      {{ case.projectName }}
+                    </button>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ getCurrentCreator() }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {{ case.memberCount || 0 }} 人
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ formatDate(case.createdAt) }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <div class="flex gap-2">
+                      <app-button
+                        variant="secondary"
+                        size="sm"
+                        label="編輯"
+                        (clicked)="editCase(case)"
+                      ></app-button>
+                      <app-button
+                        variant="primary"
+                        size="sm"
+                        label="上傳"
+                        (clicked)="openFileUpload(case)"
+                      ></app-button>
+                      <app-button
+                        variant="view"
+                        size="sm"
+                        label="分析"
+                        (clicked)="openAnalysis(case)"
+                      ></app-button>
+                      <app-button
+                        variant="danger"
+                        size="sm"
+                        label="刪除"
+                        (clicked)="deleteCase(case)"
+                      ></app-button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 空狀態 -->
+          <div *ngIf="paginatedCases.length === 0" class="text-center py-12">
+            <div class="text-gray-400 text-6xl mb-4">📋</div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">
+              {{ searchTerm ? '找不到相符的案件' : '還沒有任何案件' }}
+            </h3>
+            <p class="text-gray-600">
+              {{ searchTerm ? '請試試其他搜尋條件' : '點擊右上角的「新增案件」按鈕來建立第一個案件' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- 分頁控制 -->
+        <div *ngIf="totalPages > 1" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="text-sm text-gray-600">
+              顯示第 {{ (currentPage - 1) * pageSize + 1 }} 至 {{ Math.min(currentPage * pageSize, filteredCases.length) }} 筆，共 {{ filteredCases.length }} 筆資料
             </div>
             
-            <div class="form-group">
-              <label for="caseDescription">案件描述</label>
-              <textarea 
-                id="caseDescription"
-                [(ngModel)]="caseForm_description" 
-                placeholder="輸入案件描述..."
-                class="form-textarea"
-                rows="3"
-                maxlength="500"></textarea>
+            <div class="flex items-center gap-2">
+              <button 
+                class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                [disabled]="currentPage === 1"
+                (click)="goToPage(1)"
+              >
+                ≪
+              </button>
+              <button 
+                class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                [disabled]="currentPage === 1"
+                (click)="goToPage(currentPage - 1)"
+              >
+                ‹
+              </button>
+              
+              <div class="flex gap-1">
+                <button 
+                  *ngFor="let page of getPageNumbers()" 
+                  class="px-3 py-2 text-sm font-medium rounded-md transition-colors"
+                  [class]="cn(
+                    page === currentPage 
+                      ? 'bg-indigo-600 text-white' 
+                      : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                  )"
+                  (click)="goToPage(page)"
+                >
+                  {{ page }}
+                </button>
+              </div>
+              
+              <button 
+                class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                [disabled]="currentPage === totalPages"
+                (click)="goToPage(currentPage + 1)"
+              >
+                ›
+              </button>
+              <button 
+                class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                [disabled]="currentPage === totalPages"
+                (click)="goToPage(totalPages)"
+              >
+                ≫
+              </button>
+              
+              <select 
+                [(ngModel)]="currentPage" 
+                (change)="updatePagination()"
+                class="ml-2 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option *ngFor="let page of getAllPageNumbers()" [value]="page">第 {{ page }} 頁</option>
+              </select>
             </div>
-          </div>
-          
-          <div class="dialog-actions">
-            <button (click)="closeCreateDialog()" class="btn-cancel">取消</button>
-            <button 
-              (click)="createCase()" 
-              [disabled]="!caseForm_name.trim() || loading"
-              class="btn-confirm">
-              {{ loading ? '建立中...' : '建立案件' }}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 編輯案件對話框 -->
-      <div *ngIf="showEditDialog && editingCase" class="dialog-overlay" (click)="closeEditDialog()">
-        <div class="dialog" (click)="$event.stopPropagation()">
-          <div class="dialog-header">
-            <h3>編輯案件</h3>
-            <button (click)="closeEditDialog()" class="close-btn">×</button>
-          </div>
-          
-          <div class="dialog-content">
-            <div class="form-group">
-              <label for="editCaseName">案件名稱 *</label>
-              <input 
-                id="editCaseName"
-                type="text" 
-                [(ngModel)]="caseForm_name" 
-                placeholder="輸入案件名稱..."
-                class="form-input"
-                maxlength="100">
-            </div>
-            
-            <div class="form-group">
-              <label for="editCaseDescription">案件描述</label>
-              <textarea 
-                id="editCaseDescription"
-                [(ngModel)]="caseForm_description" 
-                placeholder="輸入案件描述..."
-                class="form-textarea"
-                rows="3"
-                maxlength="500"></textarea>
-            </div>
-          </div>
-          
-          <div class="dialog-actions">
-            <button (click)="closeEditDialog()" class="btn-cancel">取消</button>
-            <button 
-              (click)="updateCase()" 
-              [disabled]="!caseForm_name.trim() || loading"
-              class="btn-confirm">
-              {{ loading ? '更新中...' : '更新案件' }}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 刪除確認對話框 -->
-      <div *ngIf="showDeleteDialog && deletingCase" class="dialog-overlay" (click)="closeDeleteDialog()">
-        <div class="dialog" (click)="$event.stopPropagation()">
-          <div class="dialog-header">
-            <h3>確認刪除</h3>
-            <button (click)="closeDeleteDialog()" class="close-btn">×</button>
-          </div>
-          
-          <div class="dialog-content">
-            <p>確定要刪除案件「{{ deletingCase.projectName }}」嗎？</p>
-            <p class="warning-text">⚠️ 此操作無法復原，案件中的所有資料將會被移除。</p>
-          </div>
-          
-          <div class="dialog-actions">
-            <button (click)="closeDeleteDialog()" class="btn-cancel">取消</button>
-            <button 
-              (click)="confirmDelete()" 
-              [disabled]="loading"
-              class="btn-danger">
-              {{ loading ? '刪除中...' : '確認刪除' }}
-            </button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- 新增案件對話框 -->
+    <app-modal
+      [isOpen]="showCreateDialog"
+      title="新增案件"
+      (close)="closeCreateDialog()"
+    >
+      <div class="space-y-4">
+        <div>
+          <label for="caseName" class="block text-sm font-medium text-gray-700 mb-2">
+            案件名稱 <span class="text-red-500">*</span>
+          </label>
+          <input 
+            id="caseName"
+            type="text" 
+            [(ngModel)]="caseForm_name" 
+            placeholder="輸入案件名稱..."
+            maxlength="100"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          >
+        </div>
+        
+        <div>
+          <label for="caseDescription" class="block text-sm font-medium text-gray-700 mb-2">案件描述</label>
+          <textarea 
+            id="caseDescription"
+            [(ngModel)]="caseForm_description" 
+            placeholder="輸入案件描述..."
+            rows="3"
+            maxlength="500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-vertical"
+          ></textarea>
+        </div>
+      </div>
+      
+      <div class="flex justify-end gap-3 mt-6">
+        <app-button
+          variant="secondary"
+          label="取消"
+          (clicked)="closeCreateDialog()"
+        ></app-button>
+        <app-button
+          variant="primary"
+          [label]="loading ? '建立中...' : '建立案件'"
+          [disabled]="!caseForm_name.trim() || loading"
+          [loading]="loading"
+          (clicked)="createCase()"
+        ></app-button>
+      </div>
+    </app-modal>
+
+    <!-- 編輯案件對話框 -->
+    <app-modal
+      [isOpen]="showEditDialog && !!editingCase"
+      title="編輯案件"
+      (close)="closeEditDialog()"
+    >
+      <div class="space-y-4">
+        <div>
+          <label for="editCaseName" class="block text-sm font-medium text-gray-700 mb-2">
+            案件名稱 <span class="text-red-500">*</span>
+          </label>
+          <input 
+            id="editCaseName"
+            type="text" 
+            [(ngModel)]="caseForm_name" 
+            placeholder="輸入案件名稱..."
+            maxlength="100"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          >
+        </div>
+        
+        <div>
+          <label for="editCaseDescription" class="block text-sm font-medium text-gray-700 mb-2">案件描述</label>
+          <textarea 
+            id="editCaseDescription"
+            [(ngModel)]="caseForm_description" 
+            placeholder="輸入案件描述..."
+            rows="3"
+            maxlength="500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-vertical"
+          ></textarea>
+        </div>
+      </div>
+      
+      <div class="flex justify-end gap-3 mt-6">
+        <app-button
+          variant="secondary"
+          label="取消"
+          (clicked)="closeEditDialog()"
+        ></app-button>
+        <app-button
+          variant="primary"
+          [label]="loading ? '更新中...' : '更新案件'"
+          [disabled]="!caseForm_name.trim() || loading"
+          [loading]="loading"
+          (clicked)="updateCase()"
+        ></app-button>
+      </div>
+    </app-modal>
+
+    <!-- 刪除確認對話框 -->
+    <app-modal
+      [isOpen]="showDeleteDialog && !!deletingCase"
+      title="確認刪除"
+      (close)="closeDeleteDialog()"
+    >
+      <div class="space-y-4">
+        <p class="text-gray-700">確定要刪除案件「{{ deletingCase?.projectName }}」嗎？</p>
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <div class="text-yellow-600 text-xl mr-3">⚠️</div>
+            <div>
+              <p class="text-sm text-yellow-800 font-medium">警告</p>
+              <p class="text-sm text-yellow-700">此操作無法復原，案件中的所有資料將會被移除。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex justify-end gap-3 mt-6">
+        <app-button
+          variant="secondary"
+          label="取消"
+          (clicked)="closeDeleteDialog()"
+        ></app-button>
+        <app-button
+          variant="danger"
+          [label]="loading ? '刪除中...' : '確認刪除'"
+          [disabled]="loading"
+          [loading]="loading"
+          (clicked)="confirmDelete()"
+        ></app-button>
+      </div>
+    </app-modal>
   `,
-  styleUrls: ['./case-management.page.scss']
+
 })
 export class CaseManagementComponent implements OnInit, OnDestroy {
+  // Utility function for class names
+  cn = cn;
   
   // 訂閱管理
   private subscriptions = new Subscription();
