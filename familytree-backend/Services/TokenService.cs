@@ -10,12 +10,13 @@ using familytree_backend.Models;
 using Dapper;
 using Npgsql;
 using Microsoft.Extensions.Logging;
+using FamilyTree.Services;
 
 namespace familytree_backend.Services
 {
     public interface ITokenService
     {
-        string GenerateAccessToken(UserModel user);
+        Task<string> GenerateAccessTokenAsync(UserModel user);
         string GenerateRefreshToken();
         Task<bool> SaveRefreshTokenAsync(string userId, string token, DateTime expiresAt);
         Task<bool> ValidateRefreshTokenAsync(string token);
@@ -131,15 +132,18 @@ namespace familytree_backend.Services
         private readonly JwtSettings _jwtSettings;
         private readonly string _connectionString;
         private readonly ILogger<TokenService> _logger;
+        private readonly IPermissionService _permissionService;
 
         public TokenService(
             IOptions<JwtSettings> jwtSettings,
             IConfigurationService configurationService,
-            ILogger<TokenService> logger)
+            ILogger<TokenService> logger,
+            IPermissionService permissionService)
         {
             _jwtSettings = jwtSettings.Value;
             _connectionString = configurationService.GetConnectionString();
             _logger = logger;
+            _permissionService = permissionService;
 
             // 驗證 JWT 密鑰強度
             ValidateJwtSecret();
@@ -171,22 +175,41 @@ namespace familytree_backend.Services
             _logger.LogInformation("JWT Secret validation passed in TokenService. Strength score: {Score}/100", strengthScore);
         }
 
-        public string GenerateAccessToken(UserModel user)
+        public async Task<string> GenerateAccessTokenAsync(UserModel user)
         {
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
                 
-                var claims = new[]
+                // 從新的權限系統取得使用者角色
+                var userRoles = await _permissionService.GetUserRolesAsync(user.Id);
+                
+                var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.Id),
                     new Claim(ClaimTypes.Name, user.Username),
                     new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Role, user.Role),
                     new Claim("fullName", user.FullName ?? ""),
                     new Claim("status", user.Status)
                 };
+
+                // 添加新權限系統的角色
+                if (userRoles.Any())
+                {
+                    foreach (var role in userRoles)
+                    {
+                        claims.Add(new Claim(ClaimTypes.Role, role.Id));
+                    }
+                    // 主要角色（第一個角色）
+                    claims.Add(new Claim("role", userRoles.First().Id));
+                }
+                else
+                {
+                    // 如果沒有新角色，回退到舊系統
+                    claims.Add(new Claim(ClaimTypes.Role, user.Role));
+                    claims.Add(new Claim("role", user.Role));
+                }
 
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {

@@ -49,6 +49,9 @@ $color-info-400: #60a5fa;
 $color-info-500: #3b82f6;
 $color-info-600: #2563eb;
 
+// 文字顏色
+$text-on-primary: #ffffff;
+
 // ================================
 // 深色主題語義化變數
 // ================================
@@ -59,6 +62,9 @@ $bg-secondary: $color-neutral-800;      // 次要背景
 $bg-tertiary: $color-neutral-700;       // 第三層背景
 $bg-surface: $color-neutral-800;        // 表面背景
 $bg-overlay: rgba(0, 0, 0, 0.75);       // 遮罩背景
+$bg-base: $color-neutral-900;           // 基礎背景
+$bg-hover: rgba($color-neutral-600, 0.1); // 懸停背景
+$bg-disabled: $color-neutral-700;       // 禁用背景
 
 // 文字色彩
 $text-primary: $color-neutral-50;       // 主要文字
@@ -71,6 +77,7 @@ $text-inverse: $color-neutral-50;       // 反向文字 (白色)
 $border-primary: $color-neutral-700;    // 主要邊框
 $border-secondary: $color-neutral-600;  // 次要邊框
 $border-focus: $color-primary-500;      // 焦點邊框
+$border-color: $color-neutral-700;      // 通用邊框色
 
 // 主題色彩
 $primary: $color-primary-500;

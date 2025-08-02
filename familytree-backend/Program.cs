@@ -4,6 +4,7 @@ using familytree_backend.Services;
 using familytree_backend.Constants;
 using familytree_backend.Middleware;
 using FamilyTree.Services;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace familytree_backend
 {
@@ -166,7 +167,14 @@ builder.Services.AddScoped<familytree_backend.Services.PhotoUploadService>();
 builder.Services.AddScoped<familytree_backend.Services.IDataAccessService, familytree_backend.Services.DataAccessService>();
 
 // Add Data Access Service V2 - 基於 user_id 的資料隔離版本
-builder.Services.AddScoped<familytree_backend.Services.IDataAccessServiceV2, familytree_backend.Services.DataAccessServiceV2>();
+builder.Services.AddScoped<familytree_backend.Services.DataAccessServiceV2>();
+builder.Services.AddScoped<familytree_backend.Services.IDataAccessServiceV2>(provider =>
+{
+    var baseService = provider.GetRequiredService<familytree_backend.Services.DataAccessServiceV2>();
+    var cache = provider.GetRequiredService<IMemoryCache>();
+    var logger = provider.GetRequiredService<ILogger<familytree_backend.Services.CachedDataAccessServiceV2>>();
+    return new familytree_backend.Services.CachedDataAccessServiceV2(baseService, cache, logger);
+});
 
 // Add Logging Services - 統一日誌管理
 builder.Services.AddScoped<familytree_backend.Services.ILoggingService, familytree_backend.Services.LoggingService>();

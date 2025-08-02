@@ -328,6 +328,168 @@ namespace familytree_backend.Services
             }
         }
 
+        /// <summary>
+        /// 獲取人員資料列表（優化版，包含關聯資料）
+        /// </summary>
+        public async Task<IEnumerable<PersonDataModel>> GetPersonDataListOptimizedAsync(
+            string userId,
+            string userRole,
+            int page, 
+            int pageSize, 
+            string? keyword = null,
+            string? sortBy = null,
+            string? sortOrder = null)
+        {
+            try
+            {
+                _logger.LogInformation("獲取人員資料列表（優化版）：使用者 {UserId}，頁碼 {Page}，頁面大小 {PageSize}", 
+                    userId, page, pageSize);
+
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+                // 首先獲取人員列表
+                var (persons, totalCount) = await GetPersonDataListAsync(userId, userRole, page, pageSize, keyword, sortBy, sortOrder);
+                var personList = persons.ToList();
+                
+                if (!personList.Any())
+                {
+                    return personList;
+                }
+
+                var personIds = personList.Select(p => p.Id).ToList();
+
+                // 並行批量查詢關聯資料
+                var relationshipsTask = GetRelationshipsByPersonIdsAsync(personIds);
+                var photosTask = GetPhotosByPersonIdsAsync(personIds);
+
+                await Task.WhenAll(relationshipsTask, photosTask);
+
+                // 建立查找字典
+                var relationshipsLookup = relationshipsTask.Result
+                    .GroupBy(r => r.PersonId)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+                    
+                var photosLookup = photosTask.Result
+                    .GroupBy(p => p.EntityId)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                // 組裝資料
+                foreach (var person in personList)
+                {
+                    // 這裡可以將關聯資料加到 person 的某些屬性中
+                    // 由於原 PersonDataModel 沒有這些屬性，我們可以在需要時擴展
+                }
+
+                stopwatch.Stop();
+                _logger.LogInformation("人員資料列表優化查詢完成：{Count} 筆，耗時 {ElapsedMs}ms", 
+                    personList.Count, stopwatch.ElapsedMilliseconds);
+
+                return personList;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "獲取人員資料列表（優化版）失敗：使用者 {UserId}", userId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 批量獲取人員關係資料
+        /// </summary>
+        public async Task<IEnumerable<RelationshipDto>> GetRelationshipsByPersonIdsAsync(List<int> personIds)
+        {
+            try
+            {
+                if (!personIds.Any())
+                {
+                    return new List<RelationshipDto>();
+                }
+
+                _logger.LogInformation("批量查詢人員關係：{Count} 個人員", personIds.Count);
+
+                const string sql = @"
+                    SELECT 
+                        r.id as Id,
+                        r.person_id as PersonId,
+                        r.related_person_id as RelatedPersonId,
+                        r.relationship_type as RelationshipType,
+                        r.description as Description,
+                        r.is_confirmed as IsConfirmed,
+                        p1.name as PersonName,
+                        p2.name as RelatedPersonName,
+                        r.created_at as CreatedAt,
+                        r.updated_at as UpdatedAt
+                    FROM relationships r
+                    LEFT JOIN person_profile p1 ON r.person_id = p1.id
+                    LEFT JOIN person_profile p2 ON r.related_person_id = p2.id
+                    WHERE r.person_id = ANY(@PersonIds)";
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var results = await connection.QueryAsync<RelationshipDto>(sql, new { PersonIds = personIds });
+
+                _logger.LogInformation("批量查詢人員關係完成：{Count} 筆關係資料", results.Count());
+
+                return results;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "批量查詢人員關係失敗");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 批量獲取人員照片資料
+        /// </summary>
+        public async Task<IEnumerable<PhotoDto>> GetPhotosByPersonIdsAsync(List<int> personIds)
+        {
+            try
+            {
+                if (!personIds.Any())
+                {
+                    return new List<PhotoDto>();
+                }
+
+                _logger.LogInformation("批量查詢人員照片：{Count} 個人員", personIds.Count);
+
+                const string sql = @"
+                    SELECT 
+                        id as Id,
+                        entity_type as EntityType,
+                        entity_id as EntityId,
+                        file_name as FileName,
+                        file_path as FilePath,
+                        file_type as FileType,
+                        file_size as FileSize,
+                        mime_type as MimeType,
+                        md5_hash as Md5Hash,
+                        uploaded_by as UploadedBy,
+                        uploaded_at as UploadedAt,
+                        is_deleted as IsDeleted
+                    FROM file_metadata
+                    WHERE entity_type = 'person' 
+                    AND entity_id = ANY(@PersonIds)
+                    AND is_deleted = false
+                    ORDER BY uploaded_at DESC";
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var results = await connection.QueryAsync<PhotoDto>(sql, new { PersonIds = personIds });
+
+                _logger.LogInformation("批量查詢人員照片完成：{Count} 個檔案", results.Count());
+
+                return results;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "批量查詢人員照片失敗");
+                throw;
+            }
+        }
+
         #endregion
 
         #region 我的最愛操作

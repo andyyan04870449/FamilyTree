@@ -114,6 +114,25 @@ namespace FamilyTree.Controllers
         }
 
         /// <summary>
+        /// 取得角色的權限列表
+        /// </summary>
+        [HttpGet("{roleId}/permissions")]
+        [RequirePermission("role:manage")]
+        public async Task<IActionResult> GetRolePermissions(string roleId)
+        {
+            try
+            {
+                var permissions = await _permissionService.GetRolePermissionsAsync(roleId);
+                return SuccessResponse(permissions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "取得角色權限時發生錯誤: RoleId={RoleId}", roleId);
+                return ErrorResponse("取得角色權限失敗");
+            }
+        }
+
+        /// <summary>
         /// 建立新角色
         /// </summary>
         [HttpPost]

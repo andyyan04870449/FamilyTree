@@ -3,6 +3,7 @@ import { RouterModule, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StatusBarComponent } from './components/status-bar/status-bar.component';
 import { SidebarNavComponent } from './components/sidebar-nav/sidebar-nav.component';
+import { ToastComponent } from './components/toast/toast.component';
 import { EventService } from './services/event.service';
 
 @Component({
@@ -10,7 +11,7 @@ import { EventService } from './services/event.service';
   templateUrl: './app.html',
   styleUrls: ['./app.scss'],
   standalone: true,
-  imports: [CommonModule, RouterModule, StatusBarComponent, SidebarNavComponent]
+  imports: [CommonModule, RouterModule, StatusBarComponent, SidebarNavComponent, ToastComponent]
 })
 export class App {
   constructor(private router: Router, private eventService: EventService) {}

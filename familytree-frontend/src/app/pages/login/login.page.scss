@@ -1,87 +1,386 @@
 @import '../../../styles/foundation/tokens';
 @import '../../../styles/foundation/mixins';
 
-.login-bg {
-  width: 100vw;
-  height: 100vh;
-  background: url('/assets/login-bg.png') center/cover no-repeat;
-  @include flex-center;
+// 登入頁面容器
+.login-container {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-}
-
-.login-form-container {
-  background: rgba(255,255,255,0.6);
-  backdrop-filter: blur(35px);
-  box-shadow: $shadow-xl;
-  border-radius: $radius-xl;
-  border: 1px solid $border-primary;
-  padding: $spacing-3xl $spacing-2xl;
-  min-width: 400px;
-  width: 512px;
-}
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.form-group {
-  @include form-group;
-}
-
-.form-group label {
-  @include form-label;
-  font-family: $font-family-base;
-  color: var(--text-primary);
-}
-
-.form-group input {
-  @include form-control;
-  height: 36px;
-  background: var(--color-neutral-50);
-  border-color: var(--border-primary);
-}
-
-.captcha-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  min-height: 100vh;
+  background: $bg-primary;
+  overflow: hidden;
 }
 
-.captcha-img {
-  width: 224px;
-  height: 79px;
-  border-radius: 10px;
-  object-fit: cover;
-}
-
-.refresh-captcha {
-  @include button-base;
-  background: var(--warning);
-  color: $text-inverse;
-  padding: $spacing-md $spacing-2xl;
-  font-weight: $font-weight-bold;
-  height: 48px;
+// 背景裝飾
+.login-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
   
-  &:hover {
-    background: var(--warning-hover);
+  .bg-pattern {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.03;
+    animation: float 20s infinite ease-in-out;
+    
+    &-1 {
+      width: 800px;
+      height: 800px;
+      background: $color-primary-400;
+      top: -400px;
+      left: -200px;
+    }
+    
+    &-2 {
+      width: 600px;
+      height: 600px;
+      background: $color-primary-500;
+      bottom: -300px;
+      right: -150px;
+      animation-delay: -5s;
+    }
+    
+    &-3 {
+      width: 400px;
+      height: 400px;
+      background: $color-primary-600;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation-delay: -10s;
+    }
   }
 }
 
-.login-btn {
-  @include button-primary;
-  background: var(--primary);
-  padding: $spacing-md $spacing-2xl;
-  font-weight: $font-weight-bold;
+// 登入卡片
+.login-card {
+  position: relative;
+  z-index: 10;
   width: 100%;
-  height: 48px;
+  max-width: 440px;
+  background: $bg-surface;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-2xl;
+  border: 1px solid $border-color;
+  overflow: hidden;
   
-  &:hover {
-    background: var(--primary-hover);
+  @include mobile {
+    margin: $spacing-md;
+    max-width: calc(100% - #{$spacing-lg});
   }
-} 
+}
+
+// 登入頭部
+.login-header {
+  padding: $spacing-2xl $spacing-2xl $spacing-xl;
+  text-align: center;
+  background: linear-gradient(180deg, rgba($color-primary-50, 0.5) 0%, transparent 100%);
+  
+  .app-logo {
+    display: inline-flex;
+    margin-bottom: $spacing-lg;
+    animation: logoEntrance 0.6s ease-out;
+  }
+  
+  .login-title {
+    margin: 0 0 $spacing-xs;
+    font-size: $font-size-2xl;
+    font-weight: 700;
+    color: $text-primary;
+    letter-spacing: -0.5px;
+  }
+  
+  .login-subtitle {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+  }
+}
+
+// 登入表單
+.login-form {
+  padding: 0 $spacing-2xl $spacing-2xl;
+}
+
+// 提示訊息
+.alert {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  margin-bottom: $spacing-lg;
+  border-radius: $radius-md;
+  font-size: $font-size-sm;
+  animation: slideDown 0.3s ease-out;
+  
+  &-error {
+    background: rgba($color-error-500, 0.1);
+    color: $color-error-600;
+    border: 1px solid rgba($color-error-500, 0.2);
+  }
+  
+  .alert-icon {
+    flex-shrink: 0;
+  }
+}
+
+// 表單組
+.form-group {
+  margin-bottom: $spacing-lg;
+  
+  &:last-of-type {
+    margin-bottom: $spacing-xl;
+  }
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-sm;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: $text-secondary;
+  
+  .label-icon {
+    opacity: 0.6;
+  }
+}
+
+.form-input {
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  font-size: $font-size-base;
+  color: $text-primary;
+  background: $bg-base;
+  border: 1.5px solid $border-color;
+  border-radius: $radius-md;
+  transition: all 0.2s ease;
+  
+  &::placeholder {
+    color: $text-tertiary;
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: $color-primary-500;
+    box-shadow: 0 0 0 3px rgba($color-primary-500, 0.1);
+    background: $bg-surface;
+  }
+  
+  &:disabled {
+    background: $bg-disabled;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+}
+
+// 密碼輸入包裝
+.password-input-wrapper {
+  position: relative;
+  
+  .form-input {
+    padding-right: $spacing-3xl;
+  }
+  
+  .password-toggle {
+    position: absolute;
+    right: $spacing-sm;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    color: $text-tertiary;
+    background: transparent;
+    border: none;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      color: $text-secondary;
+      background: $bg-hover;
+    }
+    
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba($color-primary-500, 0.2);
+    }
+  }
+}
+
+// 登入按鈕
+.btn-login {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: $spacing-md $spacing-xl;
+  font-size: $font-size-base;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, $color-primary-500 0%, $color-primary-600 100%);
+  border: none;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba($color-primary-500, 0.3);
+    
+    &::before {
+      transform: translateX(100%);
+    }
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  
+  &:disabled {
+    background: $bg-disabled;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .btn-text {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .loading-spinner {
+    animation: spin 1s linear infinite;
+  }
+}
+
+// 登入頁腳
+.login-footer {
+  margin-top: $spacing-xl;
+  
+  .divider {
+    height: 1px;
+    background: $border-color;
+    margin-bottom: $spacing-lg;
+  }
+  
+  .demo-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    padding: $spacing-md;
+    background: $bg-hover;
+    border-radius: $radius-md;
+    
+    .info-icon {
+      color: $color-info-500;
+      flex-shrink: 0;
+    }
+    
+    p {
+      margin: 0;
+      font-size: $font-size-sm;
+      color: $text-secondary;
+      
+      code {
+        padding: 2px 6px;
+        font-family: $font-family-mono;
+        font-size: $font-size-xs;
+        color: $color-primary-600;
+        background: rgba($color-primary-500, 0.1);
+        border-radius: $radius-sm;
+      }
+    }
+  }
+}
+
+// 動畫
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-30px) scale(1.05);
+  }
+}
+
+@keyframes logoEntrance {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// 深色主題支援
+@media (prefers-color-scheme: dark) {
+  .login-card {
+    background: $color-neutral-800;
+    border-color: $color-neutral-700;
+  }
+  
+  .form-input {
+    background: $color-neutral-900;
+    border-color: $color-neutral-700;
+    
+    &:focus {
+      background: $color-neutral-800;
+    }
+  }
+  
+  .demo-info {
+    background: rgba($color-neutral-700, 0.5);
+  }
+}

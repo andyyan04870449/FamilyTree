@@ -1,25 +1,119 @@
-<div class="login-bg">
-  <div class="login-mask-group">
-    <!-- 背景圖與遮罩可用 CSS 處理 -->
+<div class="login-container">
+  <!-- 背景裝飾 -->
+  <div class="login-bg">
+    <div class="bg-pattern bg-pattern-1"></div>
+    <div class="bg-pattern bg-pattern-2"></div>
+    <div class="bg-pattern bg-pattern-3"></div>
   </div>
-  <div class="login-form-container">
+  
+  <!-- 登入卡片 -->
+  <div class="login-card">
+    <div class="login-header">
+      <div class="app-logo">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="20" fill="url(#gradient)"/>
+          <path d="M24 8v16m0 0l-6-6m6 6l6-6m-6 6v8m-8-8h16" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="gradient" x1="0" y1="0" x2="48" y2="48">
+              <stop stop-color="#3b82f6"/>
+              <stop offset="1" stop-color="#2563eb"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <h1 class="login-title">家族樹管理系統</h1>
+      <p class="login-subtitle">請登入您的帳號以繼續</p>
+    </div>
+    
     <form class="login-form" (submit)="onLoginSubmit($event)">
+      <!-- 錯誤訊息 -->
+      <div class="alert alert-error" *ngIf="error">
+        <svg class="alert-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        </svg>
+        <span>{{ error }}</span>
+      </div>
+      
+      <!-- 帳號輸入 -->
       <div class="form-group">
-        <label for="account">帳號</label>
-        <input id="account" type="text" placeholder="請輸入帳號" />
+        <label for="account" class="form-label">
+          <svg class="label-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 8a3 3 0 100-6 3 3 0 000 6zM12.735 14c.618 0 1.093-.561.872-1.139a6.002 6.002 0 00-11.215 0C2.17 13.439 2.646 14 3.265 14h9.47z"/>
+          </svg>
+          帳號
+        </label>
+        <input 
+          id="account" 
+          type="text" 
+          class="form-input"
+          placeholder="請輸入帳號或電子郵件" 
+          [(ngModel)]="username"
+          name="username"
+          [disabled]="loading"
+          required
+        />
       </div>
+      
+      <!-- 密碼輸入 -->
       <div class="form-group">
-        <label for="password">密碼</label>
-        <input id="password" type="password" placeholder="請輸入密碼" />
-        <span class="icon-eye"></span>
+        <label for="password" class="form-label">
+          <svg class="label-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path fill-rule="evenodd" d="M5 9V7a3 3 0 016 0v2a2 2 0 012 2v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-3a2 2 0 012-2zm8 0V7a5 5 0 00-10 0v2a2 2 0 00-2 2v3a2 2 0 002 2h10a2 2 0 002-2v-3a2 2 0 00-2-2zM8 11a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z" clip-rule="evenodd"/>
+          </svg>
+          密碼
+        </label>
+        <div class="password-input-wrapper">
+          <input 
+            id="password" 
+            [type]="showPassword ? 'text' : 'password'" 
+            class="form-input"
+            placeholder="請輸入密碼" 
+            [(ngModel)]="password"
+            name="password"
+            [disabled]="loading"
+            required
+          />
+          <button 
+            type="button"
+            class="password-toggle" 
+            (click)="togglePassword()"
+            [attr.aria-label]="showPassword ? '隱藏密碼' : '顯示密碼'"
+          >
+            <svg *ngIf="!showPassword" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+              <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+            </svg>
+            <svg *ngIf="showPassword" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/>
+              <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/>
+            </svg>
+          </button>
+        </div>
       </div>
-      <div class="form-group captcha-group">
-        <label for="captcha">驗證碼</label>
-        <input id="captcha" type="text" placeholder="請輸入驗證碼" />
-        <img class="captcha-img" src="/assets/captcha-demo.png" alt="驗證碼" />
-        <button type="button" class="refresh-captcha">換一張圖</button>
+      
+      <!-- 登入按鈕 -->
+      <button 
+        type="submit" 
+        class="btn-login"
+        [disabled]="loading || !username || !password"
+        [class.loading]="loading"
+      >
+        <span class="btn-text">{{ loading ? '登入中' : '登入' }}</span>
+        <svg *ngIf="loading" class="loading-spinner" width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="50.265" stroke-dashoffset="37.699"/>
+        </svg>
+      </button>
+      
+      <!-- 登入資訊 -->
+      <div class="login-footer">
+        <div class="divider"></div>
+        <div class="demo-info">
+          <svg class="info-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+          </svg>
+          <p>預設管理員帳號：<code>admin</code> / <code>Admin@123</code></p>
+        </div>
       </div>
-      <button type="submit" class="login-btn">登入</button>
     </form>
   </div>
 </div> 

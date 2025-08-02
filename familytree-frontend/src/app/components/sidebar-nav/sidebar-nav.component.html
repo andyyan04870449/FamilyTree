@@ -59,9 +59,9 @@
         </a>
       </li>
       
-      <!-- 系統管理 -->
-      <li class="nav__item" [class.is-active]="activeRoute === 'user-management'">
-        <a class="nav__link" routerLink="/user-management" (click)="closeSidebar()" [attr.aria-current]="activeRoute === 'user-management' ? 'page' : null">
+      <!-- 系統管理 (只有管理員可見) -->
+      <li class="nav__item" [class.is-active]="isSystemManagementActive()" *ngIf="isAdmin">
+        <a class="nav__link" routerLink="/user-management" (click)="closeSidebar()" [attr.aria-current]="isSystemManagementActive() ? 'page' : null">
           <div class="nav__icon">
             <img src="/assets/icons/gear.png" alt="" class="nav__icon-img">
           </div>
@@ -70,6 +70,21 @@
       </li>
     </ul>
   </nav>
+  
+  <!-- 使用者資訊區域 -->
+  <div class="sidebar__user" *ngIf="currentUser">
+    <div class="user-info">
+      <div class="user-info__name">{{ currentUser.fullName || currentUser.username }}</div>
+      <div class="user-info__role">{{ currentUser.role === 'admin' ? '管理員' : '一般使用者' }}</div>
+    </div>
+    <button class="logout-btn" (click)="logout()" title="登出">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M7.5 17.5H4.16667C3.72464 17.5 3.30072 17.3244 2.98816 17.0118C2.67559 16.6993 2.5 16.2754 2.5 15.8333V4.16667C2.5 3.72464 2.67559 3.30072 2.98816 2.98816C3.30072 2.67559 3.72464 2.5 4.16667 2.5H7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M13.3333 14.1667L17.5 10L13.3333 5.83334" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M17.5 10H7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
 
   <!-- 背景裝飾 -->
   <div class="sidebar__background" aria-hidden="true"></div>

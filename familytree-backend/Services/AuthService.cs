@@ -85,7 +85,7 @@ namespace familytree_backend.Services
                 }
 
                 // 產生 tokens
-                var accessToken = _tokenService.GenerateAccessToken(user);
+                var accessToken = await _tokenService.GenerateAccessTokenAsync(user);
                 var refreshToken = _tokenService.GenerateRefreshToken();
                 var refreshTokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.RefreshTokenExpiration);
 
@@ -175,7 +175,7 @@ namespace familytree_backend.Services
                 }
 
                 // 產生新的 tokens
-                var newAccessToken = _tokenService.GenerateAccessToken(user);
+                var newAccessToken = await _tokenService.GenerateAccessTokenAsync(user);
                 var newRefreshToken = _tokenService.GenerateRefreshToken();
                 var refreshTokenExpiry = DateTime.UtcNow.AddMinutes(_jwtSettings.RefreshTokenExpiration);
 

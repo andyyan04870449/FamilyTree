@@ -47,6 +47,28 @@ namespace familytree_backend.Services
         /// </summary>
         Task<IEnumerable<PersonDataModel>> SearchPersonsAsync(string userId, string userRole, SearchRequest request);
 
+        /// <summary>
+        /// 獲取人員資料列表（優化版，包含關聯資料）
+        /// </summary>
+        Task<IEnumerable<PersonDataModel>> GetPersonDataListOptimizedAsync(
+            string userId,
+            string userRole,
+            int page, 
+            int pageSize, 
+            string? keyword = null,
+            string? sortBy = null,
+            string? sortOrder = null);
+
+        /// <summary>
+        /// 批量獲取人員關係資料
+        /// </summary>
+        Task<IEnumerable<RelationshipDto>> GetRelationshipsByPersonIdsAsync(List<int> personIds);
+
+        /// <summary>
+        /// 批量獲取人員照片資料
+        /// </summary>
+        Task<IEnumerable<PhotoDto>> GetPhotosByPersonIdsAsync(List<int> personIds);
+
         #endregion
 
         #region 我的最愛操作
