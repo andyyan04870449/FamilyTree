@@ -73,7 +73,7 @@ namespace familytree_backend.Services
     {
         private readonly ILogger<QueryOptimizationService> _logger;
         private readonly IConfigurationService _configurationService;
-        private readonly IDataAccessService _dataAccessService;
+        private readonly IDataAccessServiceV2 _dataAccessService;
         private readonly ICacheService _cacheService;
         private readonly PerformanceConfiguration _performanceConfig;
         private readonly DatabaseConfiguration _databaseConfig;
@@ -88,7 +88,7 @@ namespace familytree_backend.Services
         public QueryOptimizationService(
             ILogger<QueryOptimizationService> logger,
             IConfigurationService configurationService,
-            IDataAccessService dataAccessService,
+            IDataAccessServiceV2 dataAccessService,
             ICacheService cacheService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -126,7 +126,9 @@ namespace familytree_backend.Services
                         batchSql = OptimizeQueryForBatch(sql, batchParameters.Count());
                     }
 
-                    var batchResults = await _dataAccessService.ExecuteQueryAsync<T>(batchSql, batchParameters);
+                    // V2 版本需要 userId 和 userRole 參數，但在這個服務層級中我們無法獲取這些資訊
+                    // 因此傳入 null，表示使用系統級別的查詢
+                    var batchResults = await _dataAccessService.ExecuteQueryAsync<T>(batchSql, batchParameters, null, null);
                     results.AddRange(batchResults);
 
                     _logger.LogDebug("批次 {BatchNumber}/{TotalBatches} 完成 - 結果數: {ResultCount}", 
@@ -177,8 +179,10 @@ namespace familytree_backend.Services
                 var optimizedDataSql = OptimizeQuery(dataSql);
 
                 // 並行執行計數和資料查詢
+                // V2 版本的 ExecuteScalarAsync 不需要 userId 和 userRole
                 var countTask = _dataAccessService.ExecuteScalarAsync<int>(optimizedCountSql, parameters);
-                var dataTask = _dataAccessService.ExecuteQueryAsync<T>(optimizedDataSql, parameters);
+                // V2 版本的 ExecuteQueryAsync 需要 userId 和 userRole，使用 null 表示系統級別查詢
+                var dataTask = _dataAccessService.ExecuteQueryAsync<T>(optimizedDataSql, parameters, null, null);
 
                 await Task.WhenAll(countTask, dataTask);
 
@@ -231,7 +235,8 @@ namespace familytree_backend.Services
                 var optimizedSql = OptimizeQuery(sql);
 
                 // 執行查詢
-                var results = await _dataAccessService.ExecuteQueryAsync<dynamic>(optimizedSql, parameters);
+                // V2 版本需要 userId 和 userRole，使用 null 表示系統級別查詢
+                var results = await _dataAccessService.ExecuteQueryAsync<dynamic>(optimizedSql, parameters, null, null);
                 var resultDict = new Dictionary<int, T>();
                 foreach (var row in results)
                 {

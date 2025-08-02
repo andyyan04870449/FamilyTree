@@ -5,8 +5,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using familytree_backend.Models;
+using familytree_backend.Models.Exceptions;
 using familytree_backend.Constants;
 using familytree_backend.Services;
+using familytree_backend.Extensions;
+using familytree_backend.Attributes;
 using FamilyTree.Attributes;
 
 namespace familytree_backend.Controllers
@@ -16,17 +19,17 @@ namespace familytree_backend.Controllers
     [Authorize]
     public class FullTextSearchController : BaseController
     {
-        private readonly IDataAccessService _dataAccessService;
+        private readonly IDataAccessServiceV2 _dataAccessService;
         private readonly SearchConfiguration _searchConfig;
 
         /// <summary>
         /// 全文檢索控制器建構子
-        /// 設計改善：使用統一的資料存取服務，移除重複的 SQL 查詢邏輯
+        /// 設計改善：使用統一的資料存取服務 V2，基於 user_id 的資料隔離
         /// </summary>
         public FullTextSearchController(
             ILogger<FullTextSearchController> logger,
             IConfigurationService configurationService,
-            IDataAccessService dataAccessService,
+            IDataAccessServiceV2 dataAccessService,
             IValidationService validationService,
             IAccessControlService accessControlService,
             ILoggingService loggingService) 
@@ -43,10 +46,10 @@ namespace familytree_backend.Controllers
         /// <param name="request">搜索請求</param>
         /// <returns>搜索結果</returns>
         [HttpPost("search")]
-        [RequirePermission("search:perform")]
+        [SearchPerformPermission]
         public async Task<IActionResult> Search([FromBody] SearchRequest request)
         {
-            return await ExecuteWithExceptionHandling(async () =>
+            return await this.ExecuteWithErrorHandlingAsync(async () =>
             {
                 LogRequestStart("全文檢索搜索", new { 
                     Keyword = request.Keyword, 
@@ -57,13 +60,8 @@ namespace familytree_backend.Controllers
                 });
 
                 // 步驟 1：參數驗證
-                if (!ModelState.IsValid)
-                {
-                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
-                    var errorMessage = string.Join("; ", errors);
-                    Logger.LogWarning("請求參數驗證失敗: {errors}", errorMessage);
-                    return CreateErrorResponse($"參數驗證失敗: {errorMessage}");
-                }
+                this.ValidateModelState();
+                this.ValidateNotNull(request, nameof(request));
 
                 // 步驟 2：驗證專案 ID（如果提供）
                 if (!string.IsNullOrEmpty(request.ProjectId))
@@ -71,20 +69,24 @@ namespace familytree_backend.Controllers
                     var projectValidationResult = ValidateProjectId(request.ProjectId, allowNull: false);
                     if (projectValidationResult != null)
                     {
-                        return projectValidationResult;
+                        throw new ValidationException("專案ID驗證失敗");
                     }
                 }
 
                 var startTime = DateTime.UtcNow;
 
-                // 步驟 3：使用統一的資料存取服務執行搜索
-                var (searchResults, totalCount) = await _dataAccessService.SearchPersonDataAsync(request);
+                // 獲取當前使用者資訊
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+
+                // 步驟 3：使用統一的資料存取服務 V2 執行搜索
+                var (searchResults, totalCount) = await _dataAccessService.SearchPersonDataAsync(userId, userRole, request);
 
                 // 步驟 4：記錄搜索關鍵字
-                await _dataAccessService.RecordSearchKeywordAsync(request.Keyword, request.SearchType, request.ProjectId);
+                await _dataAccessService.RecordSearchKeywordAsync(request.Keyword, request.SearchType, userId);
 
                 // 步驟 5：獲取搜索歷史
-                var searchHistory = await _dataAccessService.GetSearchHistoryAsync(request.ProjectId, _searchConfig.MaxSearchHistory);
+                var searchHistory = await _dataAccessService.GetSearchHistoryAsync(userId, _searchConfig.MaxSearchHistory);
 
                 var endTime = DateTime.UtcNow;
                 var searchDuration = (endTime - startTime).TotalMilliseconds;
@@ -93,24 +95,19 @@ namespace familytree_backend.Controllers
                     request.Keyword, request.SearchType, request.ProjectId ?? "全專案", searchResults.Count(), searchDuration);
 
                 // 步驟 6：建立回應資料
-                var response = new SearchResult
+                var responseData = new SearchData
                 {
-                    Success = true,
-                    Message = $"搜索完成，找到 {totalCount} 筆結果",
-                    Data = new SearchData
-                    {
-                        Keyword = request.Keyword,
-                        SearchType = request.SearchType,
-                        TotalCount = totalCount,
-                        Page = request.Page,
-                        PageSize = request.PageSize,
-                        Results = searchResults.ToList(),
-                        SearchHistory = searchHistory
-                    }
+                    Keyword = request.Keyword,
+                    SearchType = request.SearchType,
+                    TotalCount = totalCount,
+                    Page = request.Page,
+                    PageSize = request.PageSize,
+                    Results = searchResults.ToList(),
+                    SearchHistory = searchHistory
                 };
 
                 LogRequestComplete("全文檢索搜索", searchResults.Count());
-                return Ok(response);
+                return this.SuccessResponse(responseData, $"搜索完成，找到 {totalCount} 筆結果");
             }, "全文檢索搜索");
         }
 
@@ -121,7 +118,7 @@ namespace familytree_backend.Controllers
         /// <param name="request">搜索請求</param>
         /// <returns>搜索結果</returns>
         [HttpPost("search-global")]
-        [RequirePermission("search:perform")]
+        [SearchPerformPermission]
         public async Task<IActionResult> SearchGlobal([FromBody] SearchRequest request)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -144,14 +141,18 @@ namespace familytree_backend.Controllers
 
                 var startTime = DateTime.UtcNow;
 
-                // 步驟 2：使用統一的資料存取服務執行全專案搜索
-                var (searchResults, totalCount) = await _dataAccessService.SearchPersonDataAsync(request);
+                // 獲取當前使用者資訊
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+
+                // 步驟 2：使用統一的資料存取服務 V2 執行全專案搜索
+                var (searchResults, totalCount) = await _dataAccessService.SearchPersonDataAsync(userId, userRole, request);
 
                 // 步驟 3：記錄搜索關鍵字（全局記錄）
-                await _dataAccessService.RecordSearchKeywordAsync(request.Keyword, request.SearchType);
+                await _dataAccessService.RecordSearchKeywordAsync(request.Keyword, request.SearchType, userId);
 
                 // 步驟 4：獲取全專案的搜索歷史
-                var searchHistory = await _dataAccessService.GetSearchHistoryAsync(limit: _searchConfig.MaxSearchHistory);
+                var searchHistory = await _dataAccessService.GetSearchHistoryAsync(userId, _searchConfig.MaxSearchHistory);
 
                 var endTime = DateTime.UtcNow;
                 var searchDuration = (endTime - startTime).TotalMilliseconds;
@@ -189,7 +190,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>搜索歷史列表</returns>
         [HttpGet("search-history")]
-        [RequirePermission("search:perform")]
+        [SearchPerformPermission]
         public async Task<IActionResult> GetSearchHistory([FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -206,8 +207,11 @@ namespace familytree_backend.Controllers
                     }
                 }
 
-                // 使用統一的資料存取服務獲取搜索歷史
-                var searchHistory = await _dataAccessService.GetSearchHistoryAsync(project_id, _searchConfig.MaxSearchHistory);
+                // 獲取當前使用者資訊
+                var userId = GetCurrentUserId();
+
+                // 使用統一的資料存取服務 V2 獲取搜索歷史
+                var searchHistory = await _dataAccessService.GetSearchHistoryAsync(userId, _searchConfig.MaxSearchHistory);
 
                 Logger.LogInformation("獲取搜索歷史完成：專案 {ProjectId}，歷史記錄數量 {Count}", 
                     project_id ?? "全專案", searchHistory.Count);
@@ -231,7 +235,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>清除結果</returns>
         [HttpDelete("search-history")]
-        [RequirePermission("search:perform")]
+        [SearchPerformPermission]
         public async Task<IActionResult> ClearSearchHistory([FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -269,7 +273,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>搜索統計資料</returns>
         [HttpGet("statistics")]
-        [RequirePermission("search:perform")]
+        [SearchPerformPermission]
         public async Task<IActionResult> GetSearchStatistics([FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -316,7 +320,7 @@ namespace familytree_backend.Controllers
         [HttpGet("test")]
         public IActionResult Test()
         {
-            return Ok(new { message = "FullTextSearchController 測試成功", timestamp = DateTime.UtcNow });
+            return this.SuccessResponse(new { message = "FullTextSearchController 測試成功", timestamp = DateTime.UtcNow });
         }
     }
 } 

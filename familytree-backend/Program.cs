@@ -248,6 +248,9 @@ var app = builder.Build();
 
 app.UseHttpsRedirection();
 
+// Use Global Exception Handling - 必須在其他中介軟體之前註冊
+app.UseGlobalExceptionHandling();
+
 // Use Security Middleware - 安全性中介軟體 (暫時停用以避免依賴注入問題)
 // app.UseMiddleware<familytree_backend.Middleware.SecurityMiddleware>();
 

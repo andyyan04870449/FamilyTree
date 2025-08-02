@@ -13,14 +13,16 @@ import {
   AuditStatistics,
   EventType 
 } from '../../services/audit-log.service';
+import { AuditConfigService, SelectOption } from '../../services/audit-config.service';
 import { ToastService } from '../../services/toast.service';
 import { CustomSelectComponent } from '../../shared/components/custom-select/custom-select.component';
-import { SelectOption } from '../../shared/interfaces/select-option.interface';
+import { TimeRangePickerComponent, TimeRangeValue } from '../../shared/components/time-range-picker/time-range-picker.component';
+import { TimeRangeFactory } from '../../utils/time-range.factory';
 
 @Component({
   selector: 'app-audit-log-viewer',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, CustomSelectComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, CustomSelectComponent, TimeRangePickerComponent],
   template: `
     <div class="audit-log">
       <!-- 標題和操作按鈕 -->
@@ -116,49 +118,17 @@ import { SelectOption } from '../../shared/interfaces/select-option.interface';
         </div>
         
         <form [formGroup]="filterForm" *ngIf="showFilters" class="filter-panel__form">
-          <!-- 快速時間選擇 -->
-          <div class="filter-panel__quick-time">
-            <label class="form-field__label">快速時間選擇</label>
-            <div class="filter-panel__quick-buttons">
-              <button 
-                *ngFor="let range of quickTimeRanges"
-                type="button"
-                class="btn btn--sm btn--outline"
-                [class.btn--primary]="selectedQuickRange === range.label"
-                (click)="selectQuickTimeRange(range)">
-                {{ range.label }}
-              </button>
-            </div>
-          </div>
-
-          <div class="filter-panel__row">
-            <!-- 時間範圍 -->
-            <div class="form-field" role="group" aria-labelledby="date-range-label">
-              <legend id="date-range-label" class="form-field__label">時間範圍</legend>
-              <div class="form-field__group">
-                <div class="form-field__item">
-                  <label for="fromDate" class="form-field__label form-field__label--sr-only">開始時間</label>
-                  <input 
-                    type="datetime-local" 
-                    id="fromDate"
-                    formControlName="fromDate"
-                    class="form-field__input"
-                    (ngModelChange)="clearQuickSelection()"
-                    aria-label="開始時間">
-                </div>
-                <span class="form-field__separator">至</span>
-                <div class="form-field__item">
-                  <label for="toDate" class="form-field__label form-field__label--sr-only">結束時間</label>
-                  <input 
-                    type="datetime-local" 
-                    id="toDate"
-                    formControlName="toDate"
-                    class="form-field__input"
-                    (ngModelChange)="clearQuickSelection()"
-                    aria-label="結束時間">
-                </div>
-              </div>
-            </div>
+          <!-- 時間範圍選擇器 -->
+          <div class="filter-panel__time-range">
+            <app-time-range-picker
+              label="時間範圍"
+              [showQuickButtons]="true"
+              [showCustomInputs]="false"
+              [showRangeInfo]="true"
+              [quickRangeTypes]="['today', 'last7days', 'last30days', 'last90days']"
+              formControlName="timeRange"
+              (rangeChange)="onTimeRangeChange($event)">
+            </app-time-range-picker>
           </div>
 
           <div class="filter-panel__row">
@@ -200,16 +170,13 @@ import { SelectOption } from '../../shared/interfaces/select-option.interface';
             <!-- 資源類型 -->
             <div class="form-field">
               <label for="resourceType" class="form-field__label">資源類型</label>
-              <select 
+              <app-custom-select
                 id="resourceType"
-                formControlName="resourceType"
-                class="form-field__select">
-                <option value="">全部</option>
-                <option value="Person">人員資料</option>
-                <option value="File">檔案</option>
-                <option value="Project">專案</option>
-                <option value="System">系統</option>
-              </select>
+                [options]="resourceTypeOptions"
+                [searchable]="false"
+                placeholder="選擇資源類型"
+                formControlName="resourceType">
+              </app-custom-select>
             </div>
           </div>
 
@@ -652,76 +619,18 @@ export class AuditLogViewerComponent implements OnInit, OnDestroy {
   // 提供 Math 物件給模板使用
   Math = Math;
 
-  // 自定義選擇組件選項
-  eventTypeOptions: SelectOption[] = [
-    { value: '', label: '全部事件類型' },
-    { value: 'LOGIN', label: '登入' },
-    { value: 'LOGOUT', label: '登出' },
-    { value: 'LOGIN_FAILED', label: '登入失敗' },
-    { value: 'DATA_ACCESS', label: '資料存取' },
-    { value: 'FILE_UPLOAD', label: '檔案上傳' },
-    { value: 'SEARCH', label: '搜尋' },
-    { value: 'EXPORT', label: '匯出' },
-    { value: 'ADMIN_ACTION', label: '管理員動作' }
-  ];
-
-  securityLevelOptions: SelectOption[] = [
-    { value: '', label: '全部安全等級' },
-    { value: 'LOW', label: '低' },
-    { value: 'NORMAL', label: '一般' },
-    { value: 'HIGH', label: '高' },
-    { value: 'CRITICAL', label: '緊急' }
-  ];
-
-  operationResultOptions: SelectOption[] = [
-    { value: '', label: '全部結果' },
-    { value: 'true', label: '成功' },
-    { value: 'false', label: '失敗' }
-  ];
-
-  // 快速時間選擇選項
-  quickTimeRanges = [
-    {
-      label: '今天',
-      getValue: () => {
-        const today = new Date();
-        const start = new Date(today.setHours(0, 0, 0, 0));
-        const end = new Date(today.setHours(23, 59, 59, 999));
-        return { start, end };
-      }
-    },
-    {
-      label: '最近7天',
-      getValue: () => {
-        const end = new Date();
-        const start = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-        return { start, end };
-      }
-    },
-    {
-      label: '最近30天',
-      getValue: () => {
-        const end = new Date();
-        const start = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        return { start, end };
-      }
-    },
-    {
-      label: '最近90天',
-      getValue: () => {
-        const end = new Date();
-        const start = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-        return { start, end };
-      }
-    }
-  ];
-
-  selectedQuickRange = '';
+  // 動態載入的選項
+  eventTypeOptions: SelectOption[] = [];
+  securityLevelOptions: SelectOption[] = [];
+  operationResultOptions: SelectOption[] = [];
+  resourceTypeOptions: SelectOption[] = [];
 
   constructor(
     private auditLogService: AuditLogService,
+    private auditConfigService: AuditConfigService,
     private toastService: ToastService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private timeRangeFactory: TimeRangeFactory
   ) {
     this.filterForm = this.createFilterForm();
     this.canManage = this.auditLogService.canManageAuditLogs();
@@ -739,7 +648,20 @@ export class AuditLogViewerComponent implements OnInit, OnDestroy {
 
   private async initializeComponent(): Promise<void> {
     try {
-      // 載入事件類型
+      // 並行載入配置選項
+      const [eventTypes, securityLevels, operationResults, resourceTypes] = await Promise.all([
+        this.auditConfigService.getEventTypes().toPromise(),
+        this.auditConfigService.getSecurityLevels().toPromise(),
+        this.auditConfigService.getOperationResults().toPromise(),
+        this.auditConfigService.getResourceTypes().toPromise()
+      ]);
+
+      this.eventTypeOptions = eventTypes || [];
+      this.securityLevelOptions = securityLevels || [];
+      this.operationResultOptions = operationResults || [];
+      this.resourceTypeOptions = resourceTypes || [];
+
+      // 載入事件類型（保持向後兼容）
       this.eventTypes = await this.auditLogService.getEventTypes().toPromise() || [];
       this.categories = this.auditLogService.getCategories();
 
@@ -762,8 +684,7 @@ export class AuditLogViewerComponent implements OnInit, OnDestroy {
 
   private createFilterForm(): FormGroup {
     return this.fb.group({
-      fromDate: [''],
-      toDate: [''],
+      timeRange: [null],
       userId: [''],
       userName: [''],
       eventTypes: [[]],
@@ -978,9 +899,13 @@ export class AuditLogViewerComponent implements OnInit, OnDestroy {
   }
 
   private convertFilterToFormValue(filter: AuditLogFilter): any {
+    const timeRange: TimeRangeValue | null = (filter.fromDate && filter.toDate) ? {
+      startDate: filter.fromDate.slice(0, 16),
+      endDate: filter.toDate.slice(0, 16)
+    } : null;
+
     return {
-      fromDate: filter.fromDate ? filter.fromDate.slice(0, 16) : '',
-      toDate: filter.toDate ? filter.toDate.slice(0, 16) : '',
+      timeRange,
       userId: filter.userId || '',
       userName: filter.userName || '',
       eventTypes: filter.eventTypes || [],
@@ -993,10 +918,12 @@ export class AuditLogViewerComponent implements OnInit, OnDestroy {
   }
 
   private convertFormValueToFilter(formValue: any): AuditLogFilter {
+    const timeRange = formValue.timeRange as TimeRangeValue;
+    
     const filter: AuditLogFilter = {
       ...this.currentFilter,
-      fromDate: formValue.fromDate ? new Date(formValue.fromDate).toISOString() : undefined,
-      toDate: formValue.toDate ? new Date(formValue.toDate).toISOString() : undefined,
+      fromDate: timeRange?.startDate ? new Date(timeRange.startDate).toISOString() : undefined,
+      toDate: timeRange?.endDate ? new Date(timeRange.endDate).toISOString() : undefined,
       userId: formValue.userId || undefined,
       userName: formValue.userName || undefined,
       eventTypes: formValue.eventTypes?.length ? formValue.eventTypes : undefined,
@@ -1014,39 +941,23 @@ export class AuditLogViewerComponent implements OnInit, OnDestroy {
     return filter;
   }
 
-  // 快速時間選擇方法
-  selectQuickTimeRange(range: any): void {
-    const { start, end } = range.getValue();
-    this.filterForm.patchValue({
-      fromDate: this.formatDateTimeForInput(start),
-      toDate: this.formatDateTimeForInput(end)
-    });
-    this.selectedQuickRange = range.label;
+  /**
+   * 時間範圍變更處理
+   */
+  onTimeRangeChange(timeRange: TimeRangeValue): void {
+    // 時間範圍已經通過 formControlName 自動更新到表單
+    // 觸發過濾器應用
     this.applyFilter();
-  }
-
-  // 清除快速選擇
-  clearQuickSelection(): void {
-    this.selectedQuickRange = '';
-  }
-
-  // 日期時間格式化方法
-  private formatDateTimeForInput(date: Date): string {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 
   // 檢查是否有已套用的篩選條件
   get hasActiveFilters(): boolean {
     const formValue = this.filterForm.value;
+    const timeRange = formValue.timeRange as TimeRangeValue;
+    
     return !!(
-      formValue.fromDate ||
-      formValue.toDate ||
+      timeRange?.startDate ||
+      timeRange?.endDate ||
       formValue.userId ||
       formValue.userName ||
       formValue.eventTypes?.length ||
@@ -1061,9 +972,10 @@ export class AuditLogViewerComponent implements OnInit, OnDestroy {
   // 取得已套用篩選條件數量
   get activeFilterCount(): number {
     const formValue = this.filterForm.value;
+    const timeRange = formValue.timeRange as TimeRangeValue;
     let count = 0;
-    if (formValue.fromDate) count++;
-    if (formValue.toDate) count++;
+    
+    if (timeRange?.startDate || timeRange?.endDate) count++;
     if (formValue.userId) count++;
     if (formValue.userName) count++;
     if (formValue.eventTypes?.length) count++;
@@ -1077,8 +989,17 @@ export class AuditLogViewerComponent implements OnInit, OnDestroy {
 
   // 清除所有篩選條件
   clearAllFilters(): void {
-    this.filterForm.reset();
-    this.selectedQuickRange = '';
+    this.filterForm.reset({
+      timeRange: null,
+      userId: '',
+      userName: '',
+      eventTypes: [],
+      resourceType: '',
+      securityLevels: [],
+      success: '',
+      searchText: '',
+      onlySuspicious: false
+    });
     this.applyFilter();
   }
 }

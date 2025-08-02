@@ -10,6 +10,8 @@ using FamilyTree.Models;
 using FamilyTree.Attributes;
 using familytree_backend.Controllers;
 using familytree_backend.Services;
+using familytree_backend.Constants;
+using familytree_backend.Attributes;
 
 namespace FamilyTree.Controllers
 {
@@ -77,7 +79,7 @@ namespace FamilyTree.Controllers
         /// 取得特定角色資訊
         /// </summary>
         [HttpGet("{roleId}")]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> GetRole(string roleId)
         {
             try
@@ -87,7 +89,7 @@ namespace FamilyTree.Controllers
                 
                 if (role == null)
                 {
-                    return NotFoundResponse("角色不存在");
+                    return NotFoundResponse(MessageConstants.Error.RoleNotFound);
                 }
 
                 var permissions = await _permissionService.GetRolePermissionsAsync(roleId);
@@ -117,7 +119,7 @@ namespace FamilyTree.Controllers
         /// 取得角色的權限列表
         /// </summary>
         [HttpGet("{roleId}/permissions")]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> GetRolePermissions(string roleId)
         {
             try
@@ -136,7 +138,7 @@ namespace FamilyTree.Controllers
         /// 建立新角色
         /// </summary>
         [HttpPost]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> CreateRole([FromBody] CreateRoleDto dto)
         {
             if (!ModelState.IsValid)
@@ -180,7 +182,7 @@ namespace FamilyTree.Controllers
         /// 更新角色資訊
         /// </summary>
         [HttpPut("{roleId}")]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> UpdateRole(string roleId, [FromBody] UpdateRoleDto dto)
         {
             if (!ModelState.IsValid)
@@ -201,15 +203,15 @@ namespace FamilyTree.Controllers
                 {
                     await LogActivityAsync("role.update", "role", roleId, 
                         $"更新角色: {dto.DisplayName}");
-                    return SuccessResponse(null, "角色更新成功");
+                    return SuccessResponse(null, MessageConstants.Success.DataUpdated);
                 }
 
-                return NotFoundResponse("角色不存在或為系統角色");
+                return NotFoundResponse(MessageConstants.Error.RoleNotFound);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "更新角色時發生錯誤: RoleId={RoleId}", roleId);
-                return ErrorResponse("角色更新失敗");
+                return ErrorResponse(MessageConstants.Error.DataUpdateFailed);
             }
         }
 
@@ -217,7 +219,7 @@ namespace FamilyTree.Controllers
         /// 刪除角色
         /// </summary>
         [HttpDelete("{roleId}")]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> DeleteRole(string roleId)
         {
             try
@@ -228,12 +230,12 @@ namespace FamilyTree.Controllers
                 
                 if (role == null)
                 {
-                    return NotFoundResponse("角色不存在");
+                    return NotFoundResponse(MessageConstants.Error.RoleNotFound);
                 }
 
                 if (role.IsSystem)
                 {
-                    return ForbiddenResponse("無法刪除系統角色");
+                    return ForbiddenResponse(MessageConstants.Error.AccessDenied);
                 }
 
                 if (role.UserCount > 0)
@@ -263,7 +265,7 @@ namespace FamilyTree.Controllers
         /// 設定角色權限
         /// </summary>
         [HttpPost("{roleId}/permissions")]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> SetRolePermissions(string roleId, [FromBody] SetRolePermissionsDto dto)
         {
             if (!ModelState.IsValid)
@@ -279,7 +281,7 @@ namespace FamilyTree.Controllers
                 
                 if (role == null)
                 {
-                    return NotFoundResponse("角色不存在");
+                    return NotFoundResponse(MessageConstants.Error.RoleNotFound);
                 }
 
                 // 驗證權限字串格式
@@ -313,7 +315,7 @@ namespace FamilyTree.Controllers
         /// 複製角色
         /// </summary>
         [HttpPost("copy")]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> CopyRole([FromBody] CopyRoleDto dto)
         {
             if (!ModelState.IsValid)

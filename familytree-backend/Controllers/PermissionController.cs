@@ -10,6 +10,7 @@ using FamilyTree.Models;
 using FamilyTree.Attributes;
 using familytree_backend.Controllers;
 using familytree_backend.Services;
+using familytree_backend.Attributes;
 
 namespace FamilyTree.Controllers
 {
@@ -38,7 +39,7 @@ namespace FamilyTree.Controllers
         /// 取得所有權限定義
         /// </summary>
         [HttpGet]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> GetPermissions()
         {
             try
@@ -90,7 +91,7 @@ namespace FamilyTree.Controllers
         /// 取得權限分類
         /// </summary>
         [HttpGet("categories")]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> GetPermissionCategories()
         {
             try
@@ -362,7 +363,7 @@ namespace FamilyTree.Controllers
         /// 設定使用者的額外權限
         /// </summary>
         [HttpPost("user/{userId}")]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> SetUserPermissions(string userId, [FromBody] SetUserPermissionsDto dto)
         {
             if (!ModelState.IsValid)
@@ -403,7 +404,7 @@ namespace FamilyTree.Controllers
         /// 指派角色給使用者
         /// </summary>
         [HttpPost("user/{userId}/role")]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> AssignRoleToUser(string userId, [FromBody] AssignRoleDto dto)
         {
             if (!ModelState.IsValid)
@@ -451,7 +452,7 @@ namespace FamilyTree.Controllers
         /// 移除使用者的角色
         /// </summary>
         [HttpDelete("user/{userId}/role/{roleId}")]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> RemoveRoleFromUser(string userId, string roleId)
         {
             try
@@ -486,7 +487,7 @@ namespace FamilyTree.Controllers
         /// 批量指派角色
         /// </summary>
         [HttpPost("batch/assign-role")]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> BatchAssignRole([FromBody] BatchAssignRoleDto dto)
         {
             if (!ModelState.IsValid)
@@ -549,7 +550,7 @@ namespace FamilyTree.Controllers
         /// 驗證權限
         /// </summary>
         [HttpPost("validate")]
-        [RequirePermission("role:manage")]
+        [RoleManagePermission]
         public async Task<IActionResult> ValidatePermission([FromBody] ValidatePermissionDto dto)
         {
             if (!ModelState.IsValid)

@@ -7,6 +7,8 @@ using Npgsql;
 using Dapper;
 using familytree_backend.Models;
 using familytree_backend.Services;
+using familytree_backend.Constants;
+using familytree_backend.Attributes;
 
 namespace familytree_backend.Controllers
 {
@@ -32,6 +34,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案ID</param>
         /// <returns>收藏列表</returns>
         [HttpGet]
+        [FavoritesManagePermission]
         public async Task<IActionResult> GetFavorites([FromQuery] string? project_id = null)
         {
             Logger.LogInformation("📋 獲取用戶收藏列表請求，專案ID: {projectId}", project_id);
@@ -105,6 +108,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案ID</param>
         /// <returns>操作結果</returns>
         [HttpPost]
+        [FavoritesManagePermission]
         public async Task<IActionResult> AddFavorite([FromBody] FavoriteRequest request, [FromQuery] string? project_id = null)
         {
             Logger.LogInformation("📋 添加收藏請求: PersonId={personId}, PersonName='{personName}', 專案ID: {projectId}", 
@@ -215,6 +219,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案ID</param>
         /// <returns>操作結果</returns>
         [HttpDelete("{id}")]
+        [FavoritesManagePermission]
         public async Task<IActionResult> RemoveFavorite(int id, [FromQuery] string? project_id = null)
         {
             Logger.LogInformation("📋 刪除收藏請求: FavoriteId={favoriteId}, 專案ID: {projectId}", id, project_id);
@@ -290,6 +295,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案ID</param>
         /// <returns>操作結果</returns>
         [HttpDelete("person/{personId}")]
+        [FavoritesManagePermission]
         public async Task<IActionResult> RemoveFavoriteByPersonId(int personId, [FromQuery] string? project_id = null)
         {
             Logger.LogInformation("📋 通過人員ID刪除收藏請求: PersonId={personId}, 專案ID: {projectId}", personId, project_id);
@@ -365,6 +371,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案ID</param>
         /// <returns>是否已收藏</returns>
         [HttpGet("check/{personId}")]
+        [FavoritesManagePermission]
         public async Task<IActionResult> CheckFavoriteStatus(int personId, [FromQuery] string? project_id = null)
         {
             Logger.LogInformation("📋 檢查收藏狀態請求: PersonId={personId}, 專案ID: {projectId}", personId, project_id);
@@ -400,7 +407,7 @@ namespace familytree_backend.Controllers
             catch (Exception ex)
             {
                 Logger.LogError(ex, "❌ 檢查收藏狀態失敗: PersonId={personId}, 專案ID: {projectId}, 錯誤={error}", personId, project_id, ex.Message);
-                return StatusCode(500, ApiResponse<object>.ErrorResult("檢查收藏狀態時發生錯誤"));
+                return StatusCode(500, ApiResponse<object>.ErrorResult(MessageConstants.Error.OperationFailed));
             }
         }
 
@@ -411,6 +418,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案ID</param>
         /// <returns>操作結果</returns>
         [HttpPut("view/{personId}")]
+        [FavoritesManagePermission]
         public async Task<IActionResult> UpdateViewTime(int personId, [FromQuery] string? project_id = null)
         {
             Logger.LogInformation("📋 更新收藏查看時間請求: PersonId={personId}, 專案ID: {projectId}", personId, project_id);
@@ -447,13 +455,13 @@ namespace familytree_backend.Controllers
                 else
                 {
                     Logger.LogWarning("⚠️  該人員未被收藏或不屬於該專案，無法更新查看時間: PersonId={personId}, 專案ID: {projectId}", personId, project_id);
-                    return NotFound(ApiResponse<object>.ErrorResult("該人員未被收藏或不屬於當前專案"));
+                    return NotFound(ApiResponse<object>.ErrorResult(MessageConstants.Error.FavoriteNotFound));
                 }
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "❌ 更新收藏查看時間失敗: PersonId={personId}, 專案ID: {projectId}, 錯誤={error}", personId, project_id, ex.Message);
-                return StatusCode(500, ApiResponse<object>.ErrorResult("更新查看時間時發生錯誤"));
+                return StatusCode(500, ApiResponse<object>.ErrorResult(MessageConstants.Error.DataUpdateFailed));
             }
         }
 
@@ -463,6 +471,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案ID</param>
         /// <returns>操作結果</returns>
         [HttpDelete("clear")]
+        [FavoritesManagePermission]
         public async Task<IActionResult> ClearAllFavorites([FromQuery] string? project_id = null)
         {
             Logger.LogInformation("📋 清空所有收藏請求，專案ID: {projectId}", project_id);
@@ -508,6 +517,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案ID</param>
         /// <returns>收藏統計資料</returns>
         [HttpGet("statistics")]
+        [FavoritesManagePermission]
         public async Task<IActionResult> GetFavoriteStatistics([FromQuery] string? project_id = null)
         {
             Logger.LogInformation("📋 獲取收藏統計請求，專案ID: {projectId}", project_id);
@@ -557,12 +567,12 @@ namespace familytree_backend.Controllers
                 Logger.LogInformation("✅ 收藏統計獲取成功: 總收藏={totalFavorites}, 今日收藏={todayFavorites}, 專案ID: {projectId}", 
                     totalFavorites, todayFavorites, project_id);
 
-                return Ok(ApiResponse<object>.SuccessResult(stats, "獲取收藏統計成功"));
+                return Ok(ApiResponse<object>.SuccessResult(stats, MessageConstants.Success.DataRetrieved));
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "❌ 獲取收藏統計失敗: {error}, 專案ID: {projectId}", ex.Message, project_id);
-                return StatusCode(500, ApiResponse<object>.ErrorResult("獲取收藏統計時發生錯誤"));
+                return StatusCode(500, ApiResponse<object>.ErrorResult(MessageConstants.Error.OperationFailed));
             }
         }
 

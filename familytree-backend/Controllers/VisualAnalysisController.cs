@@ -9,6 +9,7 @@ using Dapper;
 using familytree_backend.Constants;
 using familytree_backend.Models;
 using familytree_backend.Services;
+using familytree_backend.Attributes;
 
 namespace familytree_backend.Controllers
 {
@@ -33,6 +34,7 @@ namespace familytree_backend.Controllers
         /// 獲取所有視覺化分析圖列表
         /// </summary>
         [HttpGet]
+        [VisualAnalysisPermission]
         public async Task<IActionResult> GetVisualAnalysisGraphs([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             try
@@ -111,6 +113,7 @@ namespace familytree_backend.Controllers
         /// 創建新的視覺化分析圖
         /// </summary>
         [HttpPost]
+        [VisualAnalysisPermission]
         public async Task<IActionResult> CreateVisualAnalysisGraph([FromBody] CreateVisualAnalysisGraphRequest request)
         {
             try
@@ -184,6 +187,7 @@ namespace familytree_backend.Controllers
         /// 刪除視覺化分析圖
         /// </summary>
         [HttpDelete("{id}")]
+        [VisualAnalysisPermission]
         public async Task<IActionResult> DeleteVisualAnalysisGraph(int id)
         {
             try
@@ -307,6 +311,7 @@ namespace familytree_backend.Controllers
         /// 獲取編輯器資料
         /// </summary>
         [HttpGet("{id}/editor")]
+        [VisualAnalysisPermission]
         public async Task<IActionResult> GetEditorData(int id)
         {
             try
@@ -420,6 +425,7 @@ namespace familytree_backend.Controllers
         /// 更新節點可見性
         /// </summary>
         [HttpPut("{id}/nodes/visibility")]
+        [VisualAnalysisPermission]
         public async Task<IActionResult> UpdateNodeVisibility(int id, [FromBody] UpdateNodeVisibilityRequest request)
         {
             try

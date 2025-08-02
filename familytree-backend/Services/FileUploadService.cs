@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using familytree_backend.Models;
+using familytree_backend.Constants;
 using Dapper;
 using Npgsql;
 
@@ -29,7 +30,7 @@ namespace familytree_backend.Services
             
             // 設定上傳目錄
             _uploadDirectory = Path.Combine(Directory.GetCurrentDirectory(), 
-                configuration.GetValue<string>("FileUpload:UploadDirectory") ?? "user_upload");
+                configuration.GetValue<string>("FileUpload:UploadDirectory") ?? ApplicationConstants.Files.UploadDirectoryName);
                 
             if (!Directory.Exists(_uploadDirectory))
             {
@@ -56,19 +57,19 @@ namespace familytree_backend.Services
                 // 驗證檔案類型
                 _logger.LogInformation("📋 [檔案上傳-{UploadId}] 開始驗證檔案類型", uploadId);
                 var allowedExtensions = _configuration.GetSection("FileUpload:AllowedExtensions")
-                    .Get<string[]>() ?? new[] { ".xls", ".xlsx", ".jpg", ".jpeg", ".png", ".zip", ".7z" };
+                    .Get<string[]>() ?? ApplicationConstants.Files.AllowedExtensions;
                     
                 var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
                 _logger.LogInformation("🔍 [檔案上傳-{UploadId}] 檔案副檔名: {Extension}, 允許的類型: {AllowedTypes}", 
                     uploadId, fileExtension, string.Join(", ", allowedExtensions));
                 
-                if (!allowedExtensions.Contains(fileExtension))
+                if (!ApplicationConstants.Files.IsValidFileType(file.FileName, file.ContentType))
                 {
                     _logger.LogWarning("❌ [檔案上傳-{UploadId}] 檔案類型不被支援: {Extension}", uploadId, fileExtension);
                     return new FileOperationResult
                     {
                         Success = false,
-                        Message = $"不支援的檔案類型: {fileExtension}"
+                        Message = ApplicationConstants.ApiResponse.ErrorMessages.FileTypeNotSupported
                     };
                 }
 
@@ -120,11 +121,11 @@ namespace familytree_backend.Services
                     FilePath = filePath,
                     FileSize = file.Length,
                     Md5Hash = md5Hash,
-                    FileType = GetFileType(fileExtension),
-                    MimeType = GetMimeType(fileExtension),
+                    FileType = ApplicationConstants.Files.GetFileTypeByExtension(file.FileName),
+                    MimeType = ApplicationConstants.Files.GetMimeTypeByExtension(file.FileName),
                     AssociatedRecordId = associatedRecordId,
                     AssociatedRecordType = associatedRecordType,
-                    UploadStatus = FileUploadStatus.Uploaded,
+                    UploadStatus = ApplicationConstants.Files.Status.Uploaded,
                     UploadedAt = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -191,9 +192,9 @@ namespace familytree_backend.Services
                 var whereConditions = new List<string> { "user_id = @userId", "upload_status != @deletedStatus" };
                 var parameters = new DynamicParameters();
                 parameters.Add("userId", userId);
-                parameters.Add("deletedStatus", FileUploadStatus.Deleted);
+                parameters.Add("deletedStatus", ApplicationConstants.Files.Status.Deleted);
                 
-                _logger.LogInformation($"🔧 [FileUploadService] 基本查詢條件 - user_id = {userId}, upload_status != {FileUploadStatus.Deleted}");
+                _logger.LogInformation($"🔧 [FileUploadService] 基本查詢條件 - user_id = {userId}, upload_status != {ApplicationConstants.Files.Status.Deleted}");
 
                 if (!string.IsNullOrEmpty(options.FileType))
                 {
@@ -426,7 +427,7 @@ namespace familytree_backend.Services
 
                 var rowsAffected = await connection.ExecuteAsync(sql, new 
                 { 
-                    status = FileUploadStatus.Deleted,
+                    status = ApplicationConstants.Files.Status.Deleted,
                     updatedAt = DateTime.UtcNow,
                     fileId, 
                     userId 
@@ -767,7 +768,7 @@ namespace familytree_backend.Services
             {
                 // 更新狀態為處理中
                 _logger.LogInformation("📝 [Excel處理-{ProcessId}] 更新檔案狀態為處理中", processId);
-                await UpdateFileStatusAsync(file.FileId, FileUploadStatus.Processing);
+                await UpdateFileStatusAsync(file.FileId, ApplicationConstants.Files.Status.Processing);
 
                 // 呼叫Excel處理服務
                 _logger.LogInformation("📊 [Excel處理-{ProcessId}] 開始呼叫 ExcelProcessingService", processId);
@@ -788,7 +789,7 @@ namespace familytree_backend.Services
                         
                     // 更新狀態為已處理
                     _logger.LogInformation("📝 [Excel處理-{ProcessId}] 更新檔案狀態為已處理", processId);
-                    await UpdateFileStatusAsync(file.FileId, FileUploadStatus.Processed, true, DateTime.UtcNow);
+                    await UpdateFileStatusAsync(file.FileId, ApplicationConstants.Files.Status.Processed, true, DateTime.UtcNow);
 
                     _logger.LogInformation("🎉 [Excel處理-{ProcessId}] Excel檔案處理完全成功 - FileId: {FileId}, 處理時間: {Duration} 秒", 
                         processId, file.FileId, duration.TotalSeconds);
@@ -814,7 +815,7 @@ namespace familytree_backend.Services
                         
                     // 更新狀態為失敗
                     _logger.LogInformation("📝 [Excel處理-{ProcessId}] 更新檔案狀態為失敗", processId);
-                    await UpdateFileStatusAsync(file.FileId, FileUploadStatus.Failed);
+                    await UpdateFileStatusAsync(file.FileId, ApplicationConstants.Files.Status.Failed);
 
                     return new ProcessResult
                     {
@@ -828,7 +829,7 @@ namespace familytree_backend.Services
             {
                 _logger.LogError(ex, "💥 [Excel處理-{ProcessId}] Excel處理過程發生異常 - FileId: {FileId}, 錯誤: {ErrorMessage}", 
                     processId, file.FileId, ex.Message);
-                await UpdateFileStatusAsync(file.FileId, FileUploadStatus.Failed);
+                await UpdateFileStatusAsync(file.FileId, ApplicationConstants.Files.Status.Failed);
                 throw;
             }
         }
@@ -969,36 +970,6 @@ namespace familytree_backend.Services
             return $"{fileNameWithoutExtension}_{timestamp}_{random}{extension}";
         }
 
-        private string GetFileType(string extension)
-        {
-            return extension.ToLowerInvariant() switch
-            {
-                ".xlsx" or ".xls" => "excel",
-                ".csv" => "csv",
-                ".pdf" => "pdf",
-                ".jpg" or ".jpeg" => "image",
-                ".png" => "image",
-                ".zip" => "archive",
-                ".7z" => "archive",
-                _ => "unknown"
-            };
-        }
-
-        private string GetMimeType(string extension)
-        {
-            return extension.ToLowerInvariant() switch
-            {
-                ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                ".xls" => "application/vnd.ms-excel",
-                ".csv" => "text/csv",
-                ".pdf" => "application/pdf",
-                ".jpg" or ".jpeg" => "image/jpeg",
-                ".png" => "image/png",
-                ".zip" => "application/zip",
-                ".7z" => "application/x-7z-compressed",
-                _ => "application/octet-stream"
-            };
-        }
 
         /// <summary>
         /// 將 PascalCase 屬性名稱轉換為 snake_case 資料庫欄位名稱

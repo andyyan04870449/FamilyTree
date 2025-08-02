@@ -3,6 +3,8 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError, Subject } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
+import { SYSTEM_ROLES, ROLE_LEVELS, RoleHelper, SystemRole } from '../constants/roles.const';
+import { PERMISSIONS, PermissionHelper } from '../constants/permissions.const';
 
 export interface LoginRequest {
   usernameOrEmail: string;
@@ -189,7 +191,61 @@ export class AuthService {
    */
   isAdmin(): boolean {
     const user = this.currentUserValue;
-    return user?.role === 'admin';
+    if (!user?.role) return false;
+    return RoleHelper.isAdminLevel(user.role);
+  }
+
+  /**
+   * 檢查是否為超級管理員
+   */
+  isSuperAdmin(): boolean {
+    const user = this.currentUserValue;
+    return user?.role === SYSTEM_ROLES.SUPER_ADMIN;
+  }
+
+  /**
+   * 檢查使用者角色是否達到最低權限等級
+   */
+  hasMinimumRole(requiredRole: SystemRole): boolean {
+    const user = this.currentUserValue;
+    if (!user?.role) return false;
+    return RoleHelper.hasMinimumRole(user.role, requiredRole);
+  }
+
+  /**
+   * 檢查使用者是否擁有特定權限
+   */
+  hasPermission(permission: string): boolean {
+    const user = this.currentUserValue;
+    if (!user?.role) return false;
+    return PermissionHelper.roleHasPermission(user.role, permission);
+  }
+
+  /**
+   * 檢查使用者角色是否有效
+   */
+  hasValidRole(): boolean {
+    const user = this.currentUserValue;
+    if (!user?.role) return false;
+    return RoleHelper.isValidRole(user.role);
+  }
+
+  /**
+   * 取得使用者角色顯示名稱
+   */
+  getCurrentUserRoleDisplayName(): string {
+    const user = this.currentUserValue;
+    if (!user?.role) return '';
+    return RoleHelper.getDisplayName(user.role);
+  }
+
+  /**
+   * 取得使用者角色等級
+   */
+  getCurrentUserRoleLevel(): number {
+    const user = this.currentUserValue;
+    if (!user?.role) return 0;
+    return ROLE_LEVELS[user.role as SystemRole] || 0;
   }
 
   /**

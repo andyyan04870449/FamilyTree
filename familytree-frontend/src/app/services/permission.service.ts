@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, of, Subject } from 'rxjs';
 import { map, tap, catchError, takeUntil } from 'rxjs/operators';
 import { AuthService } from './auth.service';
+import { SYSTEM_ROLES, ROLE_LEVELS, RoleHelper, SystemRole } from '../constants/roles.const';
+import { PERMISSIONS, PermissionHelper } from '../constants/permissions.const';
 
 export interface PermissionDefinition {
   resource: string;
@@ -104,24 +106,7 @@ export class PermissionService {
   // 檢查權限
   hasPermission(permission: string): boolean {
     const permissions = this.userPermissionsSubject.value;
-    
-    // 檢查是否有萬用字元權限
-    if (permissions.includes('*')) {
-      return true;
-    }
-    
-    // 檢查精確權限
-    if (permissions.includes(permission)) {
-      return true;
-    }
-    
-    // 檢查資源層級的萬用字元權限
-    const resource = permission.split(':')[0];
-    if (permissions.includes(`${resource}:*`)) {
-      return true;
-    }
-    
-    return false;
+    return PermissionHelper.matchesPermission(permissions, permission);
   }
 
   // 檢查多個權限（任一）
@@ -305,17 +290,25 @@ export class PermissionService {
   // 檢查是否為管理員
   isAdmin(): boolean {
     const roles = this.userRolesSubject.value;
-    return roles.some(role => 
-      role.id === 'superadmin' || 
-      role.id === 'admin' || 
-      role.level >= 90
-    );
+    return roles.some(role => RoleHelper.isAdminLevel(role.id));
   }
 
   // 檢查是否為超級管理員
   isSuperAdmin(): boolean {
     const roles = this.userRolesSubject.value;
-    return roles.some(role => role.id === 'superadmin');
+    return roles.some(role => role.id === SYSTEM_ROLES.SUPER_ADMIN);
+  }
+
+  // 檢查角色是否達到最低等級
+  hasMinimumRoleLevel(requiredLevel: number): boolean {
+    const roles = this.userRolesSubject.value;
+    return roles.some(role => role.level >= requiredLevel);
+  }
+
+  // 檢查是否擁有指定角色
+  hasRole(roleId: SystemRole): boolean {
+    const roles = this.userRolesSubject.value;
+    return roles.some(role => role.id === roleId);
   }
 
   // 取得當前使用者的最高角色等級

@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using familytree_backend.Constants;
 using familytree_backend.Services;
 using familytree_backend.Extensions;
+using familytree_backend.Models;
+using FamilyTree.Constants;
 
 namespace familytree_backend.Controllers
 {
@@ -48,7 +50,7 @@ namespace familytree_backend.Controllers
         protected (string userId, string userRole) GetUserInfo()
         {
             var userId = User.FindFirst("userId")?.Value ?? "";
-            var userRole = User.FindFirst("role")?.Value ?? "user";
+            var userRole = User.FindFirst("role")?.Value ?? RoleConstants.USER;
             return (userId, userRole);
         }
 
@@ -108,7 +110,7 @@ namespace familytree_backend.Controllers
         /// </summary>
         protected bool IsAdmin()
         {
-            return GetCurrentUserRole() == "admin";
+            return GetCurrentUserRole() == RoleConstants.ADMIN;
         }
 
         #endregion
@@ -274,13 +276,10 @@ namespace familytree_backend.Controllers
         /// <returns>標準化成功回應</returns>
         protected IActionResult CreateSuccessResponse<T>(T data, string? message = null)
         {
-            var response = new
-            {
-                success = true,
-                message = message ?? ApplicationConstants.ApiResponse.SuccessMessages.DataRetrievedSuccessfully,
-                data = data,
-                timestamp = DateTime.UtcNow
-            };
+            var response = ApiResponse<T>.SuccessResult(
+                data, 
+                message ?? ApplicationConstants.ApiResponse.SuccessMessages.DataRetrievedSuccessfully
+            );
 
             return Ok(response);
         }
@@ -294,14 +293,14 @@ namespace familytree_backend.Controllers
         /// <returns>標準化錯誤回應</returns>
         protected IActionResult CreateErrorResponse(string message, object? details = null)
         {
-            var response = new
-            {
-                success = false,
-                message = message,
-                timestamp = DateTime.UtcNow,
-                // 只在開發環境中包含詳細錯誤資訊
-                details = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development" ? details : null
-            };
+            // 只在開發環境中包含詳細錯誤資訊
+            var includeDetails = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+            
+            var response = ApiResponse.ErrorResult(
+                message,
+                includeDetails ? details : null,
+                requestId: HttpContext.TraceIdentifier
+            );
 
             return BadRequest(response);
         }
@@ -321,12 +320,11 @@ namespace familytree_backend.Controllers
 
             Logger.LogWarning("資源未找到：{ResourceName}, ID: {ResourceId}", resourceName, resourceId);
 
-            var response = new
-            {
-                success = false,
-                message = message,
-                timestamp = DateTime.UtcNow
-            };
+            var response = ApiResponse.ErrorResult(
+                message,
+                errorCode: "RESOURCE_NOT_FOUND",
+                requestId: HttpContext.TraceIdentifier
+            );
 
             return NotFound(response);
         }
@@ -349,24 +347,13 @@ namespace familytree_backend.Controllers
             int pageSize, 
             string? message = null)
         {
-            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-
-            var response = new
-            {
-                success = true,
-                message = message ?? ApplicationConstants.ApiResponse.SuccessMessages.DataRetrievedSuccessfully,
-                data = data,
-                pagination = new
-                {
-                    currentPage = page,
-                    pageSize = pageSize,
-                    totalCount = totalCount,
-                    totalPages = totalPages,
-                    hasNextPage = page < totalPages,
-                    hasPreviousPage = page > 1
-                },
-                timestamp = DateTime.UtcNow
-            };
+            var response = PagedApiResponse<T>.SuccessResult(
+                data,
+                totalCount,
+                page,
+                pageSize,
+                message ?? ApplicationConstants.ApiResponse.SuccessMessages.DataRetrievedSuccessfully
+            );
 
             return Ok(response);
         }

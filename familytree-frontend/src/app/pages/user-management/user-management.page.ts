@@ -86,8 +86,8 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           this.users = response.data;
-          this.totalItems = response.pagination.totalCount;
-          this.totalPages = response.pagination.totalPages;
+          this.totalItems = response.totalCount;
+          this.totalPages = response.totalPages;
           this.applyFilters();
           this.loading = false;
         },
@@ -188,7 +188,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response) => {
-            this.toastService.success(`密碼已重置，新密碼: ${response.data.temporaryPassword}`);
+            this.toastService.success(`密碼已重置，新密碼: ${response.data?.temporaryPassword || '請查看系統通知'}`);
           },
           error: (err) => {
             this.toastService.error(err.error?.message || '重置密碼失敗');

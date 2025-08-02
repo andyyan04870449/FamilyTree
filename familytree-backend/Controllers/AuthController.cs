@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using familytree_backend.Models;
+using familytree_backend.Models.Exceptions;
 using familytree_backend.Services;
 using familytree_backend.Constants;
 using familytree_backend.Extensions;
@@ -35,37 +36,30 @@ namespace familytree_backend.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
-            try
+            return await this.ExecuteWithErrorHandlingAsync(async () =>
             {
                 LogRequestStart("Register", new { Username = dto.Username, Email = dto.Email });
 
                 // 驗證輸入
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
+                this.ValidateModelState();
+                this.ValidateNotNull(dto, nameof(dto));
 
                 // 檢查使用者是否已存在
                 if (await _userService.UserExistsAsync(dto.Username, dto.Email))
                 {
-                    return CreateErrorResponse("使用者名稱或 Email 已被使用");
+                    throw new ConflictException(MessageConstants.Error.DataAlreadyExists);
                 }
 
                 // 註冊使用者
                 var user = await _authService.RegisterAsync(dto);
                 if (user == null)
                 {
-                    return CreateErrorResponse("註冊失敗");
+                    throw new TechnicalException(MessageConstants.Error.DataCreateFailed);
                 }
 
                 LogRequestComplete("Register");
-                return CreateSuccessResponse(new { userId = user.Id }, "註冊成功");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "註冊失敗");
-                return CreateErrorResponse(ApplicationConstants.ApiResponse.ErrorMessages.DatabaseError);
-            }
+                return this.SuccessResponse(new { userId = user.Id }, MessageConstants.Success.DataCreated);
+            }, "Register");
         }
 
         /// <summary>
@@ -75,15 +69,13 @@ namespace familytree_backend.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
-            try
+            return await this.ExecuteWithErrorHandlingAsync(async () =>
             {
                 LogRequestStart("Login", new { UsernameOrEmail = dto.UsernameOrEmail });
 
                 // 驗證輸入
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
+                this.ValidateModelState();
+                this.ValidateNotNull(dto, nameof(dto));
 
                 // 取得 IP 位址，使用強化的IP位址提取邏輯
                 var ipAddress = HttpContext.GetClientIpAddress();
@@ -93,11 +85,11 @@ namespace familytree_backend.Controllers
                 
                 if (!result.Success)
                 {
-                    return CreateErrorResponse(result.Message);
+                    throw new UnauthorizedException(result.Message);
                 }
 
                 LogRequestComplete("Login");
-                return CreateSuccessResponse(new
+                return this.SuccessResponse(new
                 {
                     accessToken = result.AccessToken,
                     refreshToken = result.RefreshToken,
@@ -112,12 +104,7 @@ namespace familytree_backend.Controllers
                         role = result.User?.Role
                     }
                 }, result.Message);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "登入失敗");
-                return CreateErrorResponse(ApplicationConstants.ApiResponse.ErrorMessages.DatabaseError);
-            }
+            }, "Login");
         }
 
         /// <summary>
@@ -141,7 +128,7 @@ namespace familytree_backend.Controllers
                 var success = await _authService.LogoutAsync(userId, dto.RefreshToken);
 
                 LogRequestComplete("Logout");
-                return CreateSuccessResponse(new { success }, "登出成功");
+                return CreateSuccessResponse(new { success }, MessageConstants.Success.LogoutSuccess);
             }
             catch (Exception ex)
             {
@@ -172,7 +159,7 @@ namespace familytree_backend.Controllers
                 
                 if (!result.Success)
                 {
-                    return Unauthorized(CreateErrorResponse("無效的 Refresh Token"));
+                    return Unauthorized(CreateErrorResponse(MessageConstants.Error.TokenInvalid));
                 }
 
                 LogRequestComplete("RefreshToken");
@@ -198,26 +185,23 @@ namespace familytree_backend.Controllers
         [Authorize]
         public async Task<IActionResult> GetCurrentUser()
         {
-            try
+            return await this.ExecuteWithErrorHandlingAsync(async () =>
             {
                 var userId = GetCurrentUserId();
                 LogRequestStart("GetCurrentUser", new { UserId = userId });
 
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized();
+                    throw new UnauthorizedException();
                 }
 
                 var user = await _userService.GetByIdAsync(userId);
-                if (user == null)
-                {
-                    return CreateNotFoundResponse("使用者", userId);
-                }
+                this.ValidateResourceExists(user, "使用者", userId);
 
                 LogRequestComplete("GetCurrentUser");
-                return CreateSuccessResponse(new
+                return this.SuccessResponse(new
                 {
-                    id = user.Id,
+                    id = user!.Id,
                     username = user.Username,
                     email = user.Email,
                     fullName = user.FullName,
@@ -226,12 +210,7 @@ namespace familytree_backend.Controllers
                     createdAt = user.CreatedAt,
                     lastLoginAt = user.LastLoginAt
                 });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "取得使用者資訊失敗");
-                return CreateErrorResponse(ApplicationConstants.ApiResponse.ErrorMessages.DatabaseError);
-            }
+            }, "GetCurrentUser");
         }
     }
 }

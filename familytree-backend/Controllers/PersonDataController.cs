@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using familytree_backend.Constants;
 using familytree_backend.Models;
 using familytree_backend.Services;
+using familytree_backend.Attributes;
 using FamilyTree.Attributes;
 
 namespace familytree_backend.Controllers
@@ -50,7 +51,7 @@ namespace familytree_backend.Controllers
         /// <param name="sortOrder">排序方向（asc/desc）</param>
         /// <returns>分頁人員資料列表</returns>
         [HttpGet]
-        [RequirePermission("person:read")]
+        [PersonReadPermission]
         public async Task<IActionResult> GetPersonDataList(
             [FromQuery] int page = 1, 
             [FromQuery] int pageSize = 0, 
@@ -104,7 +105,7 @@ namespace familytree_backend.Controllers
         [HttpGet("test")]
         public IActionResult Test()
         {
-            return Ok(new { message = "PersonDataController 測試成功", timestamp = DateTime.UtcNow });
+            return this.SuccessResponse(new { message = "PersonDataController 測試成功", timestamp = DateTime.UtcNow });
         }
 
 
@@ -117,7 +118,7 @@ namespace familytree_backend.Controllers
         /// <param name="pageSize">頁面大小</param>
         /// <returns>搜尋結果</returns>
         [HttpGet("search")]
-        [RequirePermission("person:read")]
+        [PersonReadPermission]
         public async Task<IActionResult> SearchPersonData(
             [FromQuery] string query,
             [FromQuery] int page = 1,
@@ -197,7 +198,7 @@ namespace familytree_backend.Controllers
         /// </summary>
         /// <returns>統計資料</returns>
         [HttpGet("statistics")]
-        [RequirePermission("person:read")]
+        [PersonReadPermission]
         public async Task<IActionResult> GetPersonDataStatistics()
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -241,7 +242,7 @@ namespace familytree_backend.Controllers
         /// <param name="id">人員 ID</param>
         /// <returns>人員詳細資料</returns>
         [HttpGet("{id}")]
-        [RequirePermission("person:read")]
+        [PersonReadPermission]
         public async Task<IActionResult> GetPerson(int id)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -279,7 +280,7 @@ namespace familytree_backend.Controllers
         /// <param name="person">人員資料</param>
         /// <returns>建立結果</returns>
         [HttpPost]
-        [RequirePermission("person:create")]
+        [PersonCreatePermission]
         public async Task<IActionResult> CreatePerson([FromBody] PersonDataModel person)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -325,7 +326,7 @@ namespace familytree_backend.Controllers
         /// <param name="person">更新的人員資料</param>
         /// <returns>更新結果</returns>
         [HttpPut("{id}")]
-        [RequirePermission("person:update")]
+        [PersonUpdatePermission]
         public async Task<IActionResult> UpdatePerson(int id, [FromBody] PersonDataModel person)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -382,7 +383,7 @@ namespace familytree_backend.Controllers
         /// <param name="id">人員 ID</param>
         /// <returns>刪除結果</returns>
         [HttpDelete("{id}")]
-        [RequirePermission("person:delete")]
+        [PersonDeletePermission]
         public async Task<IActionResult> DeletePerson(int id)
         {
             return await ExecuteWithExceptionHandling(async () =>

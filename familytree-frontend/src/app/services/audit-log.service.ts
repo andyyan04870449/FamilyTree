@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
+import { BaseApiService, ApiResponse, ApiCallOptions } from './base-api.service';
+import { ToastService } from './toast.service';
 import { AuthService } from './auth.service';
 
 // 稽核日誌相關介面
@@ -138,25 +140,22 @@ export interface EventType {
   category: string;
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
-}
+// 移除本地 ApiResponse 介面，使用從 BaseApiService 匯入的版本
 
 @Injectable({
   providedIn: 'root'
 })
-export class AuditLogService {
-  private readonly apiUrl = '/api/auditlog';
+export class AuditLogService extends BaseApiService {
+  protected readonly apiUrl = this.apiConfig.auditLog.base();
   private currentFilter$ = new BehaviorSubject<AuditLogFilter>({});
   private eventTypes: EventType[] = [];
 
   constructor(
-    private http: HttpClient,
+    protected override http: HttpClient,
+    protected override toastService: ToastService,
     private authService: AuthService
   ) {
+    super(http, toastService);
     this.loadEventTypes();
   }
 
@@ -164,20 +163,17 @@ export class AuditLogService {
    * 查詢稽核日誌
    */
   queryLogs(filter: AuditLogFilter): Observable<AuditLogQueryResult> {
-    return this.http.post<ApiResponse<AuditLogQueryResult>>(`${this.apiUrl}/query`, filter)
-      .pipe(
-        map(response => {
-          if (response.success && response.data) {
-            this.currentFilter$.next(filter);
-            return response.data;
-          }
-          throw new Error(response.message || '查詢稽核日誌失敗');
-        }),
-        catchError(error => {
-          console.error('查詢稽核日誌錯誤:', error);
-          throw error;
-        })
-      );
+    return this.post<ApiResponse<AuditLogQueryResult>>('query', filter, {
+      errorMessage: '查詢稽核日誌失敗'
+    }).pipe(
+      map(response => {
+        if (response.success && response.data) {
+          this.currentFilter$.next(filter);
+          return response.data;
+        }
+        throw new Error(response.message || '查詢稽核日誌失敗');
+      })
+    );
   }
 
   /**

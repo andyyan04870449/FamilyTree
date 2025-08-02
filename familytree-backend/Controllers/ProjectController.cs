@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using familytree_backend.Constants;
 using familytree_backend.Models;
 using familytree_backend.Services;
+using familytree_backend.Attributes;
 using FamilyTree.Attributes;
 
 namespace familytree_backend.Controllers
@@ -21,16 +22,16 @@ namespace familytree_backend.Controllers
     [Authorize]
     public class ProjectController : BaseController
     {
-        private readonly IDataAccessService _dataAccessService;
+        private readonly IDataAccessServiceV2 _dataAccessService;
 
         /// <summary>
         /// 專案管理控制器建構子
-        /// 設計改善：使用統一的資料存取服務，避免直接操作資料庫
+        /// 設計改善：使用統一的資料存取服務 V2，基於 user_id 的資料隔離
         /// </summary>
         public ProjectController(
             ILogger<ProjectController> logger,
             IConfigurationService configurationService,
-            IDataAccessService dataAccessService,
+            IDataAccessServiceV2 dataAccessService,
             IValidationService validationService,
             IAccessControlService accessControlService,
             ILoggingService loggingService) 
@@ -47,15 +48,19 @@ namespace familytree_backend.Controllers
         /// <param name="search">搜尋關鍵字</param>
         /// <returns>專案列表</returns>
         [HttpGet]
-        [RequirePermission("project:read")]
+        [ProjectReadPermission]
         public async Task<IActionResult> GetProjects([FromQuery] string? status = null, [FromQuery] string? search = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
                 LogRequestStart("獲取專案列表", new { Status = status, Search = search });
 
-                // 使用統一的資料存取服務獲取專案列表
-                var allProjects = await _dataAccessService.GetProjectListAsync("system"); // 暫時使用系統用戶
+                // 獲取當前使用者資訊
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+
+                // 使用統一的資料存取服務 V2 獲取專案列表
+                var allProjects = await _dataAccessService.GetProjectListAsync(userId, userRole);
                 
                 // 在控制器中進行篩選
                 var projects = allProjects.AsEnumerable();
@@ -94,7 +99,7 @@ namespace familytree_backend.Controllers
         /// <param name="id">專案 ID</param>
         /// <returns>專案詳細資料</returns>
         [HttpGet("{id}")]
-        [RequirePermission("project:read")]
+        [ProjectReadPermission]
         public async Task<IActionResult> GetProject(string id)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -107,8 +112,12 @@ namespace familytree_backend.Controllers
                     return CreateErrorResponse("專案 ID 不能為空");
                 }
 
-                // 使用統一的資料存取服務獲取專案資料
-                var project = await _dataAccessService.GetProjectByIdAsync(id);
+                // 獲取當前使用者資訊
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+
+                // 使用統一的資料存取服務 V2 獲取專案資料
+                var project = await _dataAccessService.GetProjectByIdAsync(id, userId, userRole);
 
                 if (project == null)
                 {
@@ -136,7 +145,7 @@ namespace familytree_backend.Controllers
         /// <param name="request">建立專案請求</param>
         /// <returns>建立結果</returns>
         [HttpPost]
-        [RequirePermission("project:create")]
+        [ProjectCreatePermission]
         public async Task<IActionResult> CreateProject([FromBody] CreateProjectRequest request)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -162,8 +171,14 @@ namespace familytree_backend.Controllers
                     return CreateErrorResponse($"專案名稱長度不能超過 {ApplicationConstants.Database.ProjectNameMaxLength} 個字元");
                 }
 
-                // 使用統一的資料存取服務建立專案
-                var userId = request.UserId ?? "system";
+                // 獲取當前使用者資訊
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+                
+                // 覆蓋請求中的 UserId，確保使用當前登入使用者的 ID
+                request.UserId = userId;
+
+                // 使用統一的資料存取服務 V2 建立專案
                 var newId = await _dataAccessService.CreateProjectAsync(request, userId);
                 
                 // 建立專案模型以供回應使用
@@ -232,15 +247,19 @@ namespace familytree_backend.Controllers
                     return CreateErrorResponse($"專案名稱長度不能超過 {ApplicationConstants.Database.ProjectNameMaxLength} 個字元");
                 }
 
+                // 獲取當前使用者資訊
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+
                 // 檢查專案是否存在
-                var existingProject = await _dataAccessService.GetProjectByIdAsync(id);
+                var existingProject = await _dataAccessService.GetProjectByIdAsync(id, userId, userRole);
                 if (existingProject == null)
                 {
                     return CreateNotFoundResponse("專案", id);
                 }
 
-                // 使用統一的資料存取服務更新專案
-                var success = await _dataAccessService.UpdateProjectAsync(id, request);
+                // 使用統一的資料存取服務 V2 更新專案
+                var success = await _dataAccessService.UpdateProjectAsync(id, request, userId, userRole);
                 
                 // 建立更新後的專案模型以供回應使用
                 var project = new ProjectModel
@@ -293,15 +312,19 @@ namespace familytree_backend.Controllers
                     return CreateErrorResponse("專案 ID 不能為空");
                 }
 
+                // 獲取當前使用者資訊
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+
                 // 檢查專案是否存在
-                var existingProject = await _dataAccessService.GetProjectByIdAsync(id);
+                var existingProject = await _dataAccessService.GetProjectByIdAsync(id, userId, userRole);
                 if (existingProject == null)
                 {
                     return CreateNotFoundResponse("專案", id);
                 }
 
-                // 使用統一的資料存取服務刪除專案
-                var success = await _dataAccessService.DeleteProjectAsync(id, "system");
+                // 使用統一的資料存取服務 V2 刪除專案
+                var success = await _dataAccessService.DeleteProjectAsync(id, userId, userRole);
 
                 if (!success)
                 {
@@ -331,8 +354,12 @@ namespace familytree_backend.Controllers
             {
                 LogRequestStart("測試專案資料");
 
-                // 使用統一的資料存取服務獲取專案統計
-                var projects = await _dataAccessService.GetProjectListAsync("system");
+                // 獲取當前使用者資訊
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+
+                // 使用統一的資料存取服務 V2 獲取專案統計
+                var projects = await _dataAccessService.GetProjectListAsync(userId, userRole);
 
                 var testData = new
                 {
@@ -354,15 +381,19 @@ namespace familytree_backend.Controllers
         /// </summary>
         /// <returns>專案統計資料</returns>
         [HttpGet("statistics")]
-        [RequirePermission("project:read")]
+        [ProjectReadPermission]
         public async Task<IActionResult> GetProjectStatistics()
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
                 LogRequestStart("獲取專案統計");
 
-                // 使用統一的資料存取服務獲取專案統計
-                var projects = await _dataAccessService.GetProjectListAsync("system");
+                // 獲取當前使用者資訊
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+
+                // 使用統一的資料存取服務 V2 獲取專案統計
+                var projects = await _dataAccessService.GetProjectListAsync(userId, userRole);
 
                 var statistics = new ProjectStatistics
                 {

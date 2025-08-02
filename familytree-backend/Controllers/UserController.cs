@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using familytree_backend.Models;
 using familytree_backend.Services;
 using familytree_backend.Constants;
+using FamilyTree.Constants;
+using FamilyTree.Attributes;
 
 namespace familytree_backend.Controllers
 {
@@ -32,7 +34,7 @@ namespace familytree_backend.Controllers
         /// 取得使用者列表（僅管理員）
         /// </summary>
         [HttpGet]
-        [Authorize(Roles = "admin")]
+        [RequireAdmin]
         public async Task<IActionResult> GetUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
             try
@@ -69,7 +71,7 @@ namespace familytree_backend.Controllers
                 var currentUserRole = GetCurrentUserRole();
 
                 // 權限檢查：只能查看自己的資料，除非是管理員
-                if (currentUserRole != "admin" && currentUserId != id)
+                if (currentUserRole != RoleConstants.ADMIN && currentUserId != id)
                 {
                     return Forbid();
                 }
@@ -116,13 +118,13 @@ namespace familytree_backend.Controllers
                 var currentUserRole = GetCurrentUserRole();
 
                 // 權限檢查：只能更新自己的資料，除非是管理員
-                if (currentUserRole != "admin" && currentUserId != id)
+                if (currentUserRole != RoleConstants.ADMIN && currentUserId != id)
                 {
                     return Forbid();
                 }
 
                 // 只有管理員可以更新角色
-                if (dto.Role != null && currentUserRole != "admin")
+                if (dto.Role != null && currentUserRole != RoleConstants.ADMIN)
                 {
                     return CreateErrorResponse("只有管理員可以更新角色");
                 }
@@ -205,7 +207,7 @@ namespace familytree_backend.Controllers
         /// 重設密碼（僅管理員）
         /// </summary>
         [HttpPost("{id}/reset-password")]
-        [Authorize(Roles = "admin")]
+        [RequireAdmin]
         public async Task<IActionResult> ResetPassword(string id)
         {
             try
@@ -246,7 +248,7 @@ namespace familytree_backend.Controllers
         /// 停用使用者（僅管理員）
         /// </summary>
         [HttpDelete("{id}")]
-        [Authorize(Roles = "admin")]
+        [RequireAdmin]
         public async Task<IActionResult> DisableUser(string id)
         {
             try

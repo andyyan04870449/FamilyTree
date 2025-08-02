@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using familytree_backend.Models;
+using FamilyTree.Constants;
 
 namespace familytree_backend.Services
 {
@@ -102,16 +103,16 @@ namespace familytree_backend.Services
             try
             {
                 // 管理員有完整存取權限
-                if (userRole == "Admin")
+                if (userRole == RoleConstants.ADMIN)
                     return true;
 
                 // 檢查是否有稽核讀取權限（基於角色）
                 var user = await _userService.GetByIdAsync(userId);
-                if (user?.Role == "admin" || user?.Role == "auditor")
+                if (user?.Role == RoleConstants.ADMIN || user?.Role == RoleConstants.AUDITOR)
                     return true;
 
                 // 檢查特定角色權限
-                if (userRole == "AuditReader" || userRole == "SecurityOfficer")
+                if (userRole == RoleConstants.AUDIT_READER || userRole == RoleConstants.SECURITY_OFFICER)
                     return true;
 
                 return false;
@@ -131,12 +132,12 @@ namespace familytree_backend.Services
             try
             {
                 // 只有管理員和安全官可以檢視敏感資料
-                if (userRole == "Admin" || userRole == "SecurityOfficer")
+                if (userRole == RoleConstants.ADMIN || userRole == RoleConstants.SECURITY_OFFICER)
                     return true;
 
                 // 檢查特定權限（基於角色）
                 var user = await _userService.GetByIdAsync(userId);
-                return user?.Role == "admin" || user?.Role == "security_admin";
+                return user?.Role == RoleConstants.ADMIN || user?.Role == RoleConstants.SECURITY_ADMIN;
             }
             catch (Exception ex)
             {
@@ -153,12 +154,12 @@ namespace familytree_backend.Services
             try
             {
                 // 只有管理員可以管理稽核系統
-                if (userRole == "Admin")
+                if (userRole == RoleConstants.ADMIN)
                     return true;
 
                 // 檢查特定權限（基於角色）
                 var user = await _userService.GetByIdAsync(userId);
-                return user?.Role == "admin";
+                return user?.Role == RoleConstants.ADMIN;
             }
             catch (Exception ex)
             {
@@ -175,7 +176,7 @@ namespace familytree_backend.Services
             try
             {
                 // 管理員可以存取所有使用者的日誌
-                if (requesterRole == "Admin")
+                if (requesterRole == RoleConstants.ADMIN)
                     return true;
 
                 // 使用者可以存取自己的日誌
@@ -183,12 +184,12 @@ namespace familytree_backend.Services
                     return true;
 
                 // 安全官可以存取所有使用者的日誌
-                if (requesterRole == "SecurityOfficer")
+                if (requesterRole == RoleConstants.SECURITY_OFFICER)
                     return true;
 
                 // 檢查是否有特定權限（基於角色）
                 var user = await _userService.GetByIdAsync(requesterId);
-                return user?.Role == "admin" || user?.Role == "auditor";
+                return user?.Role == RoleConstants.ADMIN || user?.Role == RoleConstants.AUDITOR;
             }
             catch (Exception ex)
             {
@@ -478,7 +479,7 @@ namespace familytree_backend.Services
         public bool RequiresApprovalForAccess(AuditLogFilterModel filter, string userRole)
         {
             // 管理員不需要審批
-            if (userRole == "Admin")
+            if (userRole == RoleConstants.ADMIN)
                 return false;
 
             // 檢視敏感資料需要審批
@@ -594,7 +595,7 @@ namespace familytree_backend.Services
         private bool ShouldMaskField(string fieldName, string viewerRole)
         {
             // 管理員和安全官可以看到所有資料
-            if (viewerRole == "Admin" || viewerRole == "SecurityOfficer")
+            if (viewerRole == RoleConstants.ADMIN || viewerRole == RoleConstants.SECURITY_OFFICER)
                 return false;
 
             return _sensitiveFields.Contains(fieldName) || IsPersonallyIdentifiableInfo(fieldName, "");

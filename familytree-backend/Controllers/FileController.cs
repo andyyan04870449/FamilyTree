@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using familytree_backend.Models;
 using familytree_backend.Services;
+using familytree_backend.Constants;
+using familytree_backend.Attributes;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 
@@ -42,6 +44,7 @@ namespace familytree_backend.Controllers
         /// 上傳檔案
         /// </summary>
         [HttpPost("upload")]
+        [FileUploadPermission]
         public async Task<IActionResult> UploadFile([FromForm] FileUploadRequest request)
         {
             try
@@ -68,13 +71,13 @@ namespace familytree_backend.Controllers
                 }
 
                 // 檢查檔案大小限制
-                var maxSize = _configuration.GetValue<long>("FileUpload:MaxFileSizeBytes", 52428800);
+                var maxSize = _configuration.GetValue<long>("FileUpload:MaxFileSizeBytes", ApplicationConstants.Files.MaxFileSizeBytes);
                 if (request.File.Length > maxSize)
                 {
                     return BadRequest(new ApiResponse
                     {
                         Success = false,
-                        Message = $"檔案大小超過限制 ({maxSize / 1024 / 1024} MB)"
+                        Message = ApplicationConstants.ApiResponse.ErrorMessages.FileSizeExceeded
                     });
                 }
 
@@ -97,7 +100,7 @@ namespace familytree_backend.Controllers
                 return Ok(new
                 {
                     Success = true,
-                    Message = result.IsDuplicate ? "檔案已存在" : "檔案上傳成功",
+                    Message = result.IsDuplicate ? ApplicationConstants.ApiResponse.ErrorMessages.DuplicateFile : ApplicationConstants.ApiResponse.SuccessMessages.FileUploadedSuccessfully,
                     Data = result.File,
                     IsDuplicate = result.IsDuplicate,
                     FilePath = result.FilePath
@@ -118,6 +121,7 @@ namespace familytree_backend.Controllers
         /// 獲取使用者的檔案列表
         /// </summary>
         [HttpGet("list")]
+        [FileReadPermission]
         public async Task<IActionResult> GetUserFiles([FromQuery] FileQueryOptions options)
         {
             try
@@ -141,7 +145,7 @@ namespace familytree_backend.Controllers
                 return Ok(new FileListResponse
                 {
                     Success = true,
-                    Message = "成功獲取檔案列表",
+                    Message = ApplicationConstants.ApiResponse.SuccessMessages.DataRetrievedSuccessfully,
                     Files = result.Files,
                     TotalCount = result.TotalCount,
                     Page = result.Page,
@@ -164,6 +168,7 @@ namespace familytree_backend.Controllers
         /// 獲取檔案詳細資訊
         /// </summary>
         [HttpGet("{fileId:guid}")]
+        [FileReadPermission]
         public async Task<IActionResult> GetFileDetails(Guid fileId)
         {
             try
@@ -184,14 +189,14 @@ namespace familytree_backend.Controllers
                     return NotFound(new ApiResponse
                     {
                         Success = false,
-                        Message = "找不到指定的檔案"
+                        Message = ApplicationConstants.ApiResponse.ErrorMessages.FileNotFound
                     });
                 }
 
                 return Ok(new
                 {
                     Success = true,
-                    Message = "成功獲取檔案詳情",
+                    Message = ApplicationConstants.ApiResponse.SuccessMessages.DataRetrievedSuccessfully,
                     Data = file
                 });
             }
@@ -251,6 +256,7 @@ namespace familytree_backend.Controllers
         /// 刪除檔案 - 支援GUID格式
         /// </summary>
         [HttpDelete("{fileId:guid}")]
+        [FileDeletePermission]
         public async Task<IActionResult> DeleteFile(Guid fileId)
         {
             return await DeleteFileInternal(fileId.ToString());
@@ -260,6 +266,7 @@ namespace familytree_backend.Controllers
         /// 刪除檔案 - 支援字串格式，會嘗試轉換為GUID
         /// </summary>
         [HttpDelete("{fileId}")]
+        [FileDeletePermission]
         public async Task<IActionResult> DeleteFileByString(string fileId)
         {
             // 嘗試解析為GUID
@@ -343,7 +350,7 @@ namespace familytree_backend.Controllers
                 return Ok(new ApiResponse
                 {
                     Success = true,
-                    Message = $"成功刪除檔案: {impactResult.FileName}"
+                    Message = ApplicationConstants.ApiResponse.SuccessMessages.FileDeletedSuccessfully
                 });
             }
             catch (Exception ex)

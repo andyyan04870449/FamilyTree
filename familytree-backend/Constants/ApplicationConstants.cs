@@ -47,10 +47,133 @@ namespace familytree_backend.Constants
             {
                 public const string Uploaded = "uploaded";      // 已上傳，等待處理
                 public const string Processing = "processing";  // 處理中
-                public const string Merged = "merged";         // 已合併到資料庫
-                public const string Error = "error";           // 處理失敗
+                public const string Processed = "processed";    // 已處理完成
+                public const string Merged = "merged";         // 已合併到資料庫 (向後相容)
+                public const string Failed = "failed";         // 處理失敗
+                public const string Error = "error";           // 處理失敗 (向後相容)
                 public const string Deleted = "deleted";       // 已刪除
                 public const string Archived = "archived";     // 已封存
+            }
+
+            /// <summary>
+            /// 檔案類型定義
+            /// 設計理念：統一的檔案類型識別，避免硬編碼字串
+            /// </summary>
+            public static class Types
+            {
+                public const string Excel = "excel";
+                public const string Csv = "csv";
+                public const string Image = "image";
+                public const string Photo = "photo";
+                public const string Archive = "archive";
+                public const string Document = "document";
+                public const string Unknown = "unknown";
+            }
+
+            /// <summary>
+            /// 檔案類型對應映射
+            /// 設計理念：統一的檔案類型檢測邏輯
+            /// </summary>
+            public static readonly Dictionary<string, string> ExtensionToTypeMap = new()
+            {
+                { ".xls", Types.Excel },
+                { ".xlsx", Types.Excel },
+                { ".csv", Types.Csv },
+                { ".jpg", Types.Photo },
+                { ".jpeg", Types.Photo },
+                { ".png", Types.Image },
+                { ".zip", Types.Archive },
+                { ".7z", Types.Archive },
+                { ".pdf", Types.Document }
+            };
+
+            /// <summary>
+            /// MIME 類型對應映射
+            /// 設計理念：統一的 MIME 類型檢測邏輯
+            /// </summary>
+            public static readonly Dictionary<string, string> MimeTypeToTypeMap = new()
+            {
+                { "application/vnd.ms-excel", Types.Excel },
+                { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Types.Excel },
+                { "text/csv", Types.Csv },
+                { "image/jpeg", Types.Photo },
+                { "image/png", Types.Image },
+                { "application/zip", Types.Archive },
+                { "application/x-7z-compressed", Types.Archive },
+                { "application/pdf", Types.Document }
+            };
+
+            /// <summary>
+            /// 取得檔案類型（根據副檔名）
+            /// </summary>
+            public static string GetFileTypeByExtension(string fileName)
+            {
+                if (string.IsNullOrEmpty(fileName)) return Types.Unknown;
+                
+                var extension = Path.GetExtension(fileName).ToLowerInvariant();
+                return ExtensionToTypeMap.TryGetValue(extension, out var fileType) ? fileType : Types.Unknown;
+            }
+
+            /// <summary>
+            /// 取得檔案類型（根據 MIME 類型）
+            /// </summary>
+            public static string GetFileTypeByMimeType(string mimeType)
+            {
+                if (string.IsNullOrEmpty(mimeType)) return Types.Unknown;
+                
+                return MimeTypeToTypeMap.TryGetValue(mimeType, out var fileType) ? fileType : Types.Unknown;
+            }
+
+            /// <summary>
+            /// 取得 MIME 類型（根據副檔名）
+            /// </summary>
+            public static string GetMimeTypeByExtension(string fileName)
+            {
+                if (string.IsNullOrEmpty(fileName)) return "application/octet-stream";
+                
+                var extension = Path.GetExtension(fileName).ToLowerInvariant();
+                return extension switch
+                {
+                    ".xls" => "application/vnd.ms-excel",
+                    ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    ".csv" => "text/csv",
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".png" => "image/png",
+                    ".zip" => "application/zip",
+                    ".7z" => "application/x-7z-compressed",
+                    ".pdf" => "application/pdf",
+                    _ => "application/octet-stream"
+                };
+            }
+
+            /// <summary>
+            /// 檢查檔案類型是否有效
+            /// </summary>
+            public static bool IsValidFileType(string fileName, string? mimeType = null)
+            {
+                var typeByExtension = GetFileTypeByExtension(fileName);
+                if (typeByExtension != Types.Unknown) return true;
+                
+                if (!string.IsNullOrEmpty(mimeType))
+                {
+                    var typeByMimeType = GetFileTypeByMimeType(mimeType);
+                    return typeByMimeType != Types.Unknown;
+                }
+                
+                return false;
+            }
+
+            /// <summary>
+            /// 關聯記錄類型定義
+            /// 設計理念：統一的關聯類型管理
+            /// </summary>
+            public static class AssociationTypes
+            {
+                public const string Person = "person";
+                public const string Project = "project";
+                public const string Analysis = "analysis";
+                public const string Photo = "photo";
+                public const string Document = "document";
             }
 
             /// <summary>

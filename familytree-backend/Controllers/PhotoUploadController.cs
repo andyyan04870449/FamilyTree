@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using familytree_backend.Constants;
 using familytree_backend.Services;
+using familytree_backend.Attributes;
 
 namespace familytree_backend.Controllers
 {
@@ -38,6 +39,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>上傳結果</returns>
         [HttpPost("upload")]
+        [FileUploadPermission]
         public async Task<IActionResult> UploadPhoto()
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -96,6 +98,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>照片列表</returns>
         [HttpGet("list")]
+        [FileReadPermission]
         public async Task<IActionResult> GetPhotoList([FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -131,6 +134,7 @@ namespace familytree_backend.Controllers
         /// <param name="id">照片 ID</param>
         /// <returns>刪除結果</returns>
         [HttpDelete("{id}")]
+        [FileDeletePermission]
         public async Task<IActionResult> DeletePhoto(int id)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -168,6 +172,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>照片檔案</returns>
         [HttpGet("photo-by-index/{photoIndex}")]
+        [FileReadPermission]
         public async Task<IActionResult> GetPhotoByIndex(string photoIndex, [FromQuery] string project_id)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -218,6 +223,7 @@ namespace familytree_backend.Controllers
         /// </summary>
         /// <returns>健康狀態</returns>
         [HttpGet("health")]
+        [AllowAnonymous]
         public IActionResult HealthCheck()
         {
             Logger.LogInformation("照片上傳服務健康檢查");

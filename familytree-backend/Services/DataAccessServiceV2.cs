@@ -3,6 +3,7 @@ using Dapper;
 using Npgsql;
 using familytree_backend.Models;
 using familytree_backend.Constants;
+using FamilyTree.Constants;
 
 namespace familytree_backend.Services
 {
@@ -45,7 +46,7 @@ namespace familytree_backend.Services
                     userId, page, pageSize, keyword ?? "無");
 
                 // 構建基礎查詢
-                var baseSql = userRole == "admin" 
+                var baseSql = userRole == RoleConstants.ADMIN 
                     ? "FROM person_profile" 
                     : "FROM person_profile WHERE user_id = @userId";
                 
@@ -73,7 +74,7 @@ namespace familytree_backend.Services
 
                 // 準備參數
                 var parameters = new DynamicParameters();
-                if (userRole != "admin")
+                if (userRole != RoleConstants.ADMIN)
                 {
                     parameters.Add("userId", userId);
                 }
@@ -112,7 +113,7 @@ namespace familytree_backend.Services
             {
                 _logger.LogInformation("查詢人員資料：ID {Id}，使用者 {UserId}", id, userId);
 
-                var sql = userRole == "admin"
+                var sql = userRole == RoleConstants.ADMIN
                     ? @"SELECT * FROM person_profile WHERE id = @id"
                     : @"SELECT * FROM person_profile WHERE id = @id AND user_id = @userId";
 
@@ -203,7 +204,7 @@ namespace familytree_backend.Services
                 person.Id = personId;
                 person.UpdatedAt = DateTime.UtcNow;
 
-                var sql = userRole == "admin"
+                var sql = userRole == RoleConstants.ADMIN
                     ? @"UPDATE person_profile 
                         SET name = @Name, gender = @Gender, birthday = @Birthday, 
                             nationality = @Nationality, mobile = @Mobile, phone = @Phone, 
@@ -235,7 +236,7 @@ namespace familytree_backend.Services
                             photo = @Photo, updated_at = @UpdatedAt
                         WHERE id = @Id AND user_id = @UserId";
 
-                var parameters = userRole == "admin" ? (object)person : new { person, UserId = userId };
+                var parameters = userRole == RoleConstants.ADMIN ? (object)person : new { person, UserId = userId };
 
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
@@ -262,7 +263,7 @@ namespace familytree_backend.Services
             {
                 _logger.LogInformation("刪除人員資料：ID {PersonId}，使用者 {UserId}", personId, userId);
 
-                var sql = userRole == "admin"
+                var sql = userRole == RoleConstants.ADMIN
                     ? @"DELETE FROM person_profile WHERE id = @personId"
                     : @"DELETE FROM person_profile WHERE id = @personId AND user_id = @userId";
 
@@ -297,7 +298,7 @@ namespace familytree_backend.Services
                     ? SqlQueries.Search.ExactSearchCondition 
                     : SqlQueries.Search.FuzzySearchCondition;
 
-                var sql = userRole == "admin"
+                var sql = userRole == RoleConstants.ADMIN
                     ? $@"SELECT * FROM person_profile WHERE {searchCondition}"
                     : $@"SELECT * FROM person_profile WHERE user_id = @userId AND {searchCondition}";
 
@@ -632,7 +633,7 @@ namespace familytree_backend.Services
             {
                 _logger.LogInformation("獲取檔案上傳記錄：使用者 {UserId}", userId);
 
-                var sql = userRole == "admin"
+                var sql = userRole == RoleConstants.ADMIN
                     ? @"SELECT * FROM file_uploads ORDER BY upload_time DESC"
                     : @"SELECT * FROM file_uploads WHERE user_id = @userId ORDER BY upload_time DESC";
 
@@ -702,7 +703,7 @@ namespace familytree_backend.Services
             {
                 _logger.LogInformation("獲取分析會話列表：使用者 {UserId}", userId);
 
-                var sql = userRole == "admin"
+                var sql = userRole == RoleConstants.ADMIN
                     ? @"SELECT * FROM analysis_sessions ORDER BY created_at DESC"
                     : @"SELECT * FROM analysis_sessions WHERE user_id = @userId ORDER BY created_at DESC";
 
@@ -731,7 +732,7 @@ namespace familytree_backend.Services
             {
                 _logger.LogInformation("獲取分析結果：會話 {SessionId}，使用者 {UserId}", sessionId, userId);
 
-                var sql = userRole == "admin"
+                var sql = userRole == RoleConstants.ADMIN
                     ? @"SELECT r.* FROM analysis_results r 
                         INNER JOIN analysis_sessions s ON r.session_id = s.id
                         WHERE r.session_id = @sessionId"
@@ -863,7 +864,7 @@ namespace familytree_backend.Services
             {
                 _logger.LogInformation("獲取專案列表：使用者 {UserId}，角色 {UserRole}", userId, userRole);
 
-                var sql = userRole == "admin"
+                var sql = userRole == RoleConstants.ADMIN
                     ? @"SELECT * FROM projects ORDER BY created_at DESC"
                     : @"SELECT * FROM projects WHERE user_id = @userId ORDER BY created_at DESC";
 
@@ -891,7 +892,7 @@ namespace familytree_backend.Services
             {
                 _logger.LogInformation("獲取專案：{ProjectId}，使用者 {UserId}", projectId, userId);
 
-                var sql = userRole == "admin"
+                var sql = userRole == RoleConstants.ADMIN
                     ? @"SELECT * FROM projects WHERE id = @projectId"
                     : @"SELECT * FROM projects WHERE id = @projectId AND user_id = @userId";
 
@@ -974,7 +975,7 @@ namespace familytree_backend.Services
             {
                 _logger.LogInformation("更新專案：{ProjectId}，使用者 {UserId}", projectId, userId);
 
-                var sql = userRole == "admin"
+                var sql = userRole == RoleConstants.ADMIN
                     ? @"UPDATE projects SET name = @name, description = @description, updated_at = @updatedAt WHERE id = @projectId"
                     : @"UPDATE projects SET name = @name, description = @description, updated_at = @updatedAt WHERE id = @projectId AND user_id = @userId";
 
@@ -1020,7 +1021,7 @@ namespace familytree_backend.Services
             {
                 _logger.LogInformation("刪除專案：{ProjectId}，使用者 {UserId}", projectId, userId);
 
-                var sql = userRole == "admin"
+                var sql = userRole == RoleConstants.ADMIN
                     ? @"DELETE FROM projects WHERE id = @projectId"
                     : @"DELETE FROM projects WHERE id = @projectId AND user_id = @userId";
 
@@ -1065,7 +1066,7 @@ namespace familytree_backend.Services
                 var parameters = new DynamicParameters();
 
                 // 權限過濾
-                if (userRole != "admin")
+                if (userRole != RoleConstants.ADMIN)
                 {
                     whereConditions.Add("user_id = @userId");
                     parameters.Add("userId", userId);
@@ -1183,7 +1184,7 @@ namespace familytree_backend.Services
             {
                 _logger.LogInformation("獲取人員關係：人員 {PersonId}，使用者 {UserId}", personId, userId);
 
-                var sql = userRole == "admin"
+                var sql = userRole == RoleConstants.ADMIN
                     ? @"SELECT * FROM relationships WHERE source_person_id = @personId OR target_person_id = @personId"
                     : @"SELECT r.* FROM relationships r 
                         INNER JOIN person_profile p1 ON r.source_person_id = p1.id 
@@ -1287,7 +1288,7 @@ namespace familytree_backend.Services
                 await connection.OpenAsync();
 
                 // 如果提供了 userId 且不是 admin，自動加入 user_id 過濾
-                if (!string.IsNullOrEmpty(userId) && userRole != "admin")
+                if (!string.IsNullOrEmpty(userId) && userRole != RoleConstants.ADMIN)
                 {
                     // 簡單的 SQL 解析，加入 user_id 條件
                     if (sql.ToUpper().Contains("WHERE"))
@@ -1361,7 +1362,7 @@ namespace familytree_backend.Services
         {
             try
             {
-                if (userRole == "admin") return true;
+                if (userRole == RoleConstants.ADMIN) return true;
 
                 var sql = resourceType.ToLower() switch
                 {

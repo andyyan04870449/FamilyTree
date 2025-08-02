@@ -1,5 +1,6 @@
 // 新檔案模型 - 使用 file_id 命名標準，支援彈性關聯機制
 using System.ComponentModel.DataAnnotations;
+using familytree_backend.Constants;
 
 namespace familytree_backend.Models
 {
@@ -91,7 +92,7 @@ namespace familytree_backend.Models
         /// </summary>
         [Required]
         [StringLength(50)]
-        public string UploadStatus { get; set; } = FileUploadStatus.Uploaded;
+        public string UploadStatus { get; set; } = "uploaded";
 
         /// <summary>
         /// 是否已處理 (針對需要處理的檔案如 Excel)
@@ -126,29 +127,7 @@ namespace familytree_backend.Models
         public int RelatedPersonsCount { get; set; } = 0;
     }
 
-    /// <summary>
-    /// 檔案上傳狀態常數
-    /// </summary>
-    public static class FileUploadStatus
-    {
-        public const string Uploaded = "uploaded";
-        public const string Processing = "processing";
-        public const string Processed = "processed";
-        public const string Failed = "failed";
-        public const string Deleted = "deleted";
-    }
 
-    /// <summary>
-    /// 關聯記錄類型常數
-    /// </summary>
-    public static class AssociatedRecordType
-    {
-        public const string Person = "person";
-        public const string Project = "project";
-        public const string Analysis = "analysis";
-        public const string Photo = "photo";
-        public const string Document = "document";
-    }
 
     // ==================== 請求模型 ====================
 
@@ -303,7 +282,7 @@ namespace familytree_backend.Models
                 FileSize = FileSize,
                 Md5Hash = Md5Hash,
                 AssociatedRecordId = ProjectId,
-                AssociatedRecordType = !string.IsNullOrEmpty(ProjectId) ? AssociatedRecordType.Project : null,
+                AssociatedRecordType = !string.IsNullOrEmpty(ProjectId) ? ApplicationConstants.Files.AssociationTypes.Project : null,
                 UploadStatus = Status,
                 IsProcessed = IsMerged,
                 ProcessedAt = MergeTime,
@@ -337,7 +316,7 @@ namespace familytree_backend.Models
                 IsMerged = file.IsProcessed,
                 MergeTime = file.ProcessedAt,
                 Status = file.UploadStatus,
-                ProjectId = file.AssociatedRecordType == AssociatedRecordType.Project ? file.AssociatedRecordId : null,
+                ProjectId = file.AssociatedRecordType == ApplicationConstants.Files.AssociationTypes.Project ? file.AssociatedRecordId : null,
                 CreatedAt = file.CreatedAt,
                 UpdatedAt = file.UpdatedAt
             };

@@ -1,19 +1,26 @@
 // 日誌控制器：提供查看分析日誌的 API 端點
 using Microsoft.AspNetCore.Mvc;
 using System.IO;
+using familytree_backend.Services;
+using familytree_backend.Models;
 
 namespace familytree_backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class LogController : ControllerBase
+    public class LogController : BaseController
     {
-        private readonly ILogger<LogController> _logger;
         private readonly IWebHostEnvironment _environment;
 
-        public LogController(ILogger<LogController> logger, IWebHostEnvironment environment)
+        public LogController(
+            ILogger<LogController> logger,
+            IConfigurationService configurationService,
+            IValidationService validationService,
+            IAccessControlService accessControlService,
+            ILoggingService loggingService,
+            IWebHostEnvironment environment)
+            : base(logger, configurationService, validationService, accessControlService, loggingService)
         {
-            _logger = logger;
             _environment = environment;
         }
 
@@ -31,33 +38,27 @@ namespace familytree_backend.Controllers
                 
                 if (!System.IO.File.Exists(logFilePath))
                 {
-                    return NotFound(new { 
-                        success = false, 
-                        message = $"找不到日誌檔案: {logFileName}" 
-                    });
+                    return CreateNotFoundResponse("日誌檔案", logFileName);
                 }
 
                 var logLines = System.IO.File.ReadAllLines(logFilePath);
                 var recentLines = logLines.TakeLast(lines).ToArray();
                 
-                return Ok(new { 
-                    success = true, 
-                    data = new {
-                        fileName = logFileName,
-                        totalLines = logLines.Length,
-                        requestedLines = lines,
-                        actualLines = recentLines.Length,
-                        logs = recentLines
-                    }
+                return CreateSuccessResponse(new {
+                    fileName = logFileName,
+                    totalLines = logLines.Length,
+                    requestedLines = lines,
+                    actualLines = recentLines.Length,
+                    logs = recentLines
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "讀取分析日誌失敗");
-                return StatusCode(500, new { 
-                    success = false, 
-                    message = "讀取日誌時發生錯誤" 
-                });
+                Logger.LogError(ex, "讀取分析日誌失敗");
+                return StatusCode(500, ApiResponse.ErrorResult(
+                    "讀取日誌時發生錯誤",
+                    requestId: HttpContext.TraceIdentifier
+                ));
             }
         }
 
@@ -81,18 +82,15 @@ namespace familytree_backend.Controllers
                     .OrderByDescending(f => f)
                     .ToArray();
                 
-                return Ok(new { 
-                    success = true, 
-                    data = new { files = logFiles }
-                });
+                return CreateSuccessResponse(new { files = logFiles });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "獲取日誌檔案列表失敗");
-                return StatusCode(500, new { 
-                    success = false, 
-                    message = "獲取日誌檔案列表時發生錯誤" 
-                });
+                Logger.LogError(ex, "獲取日誌檔案列表失敗");
+                return StatusCode(500, ApiResponse.ErrorResult(
+                    "獲取日誌檔案列表時發生錯誤",
+                    requestId: HttpContext.TraceIdentifier
+                ));
             }
         }
 
@@ -106,30 +104,24 @@ namespace familytree_backend.Controllers
                 
                 if (!System.IO.File.Exists(logFilePath))
                 {
-                    return NotFound(new { 
-                        success = false, 
-                        message = "找不到日誌檔案" 
-                    });
+                    return CreateNotFoundResponse("日誌檔案");
                 }
 
                 var logLines = System.IO.File.ReadAllLines(logFilePath);
                 var recentLines = logLines.TakeLast(lines).ToArray();
                 
-                return Ok(new { 
-                    success = true, 
-                    data = new {
-                        totalLines = logLines.Length,
-                        recentLines = recentLines
-                    }
+                return CreateSuccessResponse(new {
+                    totalLines = logLines.Length,
+                    recentLines = recentLines
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "讀取日誌尾部失敗");
-                return StatusCode(500, new { 
-                    success = false, 
-                    message = "讀取日誌時發生錯誤" 
-                });
+                Logger.LogError(ex, "讀取日誌尾部失敗");
+                return StatusCode(500, ApiResponse.ErrorResult(
+                    "讀取日誌時發生錯誤",
+                    requestId: HttpContext.TraceIdentifier
+                ));
             }
         }
     }

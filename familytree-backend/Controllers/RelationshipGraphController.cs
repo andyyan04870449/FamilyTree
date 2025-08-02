@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using familytree_backend.Models;
 using familytree_backend.Services;
+using familytree_backend.Attributes;
 using Dapper;
 using Npgsql;
 
@@ -21,16 +22,16 @@ namespace familytree_backend.Controllers
     [Authorize]
     public class RelationshipGraphController : BaseController
     {
-        private readonly IDataAccessService _dataAccessService;
+        private readonly IDataAccessServiceV2 _dataAccessService;
 
         /// <summary>
         /// 關聯圖譜控制器建構子
-        /// 設計改善：使用統一的資料存取服務，避免直接操作資料庫
+        /// 設計改善：使用統一的資料存取服務 V2，基於 user_id 的資料隔離
         /// </summary>
         public RelationshipGraphController(
             ILogger<RelationshipGraphController> logger,
             IConfigurationService configurationService,
-            IDataAccessService dataAccessService,
+            IDataAccessServiceV2 dataAccessService,
             IValidationService validationService,
             IAccessControlService accessControlService,
             ILoggingService loggingService) 
@@ -46,6 +47,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>關聯圖譜數據</returns>
         [HttpPost("analyze-all")]
+        [RelationshipViewPermission]
         public async Task<IActionResult> AnalyzeAllPersons([FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -62,9 +64,13 @@ namespace familytree_backend.Controllers
                     }
                 }
 
-                // 使用統一的資料存取服務獲取人員資料
+                // 獲取當前使用者資訊
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+
+                // 使用統一的資料存取服務 V2 獲取人員資料
                 var (persons, totalCount) = await _dataAccessService.GetPersonDataListAsync(
-                    project_id!, 1, int.MaxValue);
+                    userId, userRole, 1, int.MaxValue);
 
                 Logger.LogInformation("獲取人員資料成功，共 {Count} 筆", totalCount);
 
@@ -93,6 +99,7 @@ namespace familytree_backend.Controllers
         /// <param name="request">建立關係請求</param>
         /// <returns>建立結果</returns>
         [HttpPost("create-relationship")]
+        [PersonUpdatePermission]
         public async Task<IActionResult> CreateRelationship([FromBody] CreateRelationshipRequest request)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -156,8 +163,11 @@ namespace familytree_backend.Controllers
                     CreatedAt = DateTime.UtcNow
                 };
 
-                // 使用統一的資料存取服務建立關係
-                var success = await _dataAccessService.CreateRelationshipAsync(relationship);
+                // 獲取當前使用者資訊
+                var userId = GetCurrentUserId();
+
+                // 使用統一的資料存取服務 V2 建立關係
+                var success = await _dataAccessService.CreateRelationshipAsync(relationship, userId);
 
                 if (!success)
                 {
@@ -186,6 +196,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>關聯圖譜數據</returns>
         [HttpPost("analyze-selected")]
+        [RelationshipViewPermission]
         public async Task<IActionResult> AnalyzeSelectedPersons([FromBody] RelationshipAnalysisRequest request, [FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -213,11 +224,15 @@ namespace familytree_backend.Controllers
                     }
                 }
 
-                // 使用統一的資料存取服務獲取選定人員資料
+                // 獲取當前使用者資訊
+                var userId = GetCurrentUserId();
+                var userRole = GetCurrentUserRole();
+
+                // 使用統一的資料存取服務 V2 獲取選定人員資料
                 var selectedPersons = new List<PersonDataModel>();
                 foreach (var personId in request.PersonIds)
                 {
-                    var person = await _dataAccessService.GetPersonDataByIdAsync(personId, project_id!);
+                    var person = await _dataAccessService.GetPersonDataByIdAsync(personId, userId, userRole);
                     if (person != null)
                     {
                         selectedPersons.Add(person);

@@ -4,8 +4,12 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using familytree_backend.Models;
+using familytree_backend.Models.Exceptions;
 using familytree_backend.Services;
 using familytree_backend.Extensions;
+using FamilyTree.Constants;
+using FamilyTree.Attributes;
+using FamilyTree.Services.Authorization;
 
 namespace familytree_backend.Controllers
 {
@@ -22,15 +26,18 @@ namespace familytree_backend.Controllers
         private readonly IAuditLogService _auditLogService;
         private readonly ILogger<AuditLogController> _logger;
         private readonly ILoggingService _loggingService;
+        private readonly IPermissionContext _permissionContext;
 
         public AuditLogController(
             IAuditLogService auditLogService,
             ILogger<AuditLogController> logger,
-            ILoggingService loggingService)
+            ILoggingService loggingService,
+            IPermissionContext permissionContext)
         {
             _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _loggingService = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
+            _permissionContext = permissionContext ?? throw new ArgumentNullException(nameof(permissionContext));
         }
 
         /// <summary>
@@ -41,39 +48,29 @@ namespace familytree_backend.Controllers
         /// <param name="filter">查詢過濾條件</param>
         /// <returns>分頁的稽核日誌結果</returns>
         [HttpPost("query")]
-        [Authorize] // 暫時放寬權限以測試功能
+        [HasPermission("audit:read", allowOwner: true)]
         public async Task<IActionResult> QueryLogs([FromBody] AuditLogFilterModel filter)
         {
-            try
+            return await this.ExecuteWithErrorHandlingAsync(async () =>
             {
+                // 驗證模型狀態
+                this.ValidateModelState();
+                
                 _loggingService.LogRequestStart("QueryAuditLogs", filter);
                 
-                var currentUserId = GetCurrentUserId();
-                var currentUserRole = GetCurrentUserRole();
+                var currentUserId = _permissionContext.UserId;
                 
                 // 設定服務上下文
                 SetAuditServiceContext();
                 
-                // 非管理員只能查看自己相關的日誌
-                if (!string.Equals(currentUserRole, "admin", StringComparison.OrdinalIgnoreCase))
+                // 檢查是否有管理員權限，非管理員只能查看自己相關的日誌
+                if (!await _permissionContext.HasPermissionAsync("audit:admin"))
                 {
                     filter.UserId = currentUserId;
                 }
                 
                 // 限制查詢範圍（最多查詢90天）
-                if (filter.FromDate == null || filter.ToDate == null)
-                {
-                    filter.ToDate = DateTime.UtcNow;
-                    filter.FromDate = filter.ToDate.Value.AddDays(-90);
-                }
-                else
-                {
-                    var maxRange = TimeSpan.FromDays(90);
-                    if (filter.ToDate.Value - filter.FromDate.Value > maxRange)
-                    {
-                        filter.FromDate = filter.ToDate.Value.AddDays(-90);
-                    }
-                }
+                ValidateAndNormalizeDateRange(filter);
                 
                 var result = await _auditLogService.QueryLogsAsync(filter);
                 
@@ -83,25 +80,8 @@ namespace familytree_backend.Controllers
                     Page = result.Page 
                 });
                 
-                return Ok(new ApiResponse<AuditLogQueryResult>
-                {
-                    Success = true,
-                    Data = result,
-                    Message = $"成功查詢稽核日誌，共 {result.TotalCount} 筆記錄"
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "查詢稽核日誌失敗");
-                _loggingService.LogError("QueryAuditLogs", ex, filter);
-                
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = "查詢稽核日誌時發生錯誤",
-                    Details = ex.Message
-                });
-            }
+                return this.SuccessResponse(result, $"成功查詢稽核日誌，共 {result.TotalCount} 筆記錄");
+            }, "QueryAuditLogs");
         }
 
         /// <summary>
@@ -112,46 +92,24 @@ namespace familytree_backend.Controllers
         /// <param name="toDate">結束日期</param>
         /// <returns>稽核日誌摘要統計</returns>
         [HttpGet("summary")]
-        [Authorize(Roles = "admin,AuditReader")]
+        [AuditReaderPermission]
         public async Task<IActionResult> GetSummary(
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null)
         {
-            try
+            return await this.ExecuteWithErrorHandlingAsync(async () =>
             {
                 fromDate ??= DateTime.UtcNow.AddDays(-30);
                 toDate ??= DateTime.UtcNow;
                 
-                // 限制查詢範圍
-                if (toDate.Value - fromDate.Value > TimeSpan.FromDays(90))
-                {
-                    return BadRequest(new ApiResponse<object>
-                    {
-                        Success = false,
-                        Message = "查詢範圍不能超過90天"
-                    });
-                }
+                // 驗證查詢範圍
+                ValidateDateRange(fromDate.Value, toDate.Value, 90);
                 
                 SetAuditServiceContext();
                 var summary = await _auditLogService.GetSummaryAsync(fromDate.Value, toDate.Value);
                 
-                return Ok(new ApiResponse<IEnumerable<AuditLogSummaryModel>>
-                {
-                    Success = true,
-                    Data = summary,
-                    Message = "成功獲取稽核日誌摘要"
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "獲取稽核日誌摘要失敗");
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = "獲取稽核日誌摘要時發生錯誤",
-                    Details = ex.Message
-                });
-            }
+                return this.SuccessResponse(summary, "成功獲取稽核日誌摘要");
+            }, "GetSummary");
         }
 
         /// <summary>
@@ -162,7 +120,7 @@ namespace familytree_backend.Controllers
         /// <param name="toDate">結束日期</param>
         /// <returns>詳細統計資料</returns>
         [HttpGet("statistics")]
-        [Authorize] // 暫時放寬權限以測試功能
+        [HasPermission("audit:read")]
         public async Task<IActionResult> GetStatistics(
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null)
@@ -202,15 +160,14 @@ namespace familytree_backend.Controllers
         /// <param name="format">匯出格式 (CSV/JSON)</param>
         /// <returns>匯出檔案</returns>
         [HttpPost("export")]
-        [Authorize(Roles = "admin,AuditReader")]
+        [HasPermission("audit:export")]
         public async Task<IActionResult> ExportLogs(
             [FromBody] AuditLogFilterModel filter,
             [FromQuery] string format = "CSV")
         {
             try
             {
-                var currentUserId = GetCurrentUserId();
-                var currentUserRole = GetCurrentUserRole();
+                var currentUserId = _permissionContext.UserId;
                 
                 SetAuditServiceContext();
                 
@@ -222,8 +179,8 @@ namespace familytree_backend.Controllers
                     RequestedBy = currentUserId
                 });
                 
-                // 非管理員只能匯出自己相關的日誌
-                if (!string.Equals(currentUserRole, "admin", StringComparison.OrdinalIgnoreCase))
+                // 檢查是否有管理員權限，非管理員只能匯出自己相關的日誌
+                if (!await _permissionContext.HasPermissionAsync("audit:admin"))
                 {
                     filter.UserId = currentUserId;
                 }
@@ -261,7 +218,7 @@ namespace familytree_backend.Controllers
         /// </summary>
         /// <returns>事件類型列表</returns>
         [HttpGet("event-types")]
-        [Authorize] // 暫時放寬權限，讓所有已認證使用者都能存取
+        [Authorize] // 基本認證即可
         public IActionResult GetEventTypes()
         {
             try
@@ -322,41 +279,20 @@ namespace familytree_backend.Controllers
         /// <param name="auditLog">稽核日誌資料</param>
         /// <returns>建立的稽核日誌ID</returns>
         [HttpPost("create")]
-        [Authorize(Roles = "admin")]
+        [HasPermission("audit:create")]
         public async Task<IActionResult> CreateAuditLog([FromBody] CreateAuditLogDto auditLog)
         {
-            try
+            return await this.ExecuteWithErrorHandlingAsync(async () =>
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(new ApiResponse<object>
-                    {
-                        Success = false,
-                        Message = "請求資料驗證失敗",
-                        Details = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage))
-                    });
-                }
+                // 驗證模型狀態
+                this.ValidateModelState();
+                this.ValidateNotNull(auditLog, nameof(auditLog));
                 
                 SetAuditServiceContext();
                 var logId = await _auditLogService.LogEventAsync(auditLog);
                 
-                return Ok(new ApiResponse<object>
-                {
-                    Success = true,
-                    Data = new { LogId = logId },
-                    Message = "成功建立稽核日誌記錄"
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "建立稽核日誌失敗");
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = "建立稽核日誌時發生錯誤",
-                    Details = ex.Message
-                });
-            }
+                return this.SuccessResponse(new { LogId = logId }, "成功建立稽核日誌記錄");
+            }, "CreateAuditLog");
         }
 
         /// <summary>
@@ -368,46 +304,28 @@ namespace familytree_backend.Controllers
         /// <param name="toDate">結束日期</param>
         /// <returns>報告生成任務ID</returns>
         [HttpPost("compliance-report")]
-        [Authorize(Roles = "admin")]
+        [HasPermission("audit:report")]
         public async Task<IActionResult> GenerateComplianceReport(
             [FromQuery, Required] string reportType,
             [FromQuery, Required] DateTime fromDate,
             [FromQuery, Required] DateTime toDate)
         {
-            try
+            return await this.ExecuteWithErrorHandlingAsync(async () =>
             {
-                if (toDate <= fromDate)
-                {
-                    return BadRequest(new ApiResponse<object>
-                    {
-                        Success = false,
-                        Message = "結束日期必須大於開始日期"
-                    });
-                }
+                // 驗證參數
+                this.ValidateNotNullOrEmpty(reportType, nameof(reportType));
+                ValidateDateRange(fromDate, toDate, 365); // 報告最多可以一年
                 
-                var currentUserId = GetCurrentUserId();
+                var currentUserId = _permissionContext.UserId;
                 SetAuditServiceContext();
                 
                 var reportId = await _auditLogService.GenerateComplianceReportAsync(
                     reportType, fromDate, toDate, currentUserId);
                 
-                return Ok(new ApiResponse<object>
-                {
-                    Success = true,
-                    Data = new { ReportId = reportId },
-                    Message = $"已開始生成 {reportType} 合規性報告，報告ID: {reportId}"
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "生成合規性報告失敗");
-                return StatusCode(500, new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = "生成合規性報告時發生錯誤",
-                    Details = ex.Message
-                });
-            }
+                return this.SuccessResponse(
+                    new { ReportId = reportId }, 
+                    $"已開始生成 {reportType} 合規性報告，報告ID: {reportId}");
+            }, "GenerateComplianceReport");
         }
 
         /// <summary>
@@ -416,7 +334,7 @@ namespace familytree_backend.Controllers
         /// </summary>
         /// <returns>清理的記錄數量</returns>
         [HttpPost("cleanup")]
-        [Authorize(Roles = "admin")]
+        [HasPermission("audit:cleanup")]
         public async Task<IActionResult> CleanupExpiredLogs()
         {
             try
@@ -455,7 +373,7 @@ namespace familytree_backend.Controllers
         /// </summary>
         /// <returns>系統狀態資訊</returns>
         [HttpGet("system-status")]
-        [Authorize(Roles = "admin")]
+        [HasPermission("audit:admin")]
         public async Task<IActionResult> GetSystemStatus()
         {
             try
@@ -497,11 +415,49 @@ namespace familytree_backend.Controllers
         #region 私有方法
 
         /// <summary>
+        /// 驗證並正規化日期範圍（針對 filter 物件）
+        /// </summary>
+        private void ValidateAndNormalizeDateRange(AuditLogFilterModel filter)
+        {
+            if (filter.FromDate == null || filter.ToDate == null)
+            {
+                filter.ToDate = DateTime.UtcNow;
+                filter.FromDate = filter.ToDate.Value.AddDays(-90);
+            }
+            else
+            {
+                ValidateDateRange(filter.FromDate.Value, filter.ToDate.Value, 90);
+                
+                var maxRange = TimeSpan.FromDays(90);
+                if (filter.ToDate.Value - filter.FromDate.Value > maxRange)
+                {
+                    filter.FromDate = filter.ToDate.Value.AddDays(-90);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 驗證日期範圍
+        /// </summary>
+        private void ValidateDateRange(DateTime fromDate, DateTime toDate, int maxDays)
+        {
+            if (toDate <= fromDate)
+            {
+                throw new familytree_backend.Models.Exceptions.ValidationException("結束日期必須大於開始日期");
+            }
+
+            if (toDate - fromDate > TimeSpan.FromDays(maxDays))
+            {
+                throw new familytree_backend.Models.Exceptions.ValidationException($"查詢範圍不能超過{maxDays}天");
+            }
+        }
+
+        /// <summary>
         /// 獲取當前使用者ID
         /// </summary>
         private string GetCurrentUserId()
         {
-            return User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+            return _permissionContext.UserId ?? "unknown";
         }
 
         /// <summary>
@@ -509,7 +465,7 @@ namespace familytree_backend.Controllers
         /// </summary>
         private string GetCurrentUserRole()
         {
-            return User.FindFirst(ClaimTypes.Role)?.Value ?? "User";
+            return _permissionContext.UserRoles.FirstOrDefault() ?? "User";
         }
 
         /// <summary>
@@ -517,7 +473,7 @@ namespace familytree_backend.Controllers
         /// </summary>
         private string GetCurrentUserName()
         {
-            return User.FindFirst(ClaimTypes.Name)?.Value ?? "unknown";
+            return _permissionContext.CurrentUser?.FindFirst(ClaimTypes.Name)?.Value ?? "unknown";
         }
 
         /// <summary>

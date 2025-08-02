@@ -7,6 +7,7 @@ import { Subscription } from 'rxjs';
 import { FileUploadService, FileModel, UploadProgress } from '../../services/file-upload.service';
 import { PhotoUploadService, PhotoUploadProgress, PhotoUploadResponse } from '../../services/photo-upload.service';
 import { ProjectService } from '../../services/project.service';
+import { AppConstants } from '../../constants/app.constants';
 
 // 檔案記錄統一介面
 interface UnifiedFileRecord {
@@ -36,7 +37,7 @@ export class FileUploadComponent implements OnInit, OnDestroy {
   uploadProgress = 0;
   uploadMessage = '';
   dragOver = false;
-  detectedFileType: 'excel' | 'photo' | 'unknown' = 'unknown';
+  detectedFileType: string = AppConstants.FILE_SYSTEM.SUPPORTED_TYPES.UNKNOWN;
   
   // 統一的檔案記錄列表
   allFileRecords: UnifiedFileRecord[] = [];
@@ -111,30 +112,15 @@ export class FileUploadComponent implements OnInit, OnDestroy {
   /**
    * 智能檔案類型檢測
    */
-  private detectFileType(file: File): 'excel' | 'photo' | 'unknown' {
-    const fileName = file.name.toLowerCase();
-    const fileExtension = fileName.split('.').pop() || '';
-    
-    // Excel 檔案類型
-    const excelExtensions = ['xls', 'xlsx'];
-    if (excelExtensions.includes(fileExtension)) {
-      return 'excel';
-    }
-    
-    // 照片檔案類型
-    const photoExtensions = ['jpg', 'jpeg', 'png', 'zip', '7z'];
-    if (photoExtensions.includes(fileExtension)) {
-      return 'photo';
-    }
-    
-    return 'unknown';
+  private detectFileType(file: File): string {
+    return AppConstants.getFileTypeByExtension(file.name);
   }
 
   /**
    * 驗證檔案類型是否支援
    */
   private isValidFileType(file: File): boolean {
-    return this.detectFileType(file) !== 'unknown';
+    return AppConstants.isValidFileType(file.name);
   }
 
   onFileSelected(event: any): void {
@@ -171,24 +157,24 @@ export class FileUploadComponent implements OnInit, OnDestroy {
     // 智能檢測檔案類型
     this.detectedFileType = this.detectFileType(file);
     
-    if (this.detectedFileType === 'unknown') {
-      this.uploadMessage = '❌ 不支援的檔案格式，請上傳 Excel (.xls/.xlsx) 或圖片檔案 (.jpg/.png/.zip/.7z)';
+    if (this.detectedFileType === AppConstants.FILE_SYSTEM.SUPPORTED_TYPES.UNKNOWN) {
+      this.uploadMessage = `❌ ${AppConstants.FILE_SYSTEM.MESSAGES.INVALID_FILE_TYPE}，請上傳 ${AppConstants.FILE_SYSTEM.ALLOWED_EXTENSIONS.join(', ')} 格式檔案`;
       return;
     }
 
     this.selectedFile = file;
-    const fileTypeText = this.detectedFileType === 'excel' ? 'Excel 資料檔' : '照片檔案';
+    const fileTypeText = AppConstants.getFileTypeName(this.detectedFileType);
     this.uploadMessage = `📁 已選擇${fileTypeText}: ${file.name}`;
   }
 
   uploadFile(): void {
     if (!this.selectedFile) {
-      this.uploadMessage = '❌ 請先選擇檔案';
+      this.uploadMessage = `❌ ${AppConstants.FILE_SYSTEM.MESSAGES.SELECT_FILE_FIRST}`;
       return;
     }
 
-    if (this.detectedFileType === 'unknown') {
-      this.uploadMessage = '❌ 檔案格式不支援';
+    if (this.detectedFileType === AppConstants.FILE_SYSTEM.SUPPORTED_TYPES.UNKNOWN) {
+      this.uploadMessage = `❌ ${AppConstants.FILE_SYSTEM.MESSAGES.INVALID_FILE_TYPE}`;
       return;
     }
 
@@ -196,7 +182,7 @@ export class FileUploadComponent implements OnInit, OnDestroy {
     this.uploadProgress = 0;
     this.uploadMessage = `📤 正在上傳${this.getFileTypeText()}...`;
 
-    if (this.detectedFileType === 'excel') {
+    if (this.detectedFileType === AppConstants.FILE_SYSTEM.SUPPORTED_TYPES.EXCEL) {
       this.uploadExcelFile();
     } else {
       this.uploadPhotoFile();
@@ -260,9 +246,9 @@ export class FileUploadComponent implements OnInit, OnDestroy {
     this.uploadProgress = 100;
     
     if (result.success) {
-      this.uploadMessage = '✅ Excel 檔案上傳成功！';
+      this.uploadMessage = `✅ ${AppConstants.FILE_SYSTEM.MESSAGES.UPLOAD_SUCCESS}！`;
       this.selectedFile = null;
-      this.detectedFileType = 'unknown';
+      this.detectedFileType = AppConstants.FILE_SYSTEM.SUPPORTED_TYPES.UNKNOWN;
       this.fileUploadService.refreshFileList();
     } else {
       if (result.isDuplicate) {
@@ -270,7 +256,7 @@ export class FileUploadComponent implements OnInit, OnDestroy {
         // 重複檔案也需要刷新列表，因為後端已記錄到資料庫
         this.fileUploadService.refreshFileList();
         this.selectedFile = null;
-        this.detectedFileType = 'unknown';
+        this.detectedFileType = AppConstants.FILE_SYSTEM.SUPPORTED_TYPES.UNKNOWN;
       } else {
         this.uploadMessage = `❌ 上傳失敗: ${result.message}`;
       }
@@ -304,10 +290,10 @@ export class FileUploadComponent implements OnInit, OnDestroy {
       if (failedCount > 0) {
         this.uploadMessage = `✅ 照片上傳完成！成功: ${uploadedCount}，失敗: ${failedCount}`;
       } else {
-        this.uploadMessage = `✅ 照片上傳成功！共 ${uploadedCount} 張照片`;
+        this.uploadMessage = `✅ ${AppConstants.FILE_SYSTEM.MESSAGES.UPLOAD_SUCCESS}！共 ${uploadedCount} 張照片`;
       }
       this.selectedFile = null;
-      this.detectedFileType = 'unknown';
+      this.detectedFileType = AppConstants.FILE_SYSTEM.SUPPORTED_TYPES.UNKNOWN;
       
       // 刷新照片列表
       this.photoUploadService.refreshPhotoList();
@@ -340,11 +326,11 @@ export class FileUploadComponent implements OnInit, OnDestroy {
     this.selectedFile = null;
     this.uploadMessage = '';
     this.uploadProgress = 0;
-    this.detectedFileType = 'unknown';
+    this.detectedFileType = AppConstants.FILE_SYSTEM.SUPPORTED_TYPES.UNKNOWN;
   }
 
   formatFileSize(bytes: number): string {
-    return this.fileUploadService.formatFileSize(bytes);
+    return AppConstants.formatFileSize(bytes);
   }
 
   /**
@@ -397,36 +383,24 @@ export class FileUploadComponent implements OnInit, OnDestroy {
 
   // 取得支援的檔案格式說明
   getSupportedFormats(): string {
-    return 'Excel (.xls/.xlsx) 或 圖片檔案 (.jpg/.png/.zip/.7z)';
+    return `支援的檔案格式: ${AppConstants.FILE_SYSTEM.ALLOWED_EXTENSIONS.join(', ')}`;
   }
 
   // 取得檔案接受屬性
   getAcceptAttribute(): string {
-    return '.xls,.xlsx,.jpg,.jpeg,.png,.zip,.7z';
+    return AppConstants.FILE_SYSTEM.ALLOWED_EXTENSIONS.join(',');
   }
 
   // 取得檔案類型圖示
-  getFileTypeIcon(fileType?: 'excel' | 'photo' | 'image' | 'archive' | 'unknown'): string {
+  getFileTypeIcon(fileType?: string): string {
     const type = fileType || this.detectedFileType;
-    switch (type) {
-      case 'excel': return '📊';
-      case 'photo': return '📸';
-      case 'image': return '🖼️';
-      case 'archive': return '📦';
-      default: return '📁';
-    }
+    return AppConstants.getFileTypeIcon(type);
   }
 
   // 取得檔案類型名稱
-  getFileTypeText(fileType?: 'excel' | 'photo' | 'image' | 'archive' | 'unknown'): string {
+  getFileTypeText(fileType?: string): string {
     const type = fileType || this.detectedFileType;
-    switch (type) {
-      case 'excel': return 'Excel 資料';
-      case 'photo': return '照片檔案';
-      case 'image': return '圖片檔案';
-      case 'archive': return '壓縮檔案';
-      default: return '檔案';
-    }
+    return AppConstants.getFileTypeName(type);
   }
 
   // 格式化上傳時間
@@ -476,7 +450,7 @@ export class FileUploadComponent implements OnInit, OnDestroy {
     const fileName = record.originalName;
     const fileType = record.fileType === 'excel' ? 'Excel檔案' : '照片檔案';
     
-    if (!confirm(`確定要刪除${fileType}「${fileName}」嗎？\n\n注意：此操作無法復原。`)) {
+    if (!confirm(`${AppConstants.FILE_SYSTEM.MESSAGES.DELETE_CONFIRM}「${fileName}」？\n\n注意：此操作無法復原。`)) {
       return;
     }
 

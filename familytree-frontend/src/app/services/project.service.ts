@@ -55,12 +55,6 @@ export interface ProjectStatistics {
   totalRelationships: number;
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-  error?: string;
-}
 
 @Injectable({
   providedIn: 'root'
