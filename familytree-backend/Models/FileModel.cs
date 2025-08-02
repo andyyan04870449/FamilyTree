@@ -119,6 +119,11 @@ namespace familytree_backend.Models
         /// 最後更新時間
         /// </summary>
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// 相關人數 (從 person_profile 表統計)
+        /// </summary>
+        public int RelatedPersonsCount { get; set; } = 0;
     }
 
     /// <summary>
@@ -303,7 +308,8 @@ namespace familytree_backend.Models
                 ProcessedAt = MergeTime,
                 UploadedAt = UploadTime,
                 CreatedAt = CreatedAt,
-                UpdatedAt = UpdatedAt
+                UpdatedAt = UpdatedAt,
+                RelatedPersonsCount = 0 // 轉換時預設為 0，實際值需透過查詢取得
             };
         }
     }

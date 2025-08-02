@@ -152,10 +152,11 @@ namespace familytree_backend.Services
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                // 構建查詢條件
-                var whereConditions = new List<string> { "user_id = @userId" };
+                // 構建查詢條件 - 排除已刪除的檔案
+                var whereConditions = new List<string> { "user_id = @userId", "upload_status != @deletedStatus" };
                 var parameters = new DynamicParameters();
                 parameters.Add("userId", userId);
+                parameters.Add("deletedStatus", FileUploadStatus.Deleted);
 
                 if (!string.IsNullOrEmpty(options.FileType))
                 {
@@ -186,17 +187,24 @@ namespace familytree_backend.Services
                 var offset = (options.Page - 1) * options.PageSize;
                 
                 var dataSql = $@"
-                    SELECT file_id as FileId, user_id as UserId, filename, original_filename as OriginalFilename,
-                           file_path as FilePath, file_size as FileSize, md5_hash as Md5Hash,
-                           file_type as FileType, mime_type as MimeType,
-                           associated_record_id as AssociatedRecordId, 
-                           associated_record_type as AssociatedRecordType,
-                           upload_status as UploadStatus, is_processed as IsProcessed,
-                           processed_at as ProcessedAt, uploaded_at as UploadedAt,
-                           created_at as CreatedAt, updated_at as UpdatedAt
-                    FROM file_uploads 
+                    SELECT f.file_id as FileId, f.user_id as UserId, f.filename, f.original_filename as OriginalFilename,
+                           f.file_path as FilePath, f.file_size as FileSize, f.md5_hash as Md5Hash,
+                           f.file_type as FileType, f.mime_type as MimeType,
+                           f.associated_record_id as AssociatedRecordId, 
+                           f.associated_record_type as AssociatedRecordType,
+                           f.upload_status as UploadStatus, f.is_processed as IsProcessed,
+                           f.processed_at as ProcessedAt, f.uploaded_at as UploadedAt,
+                           f.created_at as CreatedAt, f.updated_at as UpdatedAt,
+                           COALESCE(p.person_count, 0) as RelatedPersonsCount
+                    FROM file_uploads f
+                    LEFT JOIN (
+                        SELECT file_md5, COUNT(*) as person_count
+                        FROM person_profile
+                        WHERE file_md5 IS NOT NULL
+                        GROUP BY file_md5
+                    ) p ON f.md5_hash = p.file_md5
                     WHERE {whereClause}
-                    ORDER BY {options.SortBy} {orderBy}
+                    ORDER BY f.{options.SortBy} {orderBy}
                     LIMIT @limit OFFSET @offset";
 
                 parameters.Add("limit", options.PageSize);
@@ -237,16 +245,23 @@ namespace familytree_backend.Services
                 await connection.OpenAsync();
 
                 var sql = @"
-                    SELECT file_id as FileId, user_id as UserId, filename, original_filename as OriginalFilename,
-                           file_path as FilePath, file_size as FileSize, md5_hash as Md5Hash,
-                           file_type as FileType, mime_type as MimeType,
-                           associated_record_id as AssociatedRecordId, 
-                           associated_record_type as AssociatedRecordType,
-                           upload_status as UploadStatus, is_processed as IsProcessed,
-                           processed_at as ProcessedAt, uploaded_at as UploadedAt,
-                           created_at as CreatedAt, updated_at as UpdatedAt
-                    FROM file_uploads 
-                    WHERE file_id = @fileId AND user_id = @userId";
+                    SELECT f.file_id as FileId, f.user_id as UserId, f.filename, f.original_filename as OriginalFilename,
+                           f.file_path as FilePath, f.file_size as FileSize, f.md5_hash as Md5Hash,
+                           f.file_type as FileType, f.mime_type as MimeType,
+                           f.associated_record_id as AssociatedRecordId, 
+                           f.associated_record_type as AssociatedRecordType,
+                           f.upload_status as UploadStatus, f.is_processed as IsProcessed,
+                           f.processed_at as ProcessedAt, f.uploaded_at as UploadedAt,
+                           f.created_at as CreatedAt, f.updated_at as UpdatedAt,
+                           COALESCE(p.person_count, 0) as RelatedPersonsCount
+                    FROM file_uploads f
+                    LEFT JOIN (
+                        SELECT file_md5, COUNT(*) as person_count
+                        FROM person_profile
+                        WHERE file_md5 IS NOT NULL
+                        GROUP BY file_md5
+                    ) p ON f.md5_hash = p.file_md5
+                    WHERE f.file_id = @fileId AND f.user_id = @userId";
 
                 return await connection.QueryFirstOrDefaultAsync<FileModel>(sql, new { fileId, userId });
             }
@@ -315,9 +330,12 @@ namespace familytree_backend.Services
 
             try
             {
+                _logger.LogInformation("開始刪除檔案: FileId={FileId}, UserId={UserId}", fileId, userId);
+
                 var file = await GetFileByIdAsync(fileId, userId);
                 if (file == null)
                 {
+                    _logger.LogWarning("找不到要刪除的檔案: FileId={FileId}, UserId={UserId}", fileId, userId);
                     return new FileOperationResult
                     {
                         Success = false,
@@ -325,10 +343,28 @@ namespace familytree_backend.Services
                     };
                 }
 
+                _logger.LogInformation("找到要刪除的檔案: {FileName}, 路徑: {FilePath}", file.OriginalFilename, file.FilePath);
+
                 // 刪除實體檔案
+                var physicalFileDeleted = false;
                 if (File.Exists(file.FilePath))
                 {
-                    File.Delete(file.FilePath);
+                    try
+                    {
+                        File.Delete(file.FilePath);
+                        physicalFileDeleted = true;
+                        _logger.LogInformation("實體檔案刪除成功: {FilePath}", file.FilePath);
+                    }
+                    catch (Exception fileEx)
+                    {
+                        _logger.LogError(fileEx, "刪除實體檔案失敗: {FilePath}", file.FilePath);
+                        // 即使實體檔案刪除失敗，仍然繼續更新資料庫狀態
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("實體檔案不存在: {FilePath}", file.FilePath);
+                    physicalFileDeleted = true; // 檔案不存在視為已刪除
                 }
 
                 // 更新資料庫狀態為已刪除（軟刪除）
@@ -337,7 +373,7 @@ namespace familytree_backend.Services
                     SET upload_status = @status, updated_at = @updatedAt
                     WHERE file_id = @fileId AND user_id = @userId";
 
-                await connection.ExecuteAsync(sql, new 
+                var rowsAffected = await connection.ExecuteAsync(sql, new 
                 { 
                     status = FileUploadStatus.Deleted,
                     updatedAt = DateTime.UtcNow,
@@ -345,21 +381,36 @@ namespace familytree_backend.Services
                     userId 
                 }, transaction);
 
+                if (rowsAffected == 0)
+                {
+                    _logger.LogWarning("資料庫更新失敗，沒有找到匹配的記錄: FileId={FileId}, UserId={UserId}", fileId, userId);
+                    await transaction.RollbackAsync();
+                    return new FileOperationResult
+                    {
+                        Success = false,
+                        Message = "無法更新檔案狀態，可能檔案不存在或無權限"
+                    };
+                }
+
                 await transaction.CommitAsync();
 
-                _logger.LogInformation("檔案刪除成功: {FileName}, FileId: {FileId}", 
-                    file.OriginalFilename, fileId);
+                var successMessage = physicalFileDeleted 
+                    ? "檔案和資料記錄刪除成功" 
+                    : "資料記錄已標記為刪除（實體檔案刪除時發生錯誤）";
+
+                _logger.LogInformation("檔案刪除操作完成: {FileName}, FileId={FileId}, 實體檔案刪除={PhysicalDeleted}", 
+                    file.OriginalFilename, fileId, physicalFileDeleted);
 
                 return new FileOperationResult
                 {
                     Success = true,
-                    Message = "檔案刪除成功"
+                    Message = successMessage
                 };
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, "檔案刪除失敗: {FileId}", fileId);
+                _logger.LogError(ex, "檔案刪除過程發生異常: FileId={FileId}, UserId={UserId}", fileId, userId);
                 return new FileOperationResult
                 {
                     Success = false,
@@ -709,16 +760,23 @@ namespace familytree_backend.Services
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT file_id as FileId, user_id as UserId, filename, original_filename as OriginalFilename,
-                       file_path as FilePath, file_size as FileSize, md5_hash as Md5Hash,
-                       file_type as FileType, mime_type as MimeType,
-                       associated_record_id as AssociatedRecordId, 
-                       associated_record_type as AssociatedRecordType,
-                       upload_status as UploadStatus, is_processed as IsProcessed,
-                       processed_at as ProcessedAt, uploaded_at as UploadedAt,
-                       created_at as CreatedAt, updated_at as UpdatedAt
-                FROM file_uploads 
-                WHERE md5_hash = @md5Hash AND user_id = @userId AND upload_status != 'deleted'
+                SELECT f.file_id as FileId, f.user_id as UserId, f.filename, f.original_filename as OriginalFilename,
+                       f.file_path as FilePath, f.file_size as FileSize, f.md5_hash as Md5Hash,
+                       f.file_type as FileType, f.mime_type as MimeType,
+                       f.associated_record_id as AssociatedRecordId, 
+                       f.associated_record_type as AssociatedRecordType,
+                       f.upload_status as UploadStatus, f.is_processed as IsProcessed,
+                       f.processed_at as ProcessedAt, f.uploaded_at as UploadedAt,
+                       f.created_at as CreatedAt, f.updated_at as UpdatedAt,
+                       COALESCE(p.person_count, 0) as RelatedPersonsCount
+                FROM file_uploads f
+                LEFT JOIN (
+                    SELECT file_md5, COUNT(*) as person_count
+                    FROM person_profile
+                    WHERE file_md5 IS NOT NULL
+                    GROUP BY file_md5
+                ) p ON f.md5_hash = p.file_md5
+                WHERE f.md5_hash = @md5Hash AND f.user_id = @userId AND f.upload_status != 'deleted'
                 LIMIT 1";
 
             return await connection.QueryFirstOrDefaultAsync<FileModel>(sql, new { md5Hash, userId });
@@ -742,7 +800,16 @@ namespace familytree_backend.Services
                     @AssociatedRecordId, @AssociatedRecordType,
                     @UploadStatus, @IsProcessed, @ProcessedAt,
                     @UploadedAt, @CreatedAt, @UpdatedAt
-                ) RETURNING *";
+                ) RETURNING 
+                    file_id as FileId, user_id as UserId, filename, original_filename as OriginalFilename,
+                    file_path as FilePath, file_size as FileSize, md5_hash as Md5Hash,
+                    file_type as FileType, mime_type as MimeType,
+                    associated_record_id as AssociatedRecordId, 
+                    associated_record_type as AssociatedRecordType,
+                    upload_status as UploadStatus, is_processed as IsProcessed,
+                    processed_at as ProcessedAt, uploaded_at as UploadedAt,
+                    created_at as CreatedAt, updated_at as UpdatedAt,
+                    0 as RelatedPersonsCount";
 
             var savedFile = await connection.QuerySingleAsync<FileModel>(sql, file);
             return savedFile;
