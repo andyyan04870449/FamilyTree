@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProjectService, Project, CreateProjectRequest, ProjectStatistics } from '../../services/project.service';
+import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -319,6 +320,7 @@ export class ProjectManagementComponent implements OnInit, OnDestroy {
   
   constructor(
     private projectService: ProjectService,
+    private authService: AuthService,
     private router: Router
   ) {
     console.log('📋 ProjectManagementComponent 初始化');
@@ -392,10 +394,19 @@ export class ProjectManagementComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // 使用當前登入用戶的 ID
+    const currentUser = this.authService.currentUserValue;
+    if (!currentUser?.id) {
+      console.error('❌ 用戶未登入或缺少 ID，無法建立專案');
+      alert('請先登入後再建立專案');
+      return;
+    }
+    const userId = currentUser.id;
+    
     const request: CreateProjectRequest = {
       projectName: this.projectForm_name.trim(),
       projectDescription: this.projectForm_description.trim() || undefined,
-      userId: this.projectService.generateDefaultUserId()
+      userId: userId
     };
 
     console.log('➕ 建立新專案:', request.projectName);

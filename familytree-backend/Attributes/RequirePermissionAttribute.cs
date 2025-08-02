@@ -235,10 +235,16 @@ namespace FamilyTree.Attributes
 
         private string GetProjectId(AuthorizationFilterContext context)
         {
-            // 從路由取得
+            // 從路由取得 - 支援 projectId 或 id
             if (context.RouteData.Values.TryGetValue("projectId", out var projectId))
             {
                 return projectId?.ToString();
+            }
+            
+            // 也支援 id 參數（用於 ProjectController）
+            if (context.RouteData.Values.TryGetValue("id", out var id))
+            {
+                return id?.ToString();
             }
 
             // 從查詢參數取得

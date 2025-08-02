@@ -239,10 +239,20 @@ export class AuthService {
     if (data.expiresAt) {
       // 如果後端返回 expiresAt (ISO date string)
       console.log('後端返回的 expiresAt:', data.expiresAt);
-      expirationTime = new Date(data.expiresAt).getTime();
-      expiresInSeconds = Math.floor((expirationTime - Date.now()) / 1000);
-      console.log('計算後的過期時間戳:', expirationTime);
-      console.log('剩餘秒數:', expiresInSeconds);
+      const parsedTime = new Date(data.expiresAt).getTime();
+      
+      // 檢查是否為有效日期（不是 0001-01-01）
+      if (parsedTime > 0 && !isNaN(parsedTime)) {
+        expirationTime = parsedTime;
+        expiresInSeconds = Math.floor((expirationTime - Date.now()) / 1000);
+        console.log('計算後的過期時間戳:', expirationTime);
+        console.log('剩餘秒數:', expiresInSeconds);
+      } else {
+        // 無效日期，使用預設值
+        console.warn('後端返回的 expiresAt 是無效日期，使用預設 15 分鐘');
+        expiresInSeconds = 900;
+        expirationTime = Date.now() + (900 * 1000);
+      }
     } else if (data.expiresIn) {
       // 如果後端返回 expiresIn (秒數)
       console.log('後端返回的 expiresIn:', data.expiresIn);

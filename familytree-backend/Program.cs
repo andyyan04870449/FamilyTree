@@ -5,6 +5,7 @@ using familytree_backend.Constants;
 using familytree_backend.Middleware;
 using FamilyTree.Services;
 using Microsoft.Extensions.Caching.Memory;
+using familytree_backend.Extensions;
 
 namespace familytree_backend
 {
@@ -206,6 +207,9 @@ builder.Services.AddMemoryCache(); // 權限服務需要快取
 // Add Database Initialization Service - 資料庫初始化服務
 builder.Services.AddHostedService<familytree_backend.Services.DatabaseInitializationService>();
 
+// Add Audit Log Services - 稽核日誌服務
+builder.Services.AddAuditLogServices(builder.Configuration);
+
 // Add CORS - Environment-specific configuration for security
 if (builder.Environment.IsDevelopment())
 {
@@ -259,6 +263,9 @@ else
 
 // Use JWT Authentication
 app.UseJwtAuthentication();
+
+// Use Audit Log Middleware - 稽核日誌中介軟體
+app.UseAuditLogMiddleware();
 
 app.MapControllers();
 

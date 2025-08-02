@@ -85,7 +85,7 @@ namespace familytree_backend.Models
         public string? ProjectDescription { get; set; }
         
         [Required(ErrorMessage = "用戶ID為必填項目")]
-        [StringLength(6, MinimumLength = 6, ErrorMessage = "用戶ID必須為6位數字")]
+        [StringLength(50, ErrorMessage = "用戶ID不能超過50個字元")]
         public string UserId { get; set; } = string.Empty;
         
         [RegularExpression("^(active|completed|archived|draft)$", ErrorMessage = "無效的專案狀態")]

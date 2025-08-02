@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API 連接測試</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>家族樹系統 API 連接測試</h1>
+    
+    <div class="test-section">
+        <h2>1. 檢查本地存儲的 Token</h2>
+        <button onclick="checkToken()">檢查 Token</button>
+        <div id="tokenResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 測試登入 (獲取新 Token)</h2>
+        <input type="text" id="username" placeholder="用戶名" value="admin">
+        <input type="password" id="password" placeholder="密碼" value="admin123">
+        <button onclick="testLogin()">測試登入</button>
+        <div id="loginResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 測試專案 API</h2>
+        <button onclick="testProjectList()">獲取專案列表</button>
+        <button onclick="testCreateProject()">建立測試專案</button>
+        <div id="projectResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 測試 Proxy 連接</h2>
+        <button onclick="testProxy()">測試 Proxy</button>
+        <div id="proxyResult"></div>
+    </div>
+
+    <script>
+        // 檢查 Token
+        function checkToken() {
+            const token = localStorage.getItem('access_token');
+            const user = localStorage.getItem('current_user');
+            const resultDiv = document.getElementById('tokenResult');
+            
+            if (token) {
+                // 解析 JWT token
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const expDate = new Date(payload.exp * 1000);
+                    const isExpired = expDate < new Date();
+                    
+                    resultDiv.innerHTML = `
+                        <p class="${isExpired ? 'error' : 'success'}">Token 狀態: ${isExpired ? '已過期' : '有效'}</p>
+                        <p>過期時間: ${expDate.toLocaleString()}</p>
+                        <p>用戶: ${user || '未知'}</p>
+                        <pre>${JSON.stringify(payload, null, 2)}</pre>
+                    `;
+                } catch (e) {
+                    resultDiv.innerHTML = '<p class="error">Token 格式無效</p>';
+                }
+            } else {
+                resultDiv.innerHTML = '<p class="error">未找到 Token，請先登入</p>';
+            }
+        }
+        
+        // 測試登入
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            try {
+                const response = await fetch('http://localhost:5088/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    localStorage.setItem('access_token', data.token);
+                    localStorage.setItem('current_user', JSON.stringify(data.user));
+                    resultDiv.innerHTML = `
+                        <p class="success">登入成功！</p>
+                        <p>用戶: ${data.user?.username}</p>
+                        <p>Token 已保存到 localStorage</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">登入失敗: ${data.message || '未知錯誤'}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">連接錯誤: ${error.message}</p>`;
+            }
+        }
+        
+        // 測試專案列表
+        async function testProjectList() {
+            const token = localStorage.getItem('access_token');
+            const resultDiv = document.getElementById('projectResult');
+            
+            if (!token) {
+                resultDiv.innerHTML = '<p class="error">請先登入獲取 Token</p>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5088/api/project', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <p class="success">成功獲取專案列表</p>
+                        <p>專案數量: ${data.projects?.length || 0}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">獲取失敗: ${response.status} ${response.statusText}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">連接錯誤: ${error.message}</p>`;
+            }
+        }
+        
+        // 測試建立專案
+        async function testCreateProject() {
+            const token = localStorage.getItem('access_token');
+            const resultDiv = document.getElementById('projectResult');
+            
+            if (!token) {
+                resultDiv.innerHTML = '<p class="error">請先登入獲取 Token</p>';
+                return;
+            }
+            
+            const projectData = {
+                projectName: `測試專案 ${new Date().toLocaleTimeString()}`,
+                projectDescription: '這是一個測試專案',
+                userId: Math.floor(100000 + Math.random() * 900000).toString()
+            };
+            
+            try {
+                const response = await fetch('http://localhost:5088/api/project', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(projectData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <p class="success">成功建立專案</p>
+                        <p>專案 ID: ${data.projectId}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p class="error">建立失敗: ${response.status} ${response.statusText}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">連接錯誤: ${error.message}</p>`;
+            }
+        }
+        
+        // 測試 Proxy
+        async function testProxy() {
+            const resultDiv = document.getElementById('proxyResult');
+            
+            try {
+                // 測試通過 proxy 訪問
+                const response = await fetch('/api/project/test');
+                
+                resultDiv.innerHTML = `
+                    <p class="${response.ok ? 'success' : 'error'}">Proxy 狀態: ${response.status} ${response.statusText}</p>
+                    <p>URL: /api/project/test</p>
+                    <p class="info">提示: 如果返回 401，表示 proxy 正常工作但需要認證</p>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">Proxy 錯誤: ${error.message}</p>`;
+            }
+        }
+        
+        // 頁面載入時檢查 token
+        window.onload = function() {
+            checkToken();
+        };
+    </script>
+</body>
+</html>

@@ -141,23 +141,26 @@ namespace familytree_backend.Services
                            ORDER BY upload_time DESC";
 
                 var files = await connection.QueryAsync<dynamic>(sql, new { projectId });
-                var fileList = new List<FileUploadModel>();
+                var fileList = new List<FileModel>();
                 
                 foreach (var file in files)
                 {
-                    fileList.Add(new FileUploadModel
+                    fileList.Add(new FileModel
                     {
-                        Id = file.id,
+                        FileId = Guid.NewGuid(), // 舊數據可能沒有 GUID
+                        UserId = "system", // 舊數據可能沒有用戶 ID
                         Filename = file.filename,
                         OriginalFilename = file.original_filename,
                         FilePath = file.file_path,
                         FileSize = file.file_size,
                         Md5Hash = file.md5_hash,
-                        UploadTime = file.upload_time,
-                        IsMerged = file.is_merged,
-                        MergeTime = file.merge_time,
-                        Status = file.status,
-                        ProjectId = file.project_id,
+                        FileType = Path.GetExtension(file.original_filename),
+                        UploadStatus = file.status,
+                        IsProcessed = file.is_merged,
+                        ProcessedAt = file.merge_time,
+                        AssociatedRecordId = file.project_id,
+                        AssociatedRecordType = "project",
+                        UploadedAt = file.upload_time,
                         CreatedAt = file.created_at,
                         UpdatedAt = file.updated_at
                     });

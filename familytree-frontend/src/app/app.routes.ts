@@ -61,6 +61,12 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
     data: { role: 'admin' } // 只有管理員可以訪問
   },
+  {
+    path: 'audit-logs',
+    loadComponent: () => import('./components/audit-log-viewer/audit-log-viewer.component').then(m => m.AuditLogViewerComponent),
+    canActivate: [AuthGuard],
+    data: { role: 'admin' } // 只有管理員可以訪問
+  },
   
   // === 以下路由保留但隱藏，供內部功能使用 ===
   {

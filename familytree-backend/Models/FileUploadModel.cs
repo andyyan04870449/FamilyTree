@@ -38,28 +38,6 @@ namespace familytree_backend.Models
         public DateTime UpdatedAt { get; set; }
     }
 
-    public class FileUploadRequest
-    {
-        [Required]
-        public IFormFile File { get; set; } = null!;
-    }
-
-    public class FileUploadResponse
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public FileUploadModel? FileInfo { get; set; }
-        public bool IsDuplicate { get; set; }
-        public string FilePath { get; set; } = string.Empty;    }
-
-    public class FileListResponse
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public List<FileUploadModel> Files { get; set; } = new();
-        public int TotalCount { get; set; }
-    }
-
     public class DeleteImpactResponse
     {
         public bool Success { get; set; }
@@ -68,5 +46,35 @@ namespace familytree_backend.Models
         public List<string> PersonNames { get; set; } = new();
         public string FileName { get; set; } = string.Empty;
         public bool HasMorePersons { get; set; }
+    }
+
+
+    public class FileData
+    {
+        public string FileName { get; set; } = string.Empty;
+        public string FilePath { get; set; } = string.Empty;
+        public long FileSize { get; set; }
+        public DateTime UploadTime { get; set; }
+    }
+
+    public class FileProcessResponse
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public FileUploadResult? ProcessResult { get; set; }
+    }
+
+    public class FileUploadResult
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public string? FilePath { get; set; }
+        public string? Md5Hash { get; set; }
+        public bool IsDuplicate { get; set; }
+        public int ProcessedRows { get; set; }
+        public int SuccessRows { get; set; }
+        public int ErrorRows { get; set; }
+        public List<string> Errors { get; set; } = new();
+        public DateTime ProcessTime { get; set; }
     }
 } 

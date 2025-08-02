@@ -107,7 +107,10 @@ namespace familytree_backend.Services
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                var projectId = $"{userId}-{DateTime.Now:yyyyMMddHHmmss}";
+                // 生成短的專案 ID（在 25 字符限制內）
+                var timestamp = DateTime.Now.ToString("yyMMddHHmmss"); // 12 字符
+                var randomSuffix = Guid.NewGuid().ToString("N")[..6]; // 6 字符
+                var projectId = $"p{timestamp}{randomSuffix}"; // 總共 19 字符 (1+12+6)
                 
                 var sql = @"
                     INSERT INTO projects (id, user_id, project_name, project_description, status, created_at, updated_at)

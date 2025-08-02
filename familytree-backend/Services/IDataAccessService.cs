@@ -147,7 +147,16 @@ namespace familytree_backend.Services
         /// <summary>
         /// 記錄檔案上傳
         /// </summary>
-        Task RecordFileUploadAsync(FileUploadRecord record);    }
+        Task RecordFileUploadAsync(FileUploadRecord record);
+        
+        /// <summary>
+        /// 執行非查詢命令
+        /// </summary>
+        /// <param name="sql">SQL 命令</param>
+        /// <param name="parameters">參數</param>
+        /// <returns>受影響的行數</returns>
+        Task<int> ExecuteAsync(string sql, object? parameters = null);
+    }
 
     /// <summary>
     /// 關係資料模型

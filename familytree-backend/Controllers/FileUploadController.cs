@@ -105,9 +105,10 @@ namespace familytree_backend.Controllers
                     {
                         Success = true,
                         Message = ApplicationConstants.ApiResponse.SuccessMessages.FileUploadedSuccessfully,
-                        FileData = new FileData
+                        FileInfo = new FileUploadModel
                         {
-                            FileName = file.FileName,
+                            Filename = file.FileName,
+                            OriginalFilename = file.FileName,
                             FilePath = result.FilePath,
                             FileSize = file.Length,
                             UploadTime = DateTime.UtcNow
@@ -126,9 +127,10 @@ namespace familytree_backend.Controllers
                     {
                         Success = true,
                         Message = "檔案已存在，未重複上傳",
-                        FileData = new FileData
+                        FileInfo = new FileUploadModel
                         {
-                            FileName = file.FileName,
+                            Filename = file.FileName,
+                            OriginalFilename = file.FileName,
                             FilePath = result.FilePath,
                             FileSize = file.Length,
                             UploadTime = DateTime.UtcNow
@@ -172,7 +174,7 @@ namespace familytree_backend.Controllers
                 Logger.LogInformation("成功獲取檔案列表：專案 {ProjectId}，檔案數量 {Count}", 
                     project_id, fileRecords.Count());
 
-                var response = new FileListResponse
+                var response = new FileListResponseV2
                 {
                     Success = true,
                     Message = "檔案列表獲取成功",
@@ -321,7 +323,7 @@ namespace familytree_backend.Controllers
                 {
                     Success = result.Success,
                     Message = result.Message,
-                    ProcessResult = new FileUploadResult
+                    ProcessResult = new Models.FileUploadResult
                     {
                         Success = result.Success,
                         Message = result.Message,
@@ -401,17 +403,9 @@ namespace familytree_backend.Controllers
     #region 回應模型
 
     /// <summary>
-    /// 檔案上傳回應
+    /// 檔案列表回應（保留此定義因為與 FileModel.cs 中的不同）
     /// </summary>
-    public class FileUploadResponse : ApiResponse
-    {
-        public FileData FileData { get; set; } = new();
-    }
-
-    /// <summary>
-    /// 檔案列表回應
-    /// </summary>
-    public class FileListResponse : ApiResponse
+    public class FileListResponseV2 : ApiResponse
     {
         public List<FileData> Files { get; set; } = new();
         public int TotalCount { get; set; }
@@ -423,14 +417,6 @@ namespace familytree_backend.Controllers
     public class FileDeleteImpactResponse : ApiResponse
     {
         public FileDeleteImpact Impact { get; set; } = new();
-    }
-
-    /// <summary>
-    /// 檔案處理回應
-    /// </summary>
-    public class FileProcessResponse : ApiResponse
-    {
-        public FileUploadResult ProcessResult { get; set; } = new();
     }
 
     /// <summary>

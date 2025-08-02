@@ -117,7 +117,7 @@ check_services() {
     log_info "檢查服務狀態..."
     
     # 等待服務啟動
-    sleep 15
+    sleep 3
     
     # 檢查後端
     if curl -s http://localhost:5088/api/project > /dev/null 2>&1; then

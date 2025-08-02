@@ -1,0 +1,319 @@
+<div class="audit-log-viewer">
+  <!-- Header -->
+  <div class="header">
+    <h2>稽核日誌查詢</h2>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="refreshLogs()">
+        <i class="fas fa-sync-alt"></i> 重新整理
+      </button>
+      <button class="btn btn-primary" (click)="showFilters = !showFilters">
+        <i class="fas fa-filter"></i> 篩選器
+      </button>
+      <button class="btn btn-success" (click)="exportLogs()">
+        <i class="fas fa-download"></i> 匯出
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Panel -->
+  <div class="statistics-panel" *ngIf="statistics">
+    <div class="stat-card">
+      <div class="stat-value">{{ statistics.totalEvents | number }}</div>
+      <div class="stat-label">總事件數</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ statistics.uniqueUsers | number }}</div>
+      <div class="stat-label">活躍使用者</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ statistics.failedLogins | number }}</div>
+      <div class="stat-label">失敗登入</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ statistics.highRiskEvents | number }}</div>
+      <div class="stat-label">高風險事件</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ statistics.avgResponseTime | number:'1.0-0' }}ms</div>
+      <div class="stat-label">平均回應時間</div>
+    </div>
+  </div>
+
+  <!-- Filters Panel -->
+  <div class="filters-panel" *ngIf="showFilters">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>時間範圍</label>
+        <input type="datetime-local" [(ngModel)]="filter.fromDate" class="form-control">
+        <span class="date-separator">至</span>
+        <input type="datetime-local" [(ngModel)]="filter.toDate" class="form-control">
+      </div>
+      
+      <div class="filter-group">
+        <label>使用者</label>
+        <input type="text" [(ngModel)]="filter.userId" placeholder="使用者ID或名稱" class="form-control">
+      </div>
+      
+      <div class="filter-group">
+        <label>事件類型</label>
+        <select [(ngModel)]="filter.eventType" class="form-control">
+          <option value="">全部</option>
+          <option *ngFor="let type of eventTypes" [value]="type.value">{{ type.label }}</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>資源類型</label>
+        <select [(ngModel)]="filter.resourceType" class="form-control">
+          <option value="">全部</option>
+          <option *ngFor="let type of resourceTypes" [value]="type">{{ type }}</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label>安全等級</label>
+        <select [(ngModel)]="filter.securityLevel" class="form-control">
+          <option value="">全部</option>
+          <option value="LOW">低</option>
+          <option value="MEDIUM">中</option>
+          <option value="HIGH">高</option>
+          <option value="CRITICAL">緊急</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label>關鍵字搜尋</label>
+        <input type="text" [(ngModel)]="filter.searchKeyword" placeholder="搜尋動作或詳情" class="form-control">
+      </div>
+    </div>
+    
+    <div class="filter-actions">
+      <button class="btn btn-primary" (click)="applyFilters()">套用篩選</button>
+      <button class="btn btn-secondary" (click)="resetFilters()">重設</button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>載入中...</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-container" *ngIf="error && !loading">
+    <i class="fas fa-exclamation-triangle"></i>
+    <p>{{ error }}</p>
+    <button class="btn btn-primary" (click)="refreshLogs()">重試</button>
+  </div>
+
+  <!-- Audit Logs Table -->
+  <div class="logs-table-container" *ngIf="!loading && !error">
+    <table class="logs-table">
+      <thead>
+        <tr>
+          <th (click)="sortBy('created_at')">
+            時間 
+            <i class="fas" [ngClass]="getSortIcon('created_at')"></i>
+          </th>
+          <th (click)="sortBy('user_name')">
+            使用者
+            <i class="fas" [ngClass]="getSortIcon('user_name')"></i>
+          </th>
+          <th (click)="sortBy('event_type')">
+            事件類型
+            <i class="fas" [ngClass]="getSortIcon('event_type')"></i>
+          </th>
+          <th>動作</th>
+          <th>資源</th>
+          <th (click)="sortBy('security_level')">
+            安全等級
+            <i class="fas" [ngClass]="getSortIcon('security_level')"></i>
+          </th>
+          <th>IP位址</th>
+          <th>回應時間</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let log of logs" 
+            [ngClass]="getRowClass(log)"
+            (click)="selectLog(log)">
+          <td>{{ log.created_at | date:'yyyy-MM-dd HH:mm:ss' }}</td>
+          <td>
+            <span class="user-info">
+              {{ log.user_name || log.user_id || 'Anonymous' }}
+              <span class="user-role" *ngIf="log.user_role">({{ log.user_role }})</span>
+            </span>
+          </td>
+          <td>
+            <span class="event-type" [ngClass]="'event-' + log.event_type.toLowerCase()">
+              {{ getEventTypeLabel(log.event_type) }}
+            </span>
+          </td>
+          <td class="action-cell">{{ log.action }}</td>
+          <td>
+            <span *ngIf="log.resource_type">
+              {{ log.resource_type }}
+              <span *ngIf="log.resource_id" class="resource-id">#{{ log.resource_id }}</span>
+            </span>
+          </td>
+          <td>
+            <span class="security-level" [ngClass]="'level-' + log.security_level.toLowerCase()">
+              {{ log.security_level }}
+            </span>
+          </td>
+          <td>{{ log.ip_address }}</td>
+          <td>
+            <span *ngIf="log.response_time !== null" 
+                  [ngClass]="{'slow-response': log.response_time > 1000}">
+              {{ log.response_time }}ms
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-sm btn-info" (click)="viewDetails($event, log)">
+              <i class="fas fa-eye"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="logs.length === 0">
+      <i class="fas fa-clipboard-list"></i>
+      <p>沒有找到符合條件的日誌記錄</p>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalRecords > pageSize">
+      <button class="btn btn-sm" 
+              [disabled]="currentPage === 1"
+              (click)="goToPage(1)">
+        <i class="fas fa-angle-double-left"></i>
+      </button>
+      <button class="btn btn-sm" 
+              [disabled]="currentPage === 1"
+              (click)="goToPage(currentPage - 1)">
+        <i class="fas fa-angle-left"></i>
+      </button>
+      
+      <span class="page-info">
+        第 {{ currentPage }} 頁，共 {{ totalPages }} 頁（{{ totalRecords }} 筆記錄）
+      </span>
+      
+      <button class="btn btn-sm" 
+              [disabled]="currentPage === totalPages"
+              (click)="goToPage(currentPage + 1)">
+        <i class="fas fa-angle-right"></i>
+      </button>
+      <button class="btn btn-sm" 
+              [disabled]="currentPage === totalPages"
+              (click)="goToPage(totalPages)">
+        <i class="fas fa-angle-double-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal" *ngIf="selectedLog" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>稽核日誌詳情</h3>
+        <button class="close-btn" (click)="closeModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="detail-section">
+          <h4>基本資訊</h4>
+          <div class="detail-row">
+            <span class="detail-label">時間：</span>
+            <span class="detail-value">{{ selectedLog.created_at | date:'yyyy-MM-dd HH:mm:ss' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">使用者：</span>
+            <span class="detail-value">
+              {{ selectedLog.user_name || selectedLog.user_id || 'Anonymous' }}
+              <span *ngIf="selectedLog.user_role">({{ selectedLog.user_role }})</span>
+            </span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">事件類型：</span>
+            <span class="detail-value">{{ getEventTypeLabel(selectedLog.event_type) }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">動作：</span>
+            <span class="detail-value">{{ selectedLog.action }}</span>
+          </div>
+        </div>
+
+        <div class="detail-section" *ngIf="selectedLog.request_method">
+          <h4>請求資訊</h4>
+          <div class="detail-row">
+            <span class="detail-label">方法：</span>
+            <span class="detail-value">{{ selectedLog.request_method }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">路徑：</span>
+            <span class="detail-value">{{ selectedLog.request_path }}</span>
+          </div>
+          <div class="detail-row" *ngIf="selectedLog.request_query">
+            <span class="detail-label">查詢參數：</span>
+            <span class="detail-value">{{ selectedLog.request_query }}</span>
+          </div>
+          <div class="detail-row" *ngIf="selectedLog.response_code">
+            <span class="detail-label">回應代碼：</span>
+            <span class="detail-value">{{ selectedLog.response_code }}</span>
+          </div>
+          <div class="detail-row" *ngIf="selectedLog.response_time !== null">
+            <span class="detail-label">回應時間：</span>
+            <span class="detail-value">{{ selectedLog.response_time }}ms</span>
+          </div>
+        </div>
+
+        <div class="detail-section" *ngIf="selectedLog.field_changes && selectedLog.field_changes.length > 0">
+          <h4>變更記錄</h4>
+          <div class="field-changes">
+            <div class="field-change" *ngFor="let change of selectedLog.field_changes">
+              <span class="field-name">{{ change.field_name }}：</span>
+              <span class="old-value">{{ change.old_value || '(空)' }}</span>
+              <i class="fas fa-arrow-right"></i>
+              <span class="new-value">{{ change.new_value || '(空)' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section" *ngIf="selectedLog.details">
+          <h4>詳細資訊</h4>
+          <pre class="details-json">{{ formatJson(selectedLog.details) }}</pre>
+        </div>
+
+        <div class="detail-section security-section">
+          <h4>安全資訊</h4>
+          <div class="detail-row">
+            <span class="detail-label">安全等級：</span>
+            <span class="detail-value security-level" 
+                  [ngClass]="'level-' + selectedLog.security_level.toLowerCase()">
+              {{ selectedLog.security_level }}
+            </span>
+          </div>
+          <div class="detail-row" *ngIf="selectedLog.risk_score !== null">
+            <span class="detail-label">風險分數：</span>
+            <span class="detail-value">{{ selectedLog.risk_score }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">IP位址：</span>
+            <span class="detail-value">{{ selectedLog.ip_address }}</span>
+          </div>
+          <div class="detail-row" *ngIf="selectedLog.user_agent">
+            <span class="detail-label">User Agent：</span>
+            <span class="detail-value">{{ selectedLog.user_agent }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -169,6 +169,8 @@ export class ProjectService {
    */
   createProject(request: CreateProjectRequest): Observable<{ projectId: string }> {
     // 創建新專案
+    console.log('📮 發送創建專案請求:', request);
+    console.log('📮 請求 URL:', this.baseUrl);
     this.setLoading(true);
 
     return this.http.post<{ success: boolean; projectId?: string; project?: any; message: string }>(`${this.baseUrl}`, request).pipe(
@@ -185,6 +187,10 @@ export class ProjectService {
       }),
       catchError(error => {
         // 創建專案失敗
+        console.error('❌ 創建專案失敗 - 詳細錯誤:', error);
+        if (error.error) {
+          console.error('錯誤內容:', error.error);
+        }
         return throwError(() => error);
       }),
       tap(() => this.setLoading(false))
@@ -330,12 +336,7 @@ export class ProjectService {
     );
   }
 
-  /**
-   * 生成預設的用戶ID (6位隨機數字)
-   */
-  generateDefaultUserId(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  }
+  // 已移除 generateDefaultUserId() 方法，現在使用真實的用戶 ID
 
   /**
    * 設定載入狀態

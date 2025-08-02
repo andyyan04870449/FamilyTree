@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProjectService, Project, CreateProjectRequest, ProjectStatistics } from '../../services/project.service';
+import { AuthService } from '../../services/auth.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -358,6 +359,7 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
 
   constructor(
     private projectService: ProjectService,
+    private authService: AuthService,
     private router: Router
   ) {
     console.log('📋 CaseManagementComponent 初始化');
@@ -431,14 +433,28 @@ export class CaseManagementComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // 使用當前登入用戶的 ID
+    const currentUser = this.authService.currentUserValue;
+    console.log('🔐 當前用戶:', currentUser);
+    console.log('🔐 是否已登入:', this.authService.isLoggedIn());
+    
+    if (!currentUser || !currentUser.id) {
+      console.error('❌ 用戶未登入或缺少 ID，無法建立案件');
+      alert('請先登入後再建立案件');
+      return;
+    }
+    
+    // 使用真實的用戶 ID
+    const userId = currentUser.id;
+    
     const request: CreateProjectRequest = {
       projectName: this.caseForm_name.trim(),
       projectDescription: this.caseForm_description.trim() || undefined,
-      // TODO: 未來實現帳號管理後，替換為實際用戶ID
-      userId: this.projectService.generateDefaultUserId() // 暫時使用硬代碼 user
+      userId: userId
     };
 
     console.log('➕ 建立新案件:', request.projectName);
+    console.log('📤 完整請求內容:', JSON.stringify(request));
     
     this.subscriptions.add(
       this.projectService.createProject(request).subscribe({

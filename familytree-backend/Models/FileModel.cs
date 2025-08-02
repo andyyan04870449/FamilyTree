@@ -197,6 +197,16 @@ namespace familytree_backend.Models
     // ==================== 回應模型 ====================
 
     /// <summary>
+    /// 檔案上傳回應
+    /// </summary>
+    public class FileUploadResponse : ApiResponse
+    {
+        public FileUploadModel? FileInfo { get; set; }
+        public bool IsDuplicate { get; set; }
+        public string? FilePath { get; set; }
+    }
+
+    /// <summary>
     /// 檔案操作結果
     /// </summary>
     public class FileOperationResult

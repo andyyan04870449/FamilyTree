@@ -23,8 +23,12 @@ export class AuthInterceptor implements HttpInterceptor {
 
     // 添加 Authorization header
     const token = this.authService.getAccessToken();
+    console.log('🔑 AuthInterceptor - Token:', token ? '存在' : '不存在', 'URL:', request.url);
     if (token) {
       request = this.addToken(request, token);
+      console.log('🔑 已添加 Authorization header');
+    } else {
+      console.warn('⚠️ 沒有 token，請求可能會失敗');
     }
 
     return next.handle(request).pipe(

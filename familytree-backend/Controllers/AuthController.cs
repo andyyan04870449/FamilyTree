@@ -101,6 +101,7 @@ namespace familytree_backend.Controllers
                     accessToken = result.AccessToken,
                     refreshToken = result.RefreshToken,
                     expiresAt = result.ExpiresAt,
+                    expiresIn = 15 * 60, // 15 分鐘，轉換為秒
                     user = new
                     {
                         id = result.User?.Id,
@@ -178,7 +179,8 @@ namespace familytree_backend.Controllers
                 {
                     accessToken = result.AccessToken,
                     refreshToken = result.RefreshToken,
-                    expiresAt = result.ExpiresAt
+                    expiresAt = result.ExpiresAt,
+                    expiresIn = 15 * 60 // 15 分鐘，轉換為秒
                 }, "Token 更新成功");
             }
             catch (Exception ex)
