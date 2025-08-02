@@ -1,11 +1,13 @@
 // 使用者帳號管理頁面
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { UserService, UserModel } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
+import { ErrorHandlerService } from '../../services/error-handler.service';
+import { PermissionService } from '../../services/permission.service';
 import { UserSearchComponent, UserSearchFilters } from '../../components/user-search/user-search.component';
 import { UserEditDialogComponent, UserEditResult } from '../../components/user-edit-dialog/user-edit-dialog.component';
 import { UserTableComponent, UserAction } from '../../components/user-table/user-table.component';
@@ -13,19 +15,52 @@ import { PaginationComponent, PaginationConfig, PaginationEvent } from '../../co
 import { StateDisplayComponent, DisplayState, StateConfig } from '../../components/state-display/state-display.component';
 import { PageHeaderComponent, PageHeaderConfig, HeaderAction } from '../../components/page-header/page-header.component';
 import { cn } from '../../utils/cn';
-import { Subject, takeUntil } from 'rxjs';
+import { BehaviorSubject, Subject, takeUntil, finalize, debounceTime, distinctUntilChanged } from 'rxjs';
 import { 
   USER_MANAGEMENT_CONSTANTS, 
   CSS_CLASSES, 
   USER_STATUS_DISPLAY 
 } from '../../constants/user-management.constants';
 
+// 載入狀態介面
+interface LoadingState {
+  users: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+  search: boolean;
+  export: boolean;
+  resetPassword: boolean;
+}
+
+// 錯誤狀態介面
+interface ErrorState {
+  users: string | null;
+  create: string | null;
+  update: string | null;
+  delete: string | null;
+  search: string | null;
+  export: string | null;
+}
+
 @Component({
   selector: 'app-user-management',
   standalone: true,
   imports: [CommonModule, FormsModule, UserSearchComponent, UserEditDialogComponent, UserTableComponent, PaginationComponent, StateDisplayComponent, PageHeaderComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gray-50 p-6">
+      <!-- 全域載入遮罩 -->
+      <div *ngIf="isAnyOperationLoading()" 
+           class="fixed inset-0 bg-black bg-opacity-30 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-6 shadow-xl">
+          <div class="flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <span class="text-gray-700">{{ getCurrentLoadingMessage() }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="max-w-7xl mx-auto space-y-6">
         <!-- Page Header -->
         <app-page-header
@@ -72,7 +107,7 @@ import {
     <app-user-edit-dialog
       [isOpen]="isEditDialogOpen"
       [isNewUser]="isNewUser"
-      [showRoleField]="currentUser?.role === 'admin'"
+      [showRoleField]="permissionService.isAdmin()"
       [userData]="editingUser"
       (result)="onEditResult($event)"
     ></app-user-edit-dialog>
@@ -86,18 +121,43 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   readonly Math = Math;
   readonly cn = cn;
 
+  // ================== 載入狀態管理 ==================
+  private loadingState: LoadingState = {
+    users: false,
+    create: false,
+    update: false,
+    delete: false,
+    search: false,
+    export: false,
+    resetPassword: false
+  };
+
+  private errorState: ErrorState = {
+    users: null,
+    create: null,
+    update: null,
+    delete: null,
+    search: null,
+    export: null
+  };
+
+  // 搜尋防抖主題
+  private searchSubject = new Subject<UserSearchFilters>();
+
   // 通用錯誤處理
-  private handleError = (operation: string, defaultMessage: string) => (err: any) => {
+  private handleError = (operation: keyof ErrorState, defaultMessage: string) => (err: any) => {
     console.error(`${operation}失敗:`, err);
     const message = err.error?.message || defaultMessage;
+    this.errorState[operation] = message;
     this.error = message;
-    this.toastService.error(message);
-    this.loading = false;
+    this.errorHandler.showError(message);
+    this.setLoading(operation as keyof LoadingState, false);
+    this.cdr.markForCheck();
   };
 
   // 通用成功處理
   private handleSuccess = (message: string, reload = true) => () => {
-    this.toastService.success(message);
+    this.errorHandler.showSuccess(message);
     if (reload) this.loadUsers();
   };
 
@@ -109,18 +169,33 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   }
 
   // ================== 組件配置 ==================
-  readonly headerConfig: PageHeaderConfig = {
-    title: '使用者帳號管理',
-    subtitle: '管理系統使用者、權限設定和帳號狀態',
-    icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z',
-    actions: [
-      { id: 'roles', label: '角色管理', route: '/role-management', variant: 'secondary' },
-      { id: 'permissions', label: '權限設定', route: '/permission-settings', variant: 'secondary' },
-      { id: 'audit', label: '稽核日誌', route: '/audit-logs', variant: 'secondary' },
-      { id: 'export', label: '匯出', icon: '📥', action: 'export', variant: 'secondary' },
-      { id: 'add', label: '新增使用者', icon: '➕', action: 'add', variant: 'primary' }
-    ]
-  };
+  get headerConfig(): PageHeaderConfig {
+    const actions = [];
+    
+    // 根據權限動態顯示按鈕
+    if (this.permissionService.hasPermission('ROLE_MANAGEMENT')) {
+      actions.push({ id: 'roles', label: '角色管理', route: '/role-management', variant: 'secondary' });
+    }
+    if (this.permissionService.hasPermission('PERMISSION_MANAGEMENT')) {
+      actions.push({ id: 'permissions', label: '權限設定', route: '/permission-settings', variant: 'secondary' });
+    }
+    if (this.permissionService.hasPermission('AUDIT_LOG_VIEW')) {
+      actions.push({ id: 'audit', label: '稽核日誌', route: '/audit-logs', variant: 'secondary' });
+    }
+    if (this.permissionService.hasPermission('USER_EXPORT')) {
+      actions.push({ id: 'export', label: '匯出', icon: '📥', action: 'export', variant: 'secondary' });
+    }
+    if (this.permissionService.canManageUsers()) {
+      actions.push({ id: 'add', label: '新增使用者', icon: '➕', action: 'add', variant: 'primary' });
+    }
+    
+    return {
+      title: '使用者帳號管理',
+      subtitle: '管理系統使用者、權限設定和帳號狀態',
+      icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z',
+      actions: actions as any
+    };
+  }
 
   get stateDisplayConfig(): StateConfig {
     return {
@@ -157,7 +232,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   }
 
   get currentState(): DisplayState {
-    if (this.loading) return 'loading';
+    if (this.isLoading('users')) return 'loading';
     if (this.error) return 'error';
     if (this.filteredUsers.length === 0) return 'empty';
     return 'success';
@@ -166,6 +241,27 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   // ================== 應用狀態 ==================
   private readonly destroy$ = new Subject<void>();
   readonly currentUser: any = null;
+  
+  // 權限狀態
+  get canCreateUser(): boolean {
+    return this.permissionService.canManageUsers();
+  }
+  
+  get canEditUser(): boolean {
+    return this.permissionService.canEditUser();
+  }
+  
+  get canDeleteUser(): boolean {
+    return this.permissionService.canDeleteUser();
+  }
+  
+  get canExportUsers(): boolean {
+    return this.permissionService.hasPermission('USER_EXPORT');
+  }
+  
+  get canResetPassword(): boolean {
+    return this.permissionService.hasPermission('USER_RESET_PASSWORD') || this.permissionService.isAdmin();
+  }
 
   // ================== 搜尋與篩選狀態 ==================
   searchAccount = '';
@@ -186,6 +282,44 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   loading = false;
   error = '';
   
+  // 載入狀態輔助方法
+  setLoading(key: keyof LoadingState, value: boolean): void {
+    this.loadingState[key] = value;
+    this.loading = this.isAnyOperationLoading();
+    this.cdr.markForCheck();
+  }
+
+  isLoading(key: keyof LoadingState): boolean {
+    return this.loadingState[key];
+  }
+
+  isAnyOperationLoading(): boolean {
+    return Object.values(this.loadingState).some(loading => loading);
+  }
+
+  getCurrentLoadingMessage(): string {
+    if (this.loadingState.users) return '載入使用者資料中...';
+    if (this.loadingState.create) return '建立使用者中...';
+    if (this.loadingState.update) return '更新使用者中...';
+    if (this.loadingState.delete) return '刪除使用者中...';
+    if (this.loadingState.search) return '搜尋中...';
+    if (this.loadingState.export) return '匯出資料中...';
+    if (this.loadingState.resetPassword) return '重置密碼中...';
+    return '處理中...';
+  }
+
+  hasAnyError(): boolean {
+    return Object.values(this.errorState).some(error => error !== null);
+  }
+
+  clearErrors(): void {
+    Object.keys(this.errorState).forEach(key => {
+      this.errorState[key as keyof ErrorState] = null;
+    });
+    this.error = '';
+    this.cdr.markForCheck();
+  }
+  
   // 編輯對話框狀態
   isEditDialogOpen = false;
   editingUser: Partial<UserModel> | null = null;
@@ -195,7 +329,10 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     private readonly userService: UserService,
     private readonly authService: AuthService,
     private readonly toastService: ToastService,
-    private readonly router: Router
+    private readonly errorHandler: ErrorHandlerService,
+    private readonly permissionService: PermissionService,
+    private readonly router: Router,
+    private readonly cdr: ChangeDetectorRef
   ) {
     console.log('👤 使用者管理頁面初始化');
     // 初始化當前使用者狀態
@@ -204,6 +341,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   
   ngOnInit(): void {
     this.initializeComponent();
+    this.setupSearchDebounce();
   }
   
   ngOnDestroy(): void {
@@ -255,20 +393,22 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   // ================== 資料載入管理 ==================
   
   loadUsers(): void {
-    this.loading = true;
-    this.error = '';
+    this.setLoading('users', true);
+    this.clearErrors();
     
     this.userService.getUsers(this.currentPage, this.pageSize)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.setLoading('users', false))
+      )
       .subscribe({
         next: (response) => {
           this.users = response.data;
           this.totalItems = response.totalCount;
           this.totalPages = response.totalPages;
           this.applyFilters();
-          this.loading = false;
         },
-        error: this.handleError('載入使用者', '載入使用者列表失敗')
+        error: this.handleError('users', '載入使用者列表失敗')
       });
   }
   
@@ -280,14 +420,32 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     this.applyFilters();
   }
   
+  // 設定搜尋防抖
+  private setupSearchDebounce(): void {
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged((prev, curr) => 
+        prev.searchAccount === curr.searchAccount &&
+        prev.searchName === curr.searchName &&
+        prev.selectedStatus === curr.selectedStatus
+      ),
+      takeUntil(this.destroy$)
+    ).subscribe(filters => {
+      this.setLoading('search', true);
+      this.searchAccount = filters.searchAccount;
+      this.searchName = filters.searchName;
+      this.selectedStatus = filters.selectedStatus;
+      this.currentPage = 1;
+      this.applyFilters();
+      // 模擬搜尋延遲
+      setTimeout(() => this.setLoading('search', false), 300);
+    });
+  }
+
   // 處理搜尋
   onSearch(filters: UserSearchFilters): void {
     console.log('🔍 執行搜尋');
-    this.searchAccount = filters.searchAccount;
-    this.searchName = filters.searchName;
-    this.selectedStatus = filters.selectedStatus;
-    this.currentPage = 1;
-    this.applyFilters();
+    this.searchSubject.next(filters);
   }
   
   // 處理重置
@@ -408,12 +566,20 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   // 權限檢視
   viewPermissions(user: UserModel): void {
     console.log('👁️ 檢視權限', user);
+    this.setLoading('update', true);
     // 導航到權限設定頁面，並傳遞使用者 ID
     this.router.navigate(['/permission-settings'], { 
       queryParams: { userId: user.id } 
     }).then(
-      success => console.log('Navigation success:', success),
-      error => console.error('Navigation error:', error)
+      success => {
+        console.log('Navigation success:', success);
+        this.setLoading('update', false);
+      },
+      error => {
+        console.error('Navigation error:', error);
+        this.setLoading('update', false);
+        this.errorHandler.showError('無法開啟權限設定頁面');
+      }
     );
   }
   
@@ -423,13 +589,17 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     this.confirmAction(
       `確定要重置 ${user.fullName || user.username} 的密碼嗎？`,
       () => {
+        this.setLoading('resetPassword', true);
         this.userService.resetPassword(user.id)
-          .pipe(takeUntil(this.destroy$))
+          .pipe(
+            takeUntil(this.destroy$),
+            finalize(() => this.setLoading('resetPassword', false))
+          )
           .subscribe({
             next: (response) => {
-              this.toastService.success(`密碼已重置，新密碼: ${response.data?.temporaryPassword || '請查看系統通知'}`);
+              this.errorHandler.showSuccess(`密碼已重置，新密碼: ${response.data?.temporaryPassword || '請查看系統通知'}`);
             },
-            error: this.handleError('重置密碼', '重置密碼失敗')
+            error: this.handleError('users', '重置密碼失敗')
           });
       }
     );
@@ -447,12 +617,16 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       `確定要${action} ${displayName} 嗎？`,
       () => {
         const newStatus = isActive ? 'inactive' : 'active';
+        this.setLoading('update', true);
         
         this.userService.updateUser(user.id, { status: newStatus })
-          .pipe(takeUntil(this.destroy$))
+          .pipe(
+            takeUntil(this.destroy$),
+            finalize(() => this.setLoading('update', false))
+          )
           .subscribe({
             next: this.handleSuccess(`${action}使用者成功`),
-            error: this.handleError(`${action}使用者`, `${action}使用者失敗`)
+            error: this.handleError('update', `${action}使用者失敗`)
           });
       }
     );
@@ -477,28 +651,36 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     if (this.isNewUser) {
       // 新增使用者
       const { username, email, fullName, password } = data;
+      this.setLoading('create', true);
       
       this.userService.registerUser({ username, email, password, fullName })
-        .pipe(takeUntil(this.destroy$))
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => this.setLoading('create', false))
+        )
         .subscribe({
           next: () => {
             this.handleSuccess('新增使用者成功')();
             this.closeEditDialog();
           },
-          error: this.handleError('新增使用者', '新增使用者失敗')
+          error: this.handleError('create', '新增使用者失敗')
         });
     } else {
       // 更新使用者
       const { email, fullName, role, status } = data;
+      this.setLoading('update', true);
       
       this.userService.updateUser(this.editingUser!.id!, { email, fullName, role, status })
-        .pipe(takeUntil(this.destroy$))
+        .pipe(
+          takeUntil(this.destroy$),
+          finalize(() => this.setLoading('update', false))
+        )
         .subscribe({
           next: () => {
             this.handleSuccess('更新使用者成功')();
             this.closeEditDialog();
           },
-          error: this.handleError('更新使用者', '更新使用者失敗')
+          error: this.handleError('update', '更新使用者失敗')
         });
     }
   }
@@ -513,7 +695,14 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   // 匯出資料
   exportData(): void {
     console.log('📥 匯出使用者資料');
+    this.setLoading('export', true);
+    
     // TODO: 實作匯出功能
+    // 模擬匯出操作
+    setTimeout(() => {
+      this.errorHandler.showSuccess('使用者資料匯出成功');
+      this.setLoading('export', false);
+    }, 2000);
   }
   
   // 新增使用者

@@ -3,9 +3,9 @@ import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 import { provideRouter, withViewTransitions, withInMemoryScrolling, withComponentInputBinding } from '@angular/router';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { App } from './app/app';
-import { routes } from './app/app.routes';
+import { routes } from './app/core/config/app.routes';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
-import { AuthInterceptor } from './app/interceptors/auth.interceptor';
+import { AuthInterceptor } from './app/core/interceptors/auth.interceptor';
 
 // 註冊 AG Grid 模組
 ModuleRegistry.registerModules([AllCommunityModule]);
