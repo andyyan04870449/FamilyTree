@@ -38,6 +38,21 @@ namespace familytree_backend.Controllers
             LoggingService = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
         }
 
+        #region 使用者資訊
+
+        /// <summary>
+        /// 取得當前登入使用者的資訊
+        /// </summary>
+        /// <returns>使用者 ID 和角色</returns>
+        protected (string userId, string userRole) GetUserInfo()
+        {
+            var userId = User.FindFirst("userId")?.Value ?? "";
+            var userRole = User.FindFirst("role")?.Value ?? "user";
+            return (userId, userRole);
+        }
+
+        #endregion
+
         #region 專案參數處理
 
         /// <summary>
@@ -65,6 +80,34 @@ namespace familytree_backend.Controllers
             }
 
             return null; // 驗證通過
+        }
+
+        #endregion
+
+        #region 使用者資訊
+
+        /// <summary>
+        /// 取得當前使用者 ID
+        /// </summary>
+        protected string GetCurrentUserId()
+        {
+            return User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        }
+
+        /// <summary>
+        /// 取得當前使用者角色
+        /// </summary>
+        protected string GetCurrentUserRole()
+        {
+            return User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? string.Empty;
+        }
+
+        /// <summary>
+        /// 檢查是否為管理員
+        /// </summary>
+        protected bool IsAdmin()
+        {
+            return GetCurrentUserRole() == "admin";
         }
 
         #endregion
@@ -363,6 +406,99 @@ namespace familytree_backend.Controllers
             {
                 Logger.LogError(ex, "動作執行失敗：{ActionName} - {Message}", actionName, ex.Message);
                 return CreateErrorResponse(ApplicationConstants.ApiResponse.ErrorMessages.DatabaseError);
+            }
+        }
+
+        #endregion
+
+        #region 權限管理輔助方法
+
+        /// <summary>
+        /// 建立成功回應
+        /// </summary>
+        protected IActionResult SuccessResponse(object data, string message = "操作成功")
+        {
+            return CreateSuccessResponse(data, message);
+        }
+
+        /// <summary>
+        /// 建立錯誤回應
+        /// </summary>
+        protected IActionResult ErrorResponse(string message)
+        {
+            return CreateErrorResponse(message);
+        }
+
+        /// <summary>
+        /// 建立 Not Found 回應
+        /// </summary>
+        protected IActionResult NotFoundResponse(string message)
+        {
+            return NotFound(new
+            {
+                success = false,
+                message = message,
+                timestamp = DateTime.UtcNow
+            });
+        }
+
+        /// <summary>
+        /// 建立 Forbidden 回應
+        /// </summary>
+        protected IActionResult ForbiddenResponse(string message)
+        {
+            return StatusCode(403, new
+            {
+                success = false,
+                message = message,
+                timestamp = DateTime.UtcNow
+            });
+        }
+
+        /// <summary>
+        /// 建立 Bad Request 回應
+        /// </summary>
+        protected IActionResult BadRequestResponse(string message)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = message,
+                timestamp = DateTime.UtcNow
+            });
+        }
+
+        /// <summary>
+        /// 建立 Conflict 回應
+        /// </summary>
+        protected IActionResult ConflictResponse(string message)
+        {
+            return Conflict(new
+            {
+                success = false,
+                message = message,
+                timestamp = DateTime.UtcNow
+            });
+        }
+
+        /// <summary>
+        /// 記錄活動日誌
+        /// </summary>
+        protected async Task LogActivityAsync(string action, string resourceType, string resourceId, string details)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                
+                // 格式化詳細資訊包含資源類型和ID
+                var formattedDetails = $"{action} - {resourceType}:{resourceId} - {details}";
+                
+                await LoggingService.LogActivityAsync(userId, action, formattedDetails, ipAddress);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "記錄活動日誌失敗");
             }
         }
 

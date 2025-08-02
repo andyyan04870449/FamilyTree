@@ -220,9 +220,11 @@ namespace familytree_backend.Services
 
             var result = new ExcelProcessingResult
             {
-                SuccessRows = 0,
-                FailedRows = 0,
-                UnmappedFields = new List<string>()
+                SuccessCount = 0,
+                FailureCount = 0,
+                UnmappedFields = new List<string>(),
+                SuccessRows = new List<ExcelRowResult>(),
+                FailedRows = new List<ExcelRowResult>()
             };
 
             // 收集未對應的欄位
@@ -325,18 +327,21 @@ namespace familytree_backend.Services
                     if (string.IsNullOrWhiteSpace(personData.Name))
                     {
                         _logger.LogWarning("第 {RowIndex} 行跳過: 姓名欄位為空", rowIndex);
-                        result.FailedRows++;
+                        result.FailureCount++;
+                        result.FailedRows.Add(new ExcelRowResult { RowNumber = rowIndex, Error = "姓名欄位為空" });
                         continue;
                     }
 
                     // 儲存資料
                     await SavePersonDataAsync(connection, personData, projectId);
-                    result.SuccessRows++;
+                    result.SuccessCount++;
+                    result.SuccessRows.Add(new ExcelRowResult { RowNumber = rowIndex, Data = new Dictionary<string, object?> { { "name", personData.Name } } });
                     _logger.LogInformation("第 {RowIndex} 行資料處理成功: Name='{Name}'", rowIndex, personData.Name);
                 }
                 catch (Exception ex)
                 {
-                    result.FailedRows++;
+                    result.FailureCount++;
+                    result.FailedRows.Add(new ExcelRowResult { RowNumber = rowIndex, Error = ex.Message });
                     _logger.LogError(ex, "處理第 {RowIndex} 行資料時發生錯誤: Name='{Name}', Error={ErrorMessage}", 
                         rowIndex, personData?.Name ?? "未知", ex.Message);
                 }

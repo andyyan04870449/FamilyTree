@@ -174,6 +174,7 @@ namespace familytree_backend.Services
         public long FileSize { get; set; }
         public string Status { get; set; } = string.Empty;
         public string? ProjectId { get; set; }
+        public string? UserId { get; set; }
         public string FilePath { get; set; } = string.Empty;
         public string FileType { get; set; } = string.Empty;
         public DateTime UploadTime { get; set; }

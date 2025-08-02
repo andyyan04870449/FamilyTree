@@ -2,6 +2,7 @@
 // 主要功能：添加收藏、刪除收藏、獲取收藏列表、更新查看時間
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Npgsql;
 using Dapper;
 using familytree_backend.Models;
@@ -11,6 +12,7 @@ namespace familytree_backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class FavoritesController : BaseController
     {
         private readonly string _connectionString;

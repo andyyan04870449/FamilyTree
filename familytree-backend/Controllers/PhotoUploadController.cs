@@ -2,6 +2,7 @@
 // 主要功能：支援圖片格式、ZIP解壓縮、專案分離、重複處理
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using familytree_backend.Constants;
 using familytree_backend.Services;
@@ -13,6 +14,7 @@ namespace familytree_backend.Controllers
     /// 職責：處理圖片檔案和ZIP檔案的上傳、查詢、管理
     /// </summary>
     [Route("api/[controller]")]
+    [Authorize]
     public class PhotoUploadController : BaseController
     {
         private readonly PhotoUploadService _photoUploadService;

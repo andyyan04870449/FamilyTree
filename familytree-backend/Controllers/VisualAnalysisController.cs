@@ -2,6 +2,7 @@
 // 主要功能：分析圖列表、新增、編輯、刪除、統計
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using Dapper;
@@ -12,6 +13,7 @@ using familytree_backend.Services;
 namespace familytree_backend.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     public class VisualAnalysisController : BaseController
     {
         private readonly string _connectionString;

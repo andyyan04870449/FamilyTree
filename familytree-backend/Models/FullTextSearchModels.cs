@@ -65,7 +65,10 @@ namespace familytree_backend.Models
         public string? PassportNumber { get; set; }
         public string? FamilyRelationships { get; set; }
         public string? CurrentEmployer { get; set; }
-        public string? Education { get; set; }        public string? Friends { get; set; }
+        public string? Education { get; set; }
+        public string? Friends { get; set; }
+        public string? Email { get; set; }
+        public string? Address { get; set; }
         public string? ProfileData { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

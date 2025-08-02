@@ -46,6 +46,11 @@ namespace familytree_backend.Services
         /// 記錄業務事件
         /// </summary>
         void LogBusinessEvent(string eventType, object? data = null);
+        
+        /// <summary>
+        /// 記錄使用者活動 (非同步)
+        /// </summary>
+        Task LogActivityAsync(string userId, string action, string details, string? ipAddress = null);
 
         /// <summary>
         /// 記錄錯誤
@@ -281,6 +286,28 @@ namespace familytree_backend.Services
 
             _logger.LogWarning("⚠️ 警告 - {Operation} | 訊息: {Message} | 上下文: {@Context}", 
                 operation, message, logData);
+        }
+
+        /// <summary>
+        /// 記錄使用者活動 (非同步)
+        /// </summary>
+        public async Task LogActivityAsync(string userId, string action, string details, string? ipAddress = null)
+        {
+            var logData = new
+            {
+                UserId = userId,
+                Action = action,
+                Details = details,
+                IpAddress = ipAddress,
+                Timestamp = DateTime.UtcNow,
+                EventType = "UserActivity"
+            };
+
+            _logger.LogInformation("👤 使用者活動 - 使用者: {UserId} | 動作: {Action} | 詳情: {Details} | IP: {IpAddress}", 
+                userId, action, details, ipAddress ?? "N/A");
+            
+            // 這裡可以加入將活動記錄到資料庫的邏輯
+            await Task.CompletedTask; // 暫時只記錄到日誌
         }
 
         /// <summary>

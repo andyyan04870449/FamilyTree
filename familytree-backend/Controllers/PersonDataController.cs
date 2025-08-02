@@ -1,10 +1,12 @@
 // 人員資料控制器 - 提供人員資料的CRUD操作和分頁查詢
 // 優化重點：使用統一的資料存取服務，移除重複代碼，改善架構設計
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using familytree_backend.Constants;
 using familytree_backend.Models;
 using familytree_backend.Services;
+using FamilyTree.Attributes;
 
 namespace familytree_backend.Controllers
 {
@@ -14,6 +16,7 @@ namespace familytree_backend.Controllers
     /// 設計改善：使用統一的資料存取服務，移除重複代碼，改善架構設計
     /// </summary>
     [Route("api/[controller]")]
+    [Authorize]
     public class PersonDataController : BaseController
     {
         private readonly IDataAccessService _dataAccessService;
@@ -48,6 +51,7 @@ namespace familytree_backend.Controllers
         /// <param name="sortOrder">排序方向（asc/desc）</param>
         /// <returns>分頁人員資料列表</returns>
         [HttpGet]
+        [RequirePermission("person:read")]
         public async Task<IActionResult> GetPersonDataList(
             [FromQuery] int page = 1, 
             [FromQuery] int pageSize = 0, 
@@ -146,6 +150,7 @@ namespace familytree_backend.Controllers
         /// <param name="pageSize">頁面大小</param>
         /// <returns>搜尋結果</returns>
         [HttpGet("search")]
+        [RequirePermission("person:read")]
         public async Task<IActionResult> SearchPersonData(
             [FromQuery] string query,
             [FromQuery] string? project_id = null,
@@ -214,6 +219,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>統計資料</returns>
         [HttpGet("statistics")]
+        [RequirePermission("person:read")]
         public async Task<IActionResult> GetPersonDataStatistics([FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -263,6 +269,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>人員詳細資料</returns>
         [HttpGet("{id}")]
+        [RequirePermission("person:read")]
         public async Task<IActionResult> GetPerson(int id, [FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -305,6 +312,7 @@ namespace familytree_backend.Controllers
         /// <param name="person">人員資料</param>
         /// <returns>建立結果</returns>
         [HttpPost]
+        [RequirePermission("person:create")]
         public async Task<IActionResult> CreatePerson([FromBody] PersonDataModel person)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -355,6 +363,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>更新結果</returns>
         [HttpPut("{id}")]
+        [RequirePermission("person:update")]
         public async Task<IActionResult> UpdatePerson(int id, [FromBody] PersonDataModel person, [FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -417,6 +426,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>刪除結果</returns>
         [HttpDelete("{id}")]
+        [RequirePermission("person:delete")]
         public async Task<IActionResult> DeletePerson(int id, [FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>

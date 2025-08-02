@@ -3,14 +3,17 @@
 // 重要更新：使用統一的資料存取服務，移除重複代碼，改善架構設計
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using familytree_backend.Models;
 using familytree_backend.Constants;
 using familytree_backend.Services;
+using FamilyTree.Attributes;
 
 namespace familytree_backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class FullTextSearchController : BaseController
     {
         private readonly IDataAccessService _dataAccessService;
@@ -40,6 +43,7 @@ namespace familytree_backend.Controllers
         /// <param name="request">搜索請求</param>
         /// <returns>搜索結果</returns>
         [HttpPost("search")]
+        [RequirePermission("search:perform")]
         public async Task<IActionResult> Search([FromBody] SearchRequest request)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -119,6 +123,7 @@ namespace familytree_backend.Controllers
         /// <param name="request">搜索請求</param>
         /// <returns>搜索結果</returns>
         [HttpPost("search-global")]
+        [RequirePermission("search:perform")]
         public async Task<IActionResult> SearchGlobal([FromBody] SearchRequest request)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -187,6 +192,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>熱門關鍵字列表</returns>
         [HttpGet("popular-keywords")]
+        [RequirePermission("search:perform")]
         public async Task<IActionResult> GetPopularKeywords([FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -228,6 +234,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>搜索歷史列表</returns>
         [HttpGet("search-history")]
+        [RequirePermission("search:perform")]
         public async Task<IActionResult> GetSearchHistory([FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -269,6 +276,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>清除結果</returns>
         [HttpDelete("search-history")]
+        [RequirePermission("search:perform")]
         public async Task<IActionResult> ClearSearchHistory([FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -306,6 +314,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>搜索統計資料</returns>
         [HttpGet("statistics")]
+        [RequirePermission("search:perform")]
         public async Task<IActionResult> GetSearchStatistics([FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>

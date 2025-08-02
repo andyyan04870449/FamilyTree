@@ -71,9 +71,23 @@ namespace familytree_backend.Models
         
         public string? TravelRecords { get; set; }           // 出國紀錄
         
-        public string? Notes { get; set; }                   // 備註
+        public string? TravelHistory { get; set; }           // 出國經歷
+        
+        public string? FrequentLocations { get; set; }       // 經常出入地點
+        
+        public string? Address { get; set; }                 // 地址
+        
+        public string? AncestralOrigin { get; set; }         // 祖籍
+        
+        public string? ExtraData { get; set; }               // 額外資料
+        
+        public string? Remarks { get; set; }                 // 備註
+        
+        public string? Notes { get; set; }                   // 筆記
         
         public string? ProjectId { get; set; }              // 專案ID
+        
+        public string? UserId { get; set; }                 // 使用者ID
         
         public DateTime CreatedAt { get; set; }              // 建檔時間
         

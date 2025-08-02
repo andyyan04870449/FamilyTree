@@ -3,6 +3,7 @@
 // 設計改善：使用統一的資料存取服務，移除重複代碼，改善架構設計
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using familytree_backend.Models;
 using familytree_backend.Services;
 using Dapper;
@@ -17,6 +18,7 @@ namespace familytree_backend.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class RelationshipGraphController : BaseController
     {
         private readonly IDataAccessService _dataAccessService;

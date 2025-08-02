@@ -3,10 +3,12 @@
 // 設計改善：使用統一的資料存取服務，移除重複代碼，改善架構設計
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using familytree_backend.Constants;
 using familytree_backend.Models;
 using familytree_backend.Services;
+using FamilyTree.Attributes;
 
 namespace familytree_backend.Controllers
 {
@@ -16,6 +18,7 @@ namespace familytree_backend.Controllers
     /// 設計改善：使用統一的資料存取服務，移除重複的 SQL 查詢邏輯
     /// </summary>
     [Route("api/[controller]")]
+    [Authorize]
     public class ProjectController : BaseController
     {
         private readonly IDataAccessService _dataAccessService;
@@ -44,6 +47,7 @@ namespace familytree_backend.Controllers
         /// <param name="search">搜尋關鍵字</param>
         /// <returns>專案列表</returns>
         [HttpGet]
+        [RequirePermission("project:read")]
         public async Task<IActionResult> GetProjects([FromQuery] string? status = null, [FromQuery] string? search = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -90,6 +94,7 @@ namespace familytree_backend.Controllers
         /// <param name="id">專案 ID</param>
         /// <returns>專案詳細資料</returns>
         [HttpGet("{id}")]
+        [RequirePermission("project:read")]
         public async Task<IActionResult> GetProject(string id)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -131,6 +136,7 @@ namespace familytree_backend.Controllers
         /// <param name="request">建立專案請求</param>
         /// <returns>建立結果</returns>
         [HttpPost]
+        [RequirePermission("project:create")]
         public async Task<IActionResult> CreateProject([FromBody] CreateProjectRequest request)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -195,6 +201,7 @@ namespace familytree_backend.Controllers
         /// <param name="request">更新專案請求</param>
         /// <returns>更新結果</returns>
         [HttpPut("{id}")]
+        [RequireProjectPermission("project:update")]
         public async Task<IActionResult> UpdateProject(string id, [FromBody] UpdateProjectRequest request)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -273,6 +280,7 @@ namespace familytree_backend.Controllers
         /// <param name="id">專案 ID</param>
         /// <returns>刪除結果</returns>
         [HttpDelete("{id}")]
+        [RequireProjectPermission("project:delete")]
         public async Task<IActionResult> DeleteProject(string id)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -346,6 +354,7 @@ namespace familytree_backend.Controllers
         /// </summary>
         /// <returns>專案統計資料</returns>
         [HttpGet("statistics")]
+        [RequirePermission("project:read")]
         public async Task<IActionResult> GetProjectStatistics()
         {
             return await ExecuteWithExceptionHandling(async () =>

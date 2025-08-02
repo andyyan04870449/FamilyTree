@@ -1,10 +1,12 @@
 // 檔案上傳控制器 - 提供檔案上傳、列表查詢、刪除等 API 端點
 // 設計改善：使用統一的資料存取服務，移除重複代碼，改善架構設計
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using familytree_backend.Constants;
 using familytree_backend.Models;
 using familytree_backend.Services;
+using FamilyTree.Attributes;
 
 namespace familytree_backend.Controllers
 {
@@ -14,6 +16,7 @@ namespace familytree_backend.Controllers
     /// 設計改善：使用統一的資料存取服務，移除重複的 SQL 查詢邏輯
     /// </summary>
     [Route("api/[controller]")]
+    [Authorize]
     public class FileUploadController : BaseController
     {
         private readonly FileUploadService _fileUploadService;
@@ -49,6 +52,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>上傳結果</returns>
         [HttpPost("upload")]
+        [RequirePermission("file:upload")]
         public async Task<IActionResult> UploadFile([FromForm] IFormFile file, [FromForm] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -146,6 +150,7 @@ namespace familytree_backend.Controllers
         /// <param name="project_id">專案 ID</param>
         /// <returns>檔案列表</returns>
         [HttpGet("list")]
+        [RequirePermission("file:read")]
         public async Task<IActionResult> GetFileList([FromQuery] string? project_id = null)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -193,6 +198,7 @@ namespace familytree_backend.Controllers
         /// <param name="id">檔案 ID</param>
         /// <returns>刪除結果</returns>
         [HttpDelete("{id}")]
+        [RequirePermission("file:delete")]
         public async Task<IActionResult> DeleteFile(int id)
         {
             return await ExecuteWithExceptionHandling(async () =>
@@ -285,6 +291,7 @@ namespace familytree_backend.Controllers
         /// <param name="id">檔案 ID</param>
         /// <returns>處理結果</returns>
         [HttpPost("process/{id}")]
+        [RequirePermission("file:process")]
         public async Task<IActionResult> ProcessFile(int id)
         {
             return await ExecuteWithExceptionHandling(async () =>
