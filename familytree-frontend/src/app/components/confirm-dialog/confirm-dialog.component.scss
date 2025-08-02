@@ -1,0 +1,309 @@
+// ================================
+// Confirm Dialog 組件樣式
+// 遵循 FamilyTree 設計系統規範
+// ================================
+
+@import '../../../styles/foundation/tokens';
+@import '../../../styles/foundation/mixins';
+
+:host {
+  position: relative;
+  z-index: $z-modal;
+}
+
+// ================================
+// 對話框遮罩層
+// ================================
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: $bg-overlay;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: $z-modal-backdrop;
+  backdrop-filter: blur(2px);
+  
+  // 動畫效果
+  animation: overlayFadeIn $duration-normal $easing-ease-out;
+}
+
+// ================================
+// 對話框主體
+// ================================
+.dialog {
+  background: $bg-surface;
+  border-radius: $radius-lg;
+  width: 90%;
+  max-width: 450px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: $shadow-xl;
+  border: 1px solid $border-primary;
+  
+  // 動畫效果
+  animation: dialogSlideIn $duration-normal $easing-ease-out;
+  
+  // 響應式調整
+  @media (max-width: $breakpoint-sm) {
+    width: 95%;
+    margin: $spacing-lg;
+    max-height: calc(100vh - #{$spacing-3xl});
+  }
+}
+
+// ================================
+// 對話框標題區域
+// ================================
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $dialog-padding;
+  border-bottom: 1px solid $border-secondary;
+  
+  h3 {
+    margin: 0;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    font-family: $font-family-base;
+  }
+  
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: $font-size-2xl;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: 0;
+    width: $space-8;
+    height: $space-8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: $radius-sm;
+    transition: all $duration-fast $easing-ease-in-out;
+    
+    &:hover {
+      background: $bg-hover;
+      color: $text-primary;
+    }
+    
+    &:focus {
+      outline: none;
+      box-shadow: $shadow-focus;
+    }
+    
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+  
+  // 響應式調整
+  @media (max-width: $breakpoint-sm) {
+    padding: $spacing-lg;
+    
+    h3 {
+      font-size: $font-size-base;
+    }
+    
+    .close-btn {
+      width: $space-6;
+      height: $space-6;
+      font-size: $font-size-xl;
+    }
+  }
+}
+
+// ================================
+// 對話框內容區域
+// ================================
+.dialog-content {
+  padding: $dialog-padding;
+  
+  p {
+    margin: 0;
+    color: $text-secondary;
+    font-size: $font-size-base;
+    line-height: $line-height-normal;
+    font-family: $font-family-base;
+  }
+  
+  // 響應式調整
+  @media (max-width: $breakpoint-sm) {
+    padding: $spacing-lg;
+    
+    p {
+      font-size: $font-size-sm;
+    }
+  }
+}
+
+// ================================
+// 對話框操作按鈕區域
+// ================================
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-md;
+  padding: $dialog-padding;
+  border-top: 1px solid $border-secondary;
+  
+  .btn {
+    padding: $spacing-md $spacing-xl;
+    border-radius: $radius-sm;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    font-family: $font-family-base;
+    cursor: pointer;
+    border: none;
+    transition: all $duration-fast $easing-ease-in-out;
+    min-width: 80px;
+    
+    // 取消按鈕樣式
+    &.btn-cancel {
+      background: $bg-secondary;
+      color: $text-primary;
+      border: 1px solid $border-primary;
+      
+      &:hover {
+        background: $bg-tertiary;
+        border-color: $border-secondary;
+      }
+      
+      &:focus {
+        outline: none;
+        box-shadow: $shadow-focus;
+      }
+      
+      &:active {
+        transform: translateY(1px);
+      }
+    }
+    
+    // 確認按鈕樣式
+    &.btn-confirm {
+      background: $primary;
+      color: $text-on-primary;
+      
+      &:hover {
+        background: $primary-hover;
+      }
+      
+      &:focus {
+        outline: none;
+        box-shadow: $shadow-focus;
+      }
+      
+      &:active {
+        background: $primary-active;
+        transform: translateY(1px);
+      }
+      
+      // 危險操作樣式
+      &.btn-danger {
+        background: $error;
+        
+        &:hover {
+          background: $error-hover;
+        }
+        
+        &:active {
+          background: $error-hover;
+        }
+      }
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      
+      &:hover {
+        transform: none;
+      }
+    }
+  }
+  
+  // 響應式調整
+  @media (max-width: $breakpoint-sm) {
+    padding: $spacing-lg;
+    flex-direction: column-reverse;
+    gap: $spacing-sm;
+    
+    .btn {
+      width: 100%;
+      justify-content: center;
+      padding: $spacing-lg;
+      font-size: $font-size-base;
+    }
+  }
+}
+
+// ================================
+// 動畫效果
+// ================================
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialogSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+// ================================
+// 無障礙設計支援
+// ================================
+
+// 高對比度模式支援
+@media (prefers-contrast: high) {
+  .dialog {
+    border-width: 2px;
+  }
+  
+  .dialog-actions .btn {
+    border-width: 2px;
+  }
+}
+
+// 減少動畫偏好設定
+@media (prefers-reduced-motion: reduce) {
+  .dialog-overlay,
+  .dialog {
+    animation: none;
+  }
+  
+  .dialog-actions .btn {
+    transition: none;
+  }
+  
+  .close-btn {
+    transition: none;
+  }
+}
+
+// ================================
+// 深色主題優化
+// ================================
+
+// 確保在深色主題下的對比度
+.dialog {
+  // 使用語義化變數確保主題切換的一致性
+  background: $bg-surface;
+  color: $text-primary;
+}

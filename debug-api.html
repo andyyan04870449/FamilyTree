@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Debug - File List Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>API Debug - File List Test</h1>
+    
+    <div class="section">
+        <h2>1. 測試檔案列表 API (無參數)</h2>
+        <button onclick="testFileListBasic()">測試基本檔案列表</button>
+        <div id="result1" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. 測試檔案列表 API (有專案ID)</h2>
+        <input type="text" id="projectId" value="p250802183809016115" placeholder="專案ID">
+        <button onclick="testFileListWithProject()">測試專案檔案列表</button>
+        <div id="result2" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>3. 測試後端健康狀態</h2>
+        <button onclick="testBackendHealth()">測試後端狀態</button>
+        <div id="result3" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>4. 直接測試資料庫檔案</h2>
+        <button onclick="testDirectDatabase()">檢查資料庫狀態</button>
+        <div id="result4" class="result"></div>
+    </div>
+
+    <script>
+        async function testFileListBasic() {
+            const resultDiv = document.getElementById('result1');
+            resultDiv.innerHTML = '正在測試...';
+            
+            try {
+                const response = await fetch('/api/File/list', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                resultDiv.innerHTML = `
+                    <div>狀態碼: ${response.status}</div>
+                    <div>狀態文字: ${response.statusText}</div>
+                    <div>Headers: ${JSON.stringify(Object.fromEntries(response.headers), null, 2)}</div>
+                `;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML += `<div class="success">回應數據: ${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML += `<div class="error">錯誤內容: ${errorText}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">請求失敗: ${error.message}</div>`;
+            }
+        }
+        
+        async function testFileListWithProject() {
+            const projectId = document.getElementById('projectId').value;
+            const resultDiv = document.getElementById('result2');
+            resultDiv.innerHTML = '正在測試...';
+            
+            try {
+                const url = new URL('/api/File/list', window.location.origin);
+                url.searchParams.append('AssociatedRecordId', projectId);
+                url.searchParams.append('AssociatedRecordType', 'project');
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                resultDiv.innerHTML = `
+                    <div>請求URL: ${url.toString()}</div>
+                    <div>狀態碼: ${response.status}</div>
+                    <div>狀態文字: ${response.statusText}</div>
+                `;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML += `<div class="success">回應數據: ${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML += `<div class="error">錯誤內容: ${errorText}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">請求失敗: ${error.message}</div>`;
+            }
+        }
+        
+        async function testBackendHealth() {
+            const resultDiv = document.getElementById('result3');
+            resultDiv.innerHTML = '正在測試...';
+            
+            try {
+                const response = await fetch('/api/project', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                resultDiv.innerHTML = `
+                    <div>狀態碼: ${response.status}</div>
+                    <div>狀態文字: ${response.statusText}</div>
+                `;
+                
+                if (response.ok) {
+                    resultDiv.innerHTML += `<div class="success">後端API正常運行</div>`;
+                } else {
+                    resultDiv.innerHTML += `<div class="error">後端API異常</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">無法連接後端: ${error.message}</div>`;
+            }
+        }
+        
+        function testDirectDatabase() {
+            const resultDiv = document.getElementById('result4');
+            resultDiv.innerHTML = `
+                <div>資料庫中的檔案記錄:</div>
+                <div>檔案ID: 30514cd2-2415-4c0e-afcb-f404dc4d3f4f</div>
+                <div>檔案名: 分公司客戶基資表-廠商測試版.xlsx</div>
+                <div>專案ID: p250802183809016115</div>
+                <div>記錄類型: project</div>
+                <div>狀態: uploaded</div>
+                <div class="success">資料庫中確實有一個有效的檔案記錄</div>
+            `;
+        }
+    </script>
+</body>
+</html>

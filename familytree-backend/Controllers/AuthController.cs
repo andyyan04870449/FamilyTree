@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using familytree_backend.Models;
 using familytree_backend.Services;
 using familytree_backend.Constants;
+using familytree_backend.Extensions;
 
 namespace familytree_backend.Controllers
 {
@@ -84,8 +85,8 @@ namespace familytree_backend.Controllers
                     return BadRequest(ModelState);
                 }
 
-                // 取得 IP 位址
-                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                // 取得 IP 位址，使用強化的IP位址提取邏輯
+                var ipAddress = HttpContext.GetClientIpAddress();
 
                 // 執行登入
                 var result = await _authService.LoginAsync(dto, ipAddress);

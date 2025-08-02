@@ -98,27 +98,6 @@
   position: relative;
 }
 
-.sidebar__collapse-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  background: transparent;
-  border-radius: 10px;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-}
-
-.sidebar__collapse-icon {
-  width: 36px;
-  height: 36px;
-}
 
 // 手機版關閉按鈕
 .sidebar__close-btn {
@@ -242,9 +221,6 @@
     display: block;
   }
 
-  .sidebar__collapse-btn {
-    display: none;
-  }
 }
 
 // 使用者資訊區域

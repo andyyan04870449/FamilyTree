@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>檢查認證狀態</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .info { background: #e3f2fd; padding: 10px; margin: 10px 0; }
+        .error { background: #ffebee; color: #c62828; padding: 10px; margin: 10px 0; }
+        .success { background: #e8f5e8; color: #2e7d32; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>認證狀態檢查</h1>
+    
+    <div id="authStatus"></div>
+    
+    <div class="info">
+        <h3>手動登入</h3>
+        <p>如果沒有登入，請先到前端頁面 (http://localhost:4200) 登入</p>
+        <p>預設用戶: admin / admin123</p>
+    </div>
+
+    <script>
+        function checkAuthStatus() {
+            const accessToken = localStorage.getItem('access_token');
+            const refreshToken = localStorage.getItem('refresh_token');
+            const currentUser = localStorage.getItem('current_user');
+            const tokenExpiration = localStorage.getItem('token_expiration');
+            
+            const statusDiv = document.getElementById('authStatus');
+            
+            if (!accessToken) {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ 未登入</h3>
+                        <p>沒有找到 access_token，需要先登入</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 檢查token是否過期
+            const expiration = parseInt(tokenExpiration || '0');
+            const now = Date.now();
+            const isExpired = expiration > 0 && now > expiration;
+            
+            statusDiv.innerHTML = `
+                <div class="${isExpired ? 'error' : 'success'}">
+                    <h3>${isExpired ? '⚠️ Token已過期' : '✅ 已登入'}</h3>
+                    <p><strong>Access Token:</strong> ${accessToken.substring(0, 50)}...</p>
+                    <p><strong>Refresh Token:</strong> ${refreshToken ? refreshToken.substring(0, 50) + '...' : '無'}</p>
+                    <p><strong>當前用戶:</strong> ${currentUser || '無'}</p>
+                    <p><strong>Token過期時間:</strong> ${expiration ? new Date(expiration).toLocaleString() : '無'}</p>
+                    <p><strong>剩餘時間:</strong> ${expiration ? Math.max(0, Math.floor((expiration - now) / 1000)) + '秒' : '無'}</p>
+                </div>
+            `;
+            
+            // 如果已登入且token有效，測試API調用
+            if (!isExpired) {
+                testApiWithAuth(accessToken);
+            }
+        }
+        
+        async function testApiWithAuth(token) {
+            try {
+                const response = await fetch('/api/File/list?AssociatedRecordId=p250802183809016115&AssociatedRecordType=project', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const resultDiv = document.createElement('div');
+                resultDiv.className = response.ok ? 'success' : 'error';
+                resultDiv.innerHTML = `
+                    <h3>${response.ok ? '✅ API調用成功' : '❌ API調用失敗'}</h3>
+                    <p><strong>狀態碼:</strong> ${response.status}</p>
+                    <p><strong>請求URL:</strong> /api/File/list?AssociatedRecordId=p250802183809016115&AssociatedRecordType=project</p>
+                `;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML += `
+                        <p><strong>回應數據:</strong></p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML += `<p><strong>錯誤:</strong> ${errorText}</p>`;
+                }
+                
+                document.getElementById('authStatus').appendChild(resultDiv);
+            } catch (error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.innerHTML = `<h3>❌ API請求失敗</h3><p>${error.message}</p>`;
+                document.getElementById('authStatus').appendChild(errorDiv);
+            }
+        }
+        
+        // 頁面載入時檢查認證狀態
+        checkAuthStatus();
+    </script>
+</body>
+</html>

@@ -42,6 +42,15 @@
         <button onclick="testProxy()">測試 Proxy</button>
         <div id="proxyResult"></div>
     </div>
+    
+    <div class="test-section">
+        <h2>5. 測試檔案刪除 API</h2>
+        <p>輸入 File ID: <input type="text" id="fileIdToDelete" placeholder="例如: 321321 或 GUID" style="width: 300px;"></p>
+        <button onclick="testDeleteFile()">測試刪除 (數字ID)</button>
+        <button onclick="testDeleteFileGuid()">測試刪除 (GUID)</button>
+        <button onclick="testFileList()">查看檔案列表</button>
+        <div id="deleteResult"></div>
+    </div>
 
     <script>
         // 檢查 Token
@@ -197,6 +206,115 @@
                 `;
             } catch (error) {
                 resultDiv.innerHTML = `<p class="error">Proxy 錯誤: ${error.message}</p>`;
+            }
+        }
+        
+        // 測試檔案列表
+        async function testFileList() {
+            const token = localStorage.getItem('access_token');
+            const resultDiv = document.getElementById('deleteResult');
+            
+            if (!token) {
+                resultDiv.innerHTML = '<p class="error">請先登入獲取 Token</p>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5088/api/File', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <p class="success">成功獲取檔案列表</p>
+                        <p>檔案數量: ${data.files?.length || 0}</p>
+                        <p>第一個檔案ID: ${data.files?.[0]?.fileId || '無'}</p>
+                        <pre>${JSON.stringify(data.files?.slice(0, 3), null, 2)}</pre>
+                    `;
+                    
+                    // 如果有檔案，自動填入第一個檔案ID
+                    if (data.files?.length > 0) {
+                        document.getElementById('fileIdToDelete').value = data.files[0].fileId;
+                    }
+                } else {
+                    resultDiv.innerHTML = `<p class="error">獲取失敗: ${response.status} ${response.statusText}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">連接錯誤: ${error.message}</p>`;
+            }
+        }
+        
+        // 測試刪除檔案 (數字ID)
+        async function testDeleteFile() {
+            const fileId = document.getElementById('fileIdToDelete').value;
+            await deleteFileWithId(fileId, '數字ID');
+        }
+        
+        // 測試刪除檔案 (GUID)
+        async function testDeleteFileGuid() {
+            const fileId = document.getElementById('fileIdToDelete').value;
+            await deleteFileWithId(fileId, 'GUID');
+        }
+        
+        // 實際刪除檔案
+        async function deleteFileWithId(fileId, type) {
+            const token = localStorage.getItem('access_token');
+            const resultDiv = document.getElementById('deleteResult');
+            
+            if (!token) {
+                resultDiv.innerHTML = '<p class="error">請先登入獲取 Token</p>';
+                return;
+            }
+            
+            if (!fileId) {
+                resultDiv.innerHTML = '<p class="error">請輸入 File ID</p>';
+                return;
+            }
+            
+            resultDiv.innerHTML = `<p class="info">正在刪除... (${type}: ${fileId})</p>`;
+            
+            try {
+                const response = await fetch(`http://localhost:5088/api/File/${fileId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                let data;
+                const responseText = await response.text();
+                
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    data = { rawResponse: responseText };
+                }
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <p class="success">刪除成功！</p>
+                        <p>API 回應: ${response.status} ${response.statusText}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p class="error">刪除失敗: ${response.status} ${response.statusText}</p>
+                        <p>File ID: ${fileId}</p>
+                        <p>URL: http://localhost:5088/api/File/${fileId}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">連接錯誤: ${error.message}</p>
+                    <p>File ID: ${fileId}</p>
+                    <p>URL: http://localhost:5088/api/File/${fileId}</p>
+                `;
             }
         }
         

@@ -370,6 +370,15 @@
         font-size: 0.85rem;
         color: $text-tertiary;
         line-height: 1.4;
+
+        .related-persons {
+          color: $primary;
+          font-weight: 500;
+
+          .person-icon {
+            margin-right: 0.25rem;
+          }
+        }
       }
 
       .saved-name {

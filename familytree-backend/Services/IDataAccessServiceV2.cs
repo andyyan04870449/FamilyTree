@@ -137,6 +137,64 @@ namespace familytree_backend.Services
 
         #endregion
 
+        #region 專案管理操作
+
+        /// <summary>
+        /// 獲取使用者的專案列表
+        /// </summary>
+        Task<IEnumerable<ProjectModel>> GetProjectListAsync(string userId, string userRole);
+
+        /// <summary>
+        /// 根據ID獲取專案（包含權限檢查）
+        /// </summary>
+        Task<ProjectModel?> GetProjectByIdAsync(string projectId, string userId, string userRole);
+
+        /// <summary>
+        /// 建立專案
+        /// </summary>
+        Task<string?> CreateProjectAsync(CreateProjectRequest request, string userId);
+
+        /// <summary>
+        /// 更新專案
+        /// </summary>
+        Task<bool> UpdateProjectAsync(string projectId, UpdateProjectRequest request, string userId, string userRole);
+
+        /// <summary>
+        /// 刪除專案
+        /// </summary>
+        Task<bool> DeleteProjectAsync(string projectId, string userId, string userRole);
+
+        #endregion
+
+        #region 搜尋操作
+
+        /// <summary>
+        /// 搜尋人員資料（基於用戶權限）
+        /// </summary>
+        Task<(IEnumerable<PersonSearchResult> Data, int TotalCount)> SearchPersonDataAsync(string userId, string userRole, SearchRequest request);
+
+        /// <summary>
+        /// 記錄搜尋關鍵字
+        /// </summary>
+        Task RecordSearchKeywordAsync(string keyword, string searchType, string userId);
+
+        /// <summary>
+        /// 獲取搜尋歷史
+        /// </summary>
+        Task<List<string>> GetSearchHistoryAsync(string userId, int limit = 20);
+
+        /// <summary>
+        /// 獲取人員關係（基於用戶權限）
+        /// </summary>
+        Task<IEnumerable<RelationshipData>> GetPersonRelationshipsAsync(int personId, string userId, string userRole);
+
+        /// <summary>
+        /// 建立關係
+        /// </summary>
+        Task<bool> CreateRelationshipAsync(RelationshipData relationship, string userId);
+
+        #endregion
+
         #region 通用查詢
 
         /// <summary>
@@ -148,6 +206,11 @@ namespace familytree_backend.Services
         /// 執行標量查詢
         /// </summary>
         Task<T?> ExecuteScalarAsync<T>(string sql, object? parameters = null);
+
+        /// <summary>
+        /// 執行非查詢命令（會自動加入 user_id 過濾）
+        /// </summary>
+        Task<int> ExecuteAsync(string sql, object? parameters = null, string? userId = null, string? userRole = null);
 
         /// <summary>
         /// 檢查資源擁有權

@@ -179,7 +179,7 @@ namespace familytree_backend.Models
         
         // 分頁
         public int Page { get; set; } = 1;
-        public int PageSize { get; set; } = 50;
+        public int PageSize { get; set; } = 20;
         public string? SortField { get; set; } = "OccurredAt";
         public string? SortDirection { get; set; } = "DESC";
         
@@ -272,6 +272,7 @@ namespace familytree_backend.Models
         
         // 額外資訊
         public object? AdditionalData { get; set; }
+        public object? AdditionalMetadata { get; set; }
         public string[]? Tags { get; set; }
         public string[]? ComplianceFlags { get; set; }
         
@@ -329,14 +330,31 @@ namespace familytree_backend.Models
         public long FailedEvents { get; set; }
         public long SuspiciousEvents { get; set; }
         public long UniqueUsers { get; set; }
+        public long UniqueSessions { get; set; }
         public long UniqueResources { get; set; }
+        public int HighRiskEvents { get; set; }
+        public double? AvgResponseTime { get; set; }
+        public double? MaxResponseTime { get; set; }
+        public double? MinResponseTime { get; set; }
         public double SuccessRate => TotalEvents > 0 ? (double)SuccessfulEvents / TotalEvents * 100 : 0;
+        public Dictionary<string, int> EventTypeDistribution { get; set; } = new();
+        public IEnumerable<UserActivityModel>? TopActiveUsers { get; set; }
         public Dictionary<string, long> EventTypeBreakdown { get; set; } = new();
         public Dictionary<string, long> ActionBreakdown { get; set; } = new();
         public Dictionary<string, long> SecurityLevelBreakdown { get; set; } = new();
         public Dictionary<string, long> HourlyBreakdown { get; set; } = new();
         public List<TopUserActivity> TopUsers { get; set; } = new();
         public List<TopResourceActivity> TopResources { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 使用者活動模型
+    /// </summary>
+    public class UserActivityModel
+    {
+        public string? user_id { get; set; }
+        public string? user_name { get; set; }
+        public int event_count { get; set; }
     }
 
     /// <summary>
@@ -441,5 +459,16 @@ namespace familytree_backend.Models
         public const string NORMAL = "NORMAL";
         public const string HIGH = "HIGH";
         public const string CRITICAL = "CRITICAL";
+    }
+
+    /// <summary>
+    /// 補全後的使用者資訊模型
+    /// 用於審計日誌中的使用者資訊自動補全
+    /// </summary>
+    public class EnrichedUserInfo
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string UserRole { get; set; } = string.Empty;
     }
 }

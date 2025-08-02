@@ -16,11 +16,8 @@
 
 <!-- 側邊欄 - 根據 Figma 設計重構 -->
 <aside class="sidebar" [class.sidebar--mobile-open]="isSidebarOpen">
-  <!-- 側邊欄頂部 - 收起按鈕 -->
+  <!-- 側邊欄頂部 -->
   <div class="sidebar__header">
-    <button class="sidebar__collapse-btn" (click)="toggleSidebar()" aria-label="收起側邊欄">
-      <img src="/assets/icons/circle-left.png" alt="" class="sidebar__collapse-icon">
-    </button>
     <!-- 手機版關閉按鈕 -->
     <button class="sidebar__close-btn" (click)="closeSidebar()" aria-label="關閉側邊欄">×</button>
   </div>

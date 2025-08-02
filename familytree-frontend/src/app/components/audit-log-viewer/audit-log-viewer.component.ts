@@ -14,11 +14,13 @@ import {
   EventType 
 } from '../../services/audit-log.service';
 import { ToastService } from '../../services/toast.service';
+import { CustomSelectComponent } from '../../shared/components/custom-select/custom-select.component';
+import { SelectOption } from '../../shared/interfaces/select-option.interface';
 
 @Component({
   selector: 'app-audit-log-viewer',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, CustomSelectComponent],
   template: `
     <div class="audit-log">
       <!-- 標題和操作按鈕 -->
@@ -85,19 +87,50 @@ import { ToastService } from '../../services/toast.service';
       <!-- 查詢過濾器 -->
       <div class="filter-panel" [class.filter-panel--expanded]="showFilters">
         <div class="filter-panel__header">
-          <h3 class="filter-panel__title">過濾條件</h3>
-          <button 
-            type="button" 
-            class="btn btn--link"
-            (click)="showFilters = !showFilters"
-            [attr.aria-expanded]="showFilters"
-            aria-label="切換過濾條件面板">
-            <i class="fas" [ngClass]="showFilters ? 'fa-chevron-up' : 'fa-chevron-down'" aria-hidden="true"></i>
-            {{ showFilters ? '收合' : '展開' }}
-          </button>
+          <div class="filter-panel__title-wrapper">
+            <h3 class="filter-panel__title">過濾條件</h3>
+            <span class="filter-panel__count" *ngIf="activeFilterCount > 0">
+              ({{ activeFilterCount }} 個條件)
+            </span>
+          </div>
+          <div class="filter-panel__actions">
+            <button 
+              type="button" 
+              class="btn btn--sm btn--secondary"
+              *ngIf="hasActiveFilters"
+              (click)="clearAllFilters()"
+              aria-label="清除所有篩選條件">
+              <i class="fas fa-times" aria-hidden="true"></i>
+              清除篩選
+            </button>
+            <button 
+              type="button" 
+              class="btn btn--link"
+              (click)="showFilters = !showFilters"
+              [attr.aria-expanded]="showFilters"
+              aria-label="切換過濾條件面板">
+              <i class="fas" [ngClass]="showFilters ? 'fa-chevron-up' : 'fa-chevron-down'" aria-hidden="true"></i>
+              {{ showFilters ? '收合' : '展開' }}
+            </button>
+          </div>
         </div>
         
         <form [formGroup]="filterForm" *ngIf="showFilters" class="filter-panel__form">
+          <!-- 快速時間選擇 -->
+          <div class="filter-panel__quick-time">
+            <label class="form-field__label">快速時間選擇</label>
+            <div class="filter-panel__quick-buttons">
+              <button 
+                *ngFor="let range of quickTimeRanges"
+                type="button"
+                class="btn btn--sm btn--outline"
+                [class.btn--primary]="selectedQuickRange === range.label"
+                (click)="selectQuickTimeRange(range)">
+                {{ range.label }}
+              </button>
+            </div>
+          </div>
+
           <div class="filter-panel__row">
             <!-- 時間範圍 -->
             <div class="form-field" role="group" aria-labelledby="date-range-label">
@@ -110,6 +143,7 @@ import { ToastService } from '../../services/toast.service';
                     id="fromDate"
                     formControlName="fromDate"
                     class="form-field__input"
+                    (ngModelChange)="clearQuickSelection()"
                     aria-label="開始時間">
                 </div>
                 <span class="form-field__separator">至</span>
@@ -120,6 +154,7 @@ import { ToastService } from '../../services/toast.service';
                     id="toDate"
                     formControlName="toDate"
                     class="form-field__input"
+                    (ngModelChange)="clearQuickSelection()"
                     aria-label="結束時間">
                 </div>
               </div>
@@ -152,21 +187,15 @@ import { ToastService } from '../../services/toast.service';
             <!-- 事件類型 -->
             <div class="form-field">
               <label for="eventTypes" class="form-field__label">事件類型</label>
-              <select 
+              <app-custom-select
                 id="eventTypes"
+                [options]="eventTypeOptions"
+                [searchable]="true"
+                placeholder="選擇事件類型"
                 formControlName="eventTypes"
-                class="form-field__select form-field__select--multiple"
-                multiple
                 aria-describedby="eventTypes-help">
-                <optgroup *ngFor="let category of categories" [label]="category">
-                  <option 
-                    *ngFor="let eventType of getEventTypesByCategory(category)"
-                    [value]="eventType.code">
-                    {{ eventType.name }}
-                  </option>
-                </optgroup>
-              </select>
-              <small id="eventTypes-help" class="form-field__help">可選擇多個事件類型</small>
+              </app-custom-select>
+              <small id="eventTypes-help" class="form-field__help">選擇要篩選的事件類型</small>
             </div>
             <!-- 資源類型 -->
             <div class="form-field">
@@ -188,30 +217,26 @@ import { ToastService } from '../../services/toast.service';
             <!-- 安全等級 -->
             <div class="form-field">
               <label for="securityLevels" class="form-field__label">安全等級</label>
-              <select 
+              <app-custom-select
                 id="securityLevels"
+                [options]="securityLevelOptions"
+                [searchable]="false"
+                placeholder="選擇安全等級"
                 formControlName="securityLevels"
-                class="form-field__select form-field__select--multiple"
-                multiple
                 aria-describedby="securityLevels-help">
-                <option value="LOW">低</option>
-                <option value="NORMAL">一般</option>
-                <option value="HIGH">高</option>
-                <option value="CRITICAL">嚴重</option>
-              </select>
-              <small id="securityLevels-help" class="form-field__help">可選擇多個安全等級</small>
+              </app-custom-select>
+              <small id="securityLevels-help" class="form-field__help">選擇要篩選的安全等級</small>
             </div>
             <!-- 操作結果 -->
             <div class="form-field">
               <label for="success" class="form-field__label">操作結果</label>
-              <select 
+              <app-custom-select
                 id="success"
-                formControlName="success"
-                class="form-field__select">
-                <option value="">全部</option>
-                <option value="true">成功</option>
-                <option value="false">失敗</option>
-              </select>
+                [options]="operationResultOptions"
+                [searchable]="false"
+                placeholder="選擇操作結果"
+                formControlName="success">
+              </app-custom-select>
             </div>
           </div>
 
@@ -610,7 +635,7 @@ export class AuditLogViewerComponent implements OnInit, OnDestroy {
 
   // 資料狀態
   loading = false;
-  showFilters = true;
+  showFilters = false; // 改為預設收合
   showStatistics = false;
   queryResult: AuditLogQueryResult | null = null;
   statistics: AuditStatistics | null = null;
@@ -626,6 +651,72 @@ export class AuditLogViewerComponent implements OnInit, OnDestroy {
   canManage = false;
   // 提供 Math 物件給模板使用
   Math = Math;
+
+  // 自定義選擇組件選項
+  eventTypeOptions: SelectOption[] = [
+    { value: '', label: '全部事件類型' },
+    { value: 'LOGIN', label: '登入' },
+    { value: 'LOGOUT', label: '登出' },
+    { value: 'LOGIN_FAILED', label: '登入失敗' },
+    { value: 'DATA_ACCESS', label: '資料存取' },
+    { value: 'FILE_UPLOAD', label: '檔案上傳' },
+    { value: 'SEARCH', label: '搜尋' },
+    { value: 'EXPORT', label: '匯出' },
+    { value: 'ADMIN_ACTION', label: '管理員動作' }
+  ];
+
+  securityLevelOptions: SelectOption[] = [
+    { value: '', label: '全部安全等級' },
+    { value: 'LOW', label: '低' },
+    { value: 'NORMAL', label: '一般' },
+    { value: 'HIGH', label: '高' },
+    { value: 'CRITICAL', label: '緊急' }
+  ];
+
+  operationResultOptions: SelectOption[] = [
+    { value: '', label: '全部結果' },
+    { value: 'true', label: '成功' },
+    { value: 'false', label: '失敗' }
+  ];
+
+  // 快速時間選擇選項
+  quickTimeRanges = [
+    {
+      label: '今天',
+      getValue: () => {
+        const today = new Date();
+        const start = new Date(today.setHours(0, 0, 0, 0));
+        const end = new Date(today.setHours(23, 59, 59, 999));
+        return { start, end };
+      }
+    },
+    {
+      label: '最近7天',
+      getValue: () => {
+        const end = new Date();
+        const start = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        return { start, end };
+      }
+    },
+    {
+      label: '最近30天',
+      getValue: () => {
+        const end = new Date();
+        const start = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        return { start, end };
+      }
+    },
+    {
+      label: '最近90天',
+      getValue: () => {
+        const end = new Date();
+        const start = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+        return { start, end };
+      }
+    }
+  ];
+
+  selectedQuickRange = '';
 
   constructor(
     private auditLogService: AuditLogService,
@@ -915,11 +1006,79 @@ export class AuditLogViewerComponent implements OnInit, OnDestroy {
       searchText: formValue.searchText || undefined,
       onlySuspicious: formValue.onlySuspicious || undefined,
       page: 1, // 重設為第一頁
-      pageSize: 50,
+      pageSize: 20,
       sortField: this.currentFilter.sortField || 'occurredAt',
       sortDirection: this.currentFilter.sortDirection || 'DESC'
     };
 
     return filter;
+  }
+
+  // 快速時間選擇方法
+  selectQuickTimeRange(range: any): void {
+    const { start, end } = range.getValue();
+    this.filterForm.patchValue({
+      fromDate: this.formatDateTimeForInput(start),
+      toDate: this.formatDateTimeForInput(end)
+    });
+    this.selectedQuickRange = range.label;
+    this.applyFilter();
+  }
+
+  // 清除快速選擇
+  clearQuickSelection(): void {
+    this.selectedQuickRange = '';
+  }
+
+  // 日期時間格式化方法
+  private formatDateTimeForInput(date: Date): string {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  // 檢查是否有已套用的篩選條件
+  get hasActiveFilters(): boolean {
+    const formValue = this.filterForm.value;
+    return !!(
+      formValue.fromDate ||
+      formValue.toDate ||
+      formValue.userId ||
+      formValue.userName ||
+      formValue.eventTypes?.length ||
+      formValue.resourceType ||
+      formValue.securityLevels?.length ||
+      formValue.success !== '' ||
+      formValue.searchText ||
+      formValue.onlySuspicious
+    );
+  }
+
+  // 取得已套用篩選條件數量
+  get activeFilterCount(): number {
+    const formValue = this.filterForm.value;
+    let count = 0;
+    if (formValue.fromDate) count++;
+    if (formValue.toDate) count++;
+    if (formValue.userId) count++;
+    if (formValue.userName) count++;
+    if (formValue.eventTypes?.length) count++;
+    if (formValue.resourceType) count++;
+    if (formValue.securityLevels?.length) count++;
+    if (formValue.success !== '') count++;
+    if (formValue.searchText) count++;
+    if (formValue.onlySuspicious) count++;
+    return count;
+  }
+
+  // 清除所有篩選條件
+  clearAllFilters(): void {
+    this.filterForm.reset();
+    this.selectedQuickRange = '';
+    this.applyFilter();
   }
 }

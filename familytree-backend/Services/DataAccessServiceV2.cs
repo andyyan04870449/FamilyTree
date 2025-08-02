@@ -852,6 +852,428 @@ namespace familytree_backend.Services
 
         #endregion
 
+        #region 專案管理操作
+
+        /// <summary>
+        /// 獲取使用者的專案列表
+        /// </summary>
+        public async Task<IEnumerable<ProjectModel>> GetProjectListAsync(string userId, string userRole)
+        {
+            try
+            {
+                _logger.LogInformation("獲取專案列表：使用者 {UserId}，角色 {UserRole}", userId, userRole);
+
+                var sql = userRole == "admin"
+                    ? @"SELECT * FROM projects ORDER BY created_at DESC"
+                    : @"SELECT * FROM projects WHERE user_id = @userId ORDER BY created_at DESC";
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var projects = await connection.QueryAsync<ProjectModel>(sql, new { userId });
+
+                _logger.LogInformation("獲取專案列表完成：{Count} 個專案", projects.Count());
+                return projects;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "獲取專案列表失敗：使用者 {UserId}", userId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 根據ID獲取專案（包含權限檢查）
+        /// </summary>
+        public async Task<ProjectModel?> GetProjectByIdAsync(string projectId, string userId, string userRole)
+        {
+            try
+            {
+                _logger.LogInformation("獲取專案：{ProjectId}，使用者 {UserId}", projectId, userId);
+
+                var sql = userRole == "admin"
+                    ? @"SELECT * FROM projects WHERE id = @projectId"
+                    : @"SELECT * FROM projects WHERE id = @projectId AND user_id = @userId";
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var project = await connection.QueryFirstOrDefaultAsync<ProjectModel>(sql, new { projectId, userId });
+
+                if (project != null)
+                {
+                    _logger.LogInformation("專案獲取成功：{ProjectName}", project.ProjectName);
+                }
+                else
+                {
+                    _logger.LogWarning("找不到專案或無權限：{ProjectId}", projectId);
+                }
+
+                return project;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "獲取專案失敗：{ProjectId}", projectId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 建立專案
+        /// </summary>
+        public async Task<string?> CreateProjectAsync(CreateProjectRequest request, string userId)
+        {
+            try
+            {
+                _logger.LogInformation("建立專案：{ProjectName}，使用者 {UserId}", request.ProjectName, userId);
+
+                var projectId = Guid.NewGuid().ToString();
+                var sql = @"
+                    INSERT INTO projects (id, name, description, user_id, created_at, updated_at)
+                    VALUES (@id, @name, @description, @userId, @createdAt, @updatedAt)";
+
+                var parameters = new
+                {
+                    id = projectId,
+                    name = request.ProjectName,
+                    description = request.ProjectDescription,
+                    userId = userId,
+                    createdAt = DateTime.UtcNow,
+                    updatedAt = DateTime.UtcNow
+                };
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var rowsAffected = await connection.ExecuteAsync(sql, parameters);
+
+                if (rowsAffected > 0)
+                {
+                    _logger.LogInformation("專案建立成功：{ProjectId}", projectId);
+                    return projectId;
+                }
+                else
+                {
+                    _logger.LogWarning("專案建立失敗：沒有插入任何記錄");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "建立專案失敗：{ProjectName}", request.ProjectName);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 更新專案
+        /// </summary>
+        public async Task<bool> UpdateProjectAsync(string projectId, UpdateProjectRequest request, string userId, string userRole)
+        {
+            try
+            {
+                _logger.LogInformation("更新專案：{ProjectId}，使用者 {UserId}", projectId, userId);
+
+                var sql = userRole == "admin"
+                    ? @"UPDATE projects SET name = @name, description = @description, updated_at = @updatedAt WHERE id = @projectId"
+                    : @"UPDATE projects SET name = @name, description = @description, updated_at = @updatedAt WHERE id = @projectId AND user_id = @userId";
+
+                var parameters = new
+                {
+                    projectId = projectId,
+                    name = request.ProjectName,
+                    description = request.ProjectDescription,
+                    updatedAt = DateTime.UtcNow,
+                    userId = userId
+                };
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var rowsAffected = await connection.ExecuteAsync(sql, parameters);
+
+                var success = rowsAffected > 0;
+                if (success)
+                {
+                    _logger.LogInformation("專案更新成功：{ProjectId}", projectId);
+                }
+                else
+                {
+                    _logger.LogWarning("專案更新失敗：找不到專案或無權限：{ProjectId}", projectId);
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新專案失敗：{ProjectId}", projectId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 刪除專案
+        /// </summary>
+        public async Task<bool> DeleteProjectAsync(string projectId, string userId, string userRole)
+        {
+            try
+            {
+                _logger.LogInformation("刪除專案：{ProjectId}，使用者 {UserId}", projectId, userId);
+
+                var sql = userRole == "admin"
+                    ? @"DELETE FROM projects WHERE id = @projectId"
+                    : @"DELETE FROM projects WHERE id = @projectId AND user_id = @userId";
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var rowsAffected = await connection.ExecuteAsync(sql, new { projectId, userId });
+
+                var success = rowsAffected > 0;
+                if (success)
+                {
+                    _logger.LogInformation("專案刪除成功：{ProjectId}", projectId);
+                }
+                else
+                {
+                    _logger.LogWarning("專案刪除失敗：找不到專案或無權限：{ProjectId}", projectId);
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "刪除專案失敗：{ProjectId}", projectId);
+                throw;
+            }
+        }
+
+        #endregion
+
+        #region 搜尋操作
+
+        /// <summary>
+        /// 搜尋人員資料（基於用戶權限）
+        /// </summary>
+        public async Task<(IEnumerable<PersonSearchResult> Data, int TotalCount)> SearchPersonDataAsync(string userId, string userRole, SearchRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("搜尋人員資料：使用者 {UserId}，關鍵字 '{Keyword}'", userId, request.Keyword);
+
+                var whereConditions = new List<string>();
+                var parameters = new DynamicParameters();
+
+                // 權限過濾
+                if (userRole != "admin")
+                {
+                    whereConditions.Add("user_id = @userId");
+                    parameters.Add("userId", userId);
+                }
+
+                // 關鍵字搜尋
+                if (!string.IsNullOrEmpty(request.Keyword))
+                {
+                    whereConditions.Add("(name ILIKE @keyword OR alternate_names ILIKE @keyword)");
+                    parameters.Add("keyword", $"%{request.Keyword}%");
+                }
+
+                var whereClause = whereConditions.Any() ? $"WHERE {string.Join(" AND ", whereConditions)}" : "";
+
+                // 計算總數
+                var countSql = $"SELECT COUNT(*) FROM person_profile {whereClause}";
+                var totalCount = 0;
+
+                // 查詢資料
+                var dataSql = $@"
+                    SELECT id, name, birth_date, death_date, gender, 
+                           alternate_names, note, user_id, created_at, updated_at
+                    FROM person_profile 
+                    {whereClause}
+                    ORDER BY name
+                    LIMIT @pageSize OFFSET @offset";
+
+                parameters.Add("pageSize", request.PageSize);
+                parameters.Add("offset", (request.Page - 1) * request.PageSize);
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                totalCount = await connection.ExecuteScalarAsync<int>(countSql, parameters);
+                var data = await connection.QueryAsync<PersonSearchResult>(dataSql, parameters);
+
+                _logger.LogInformation("搜尋人員資料完成：找到 {TotalCount} 筆", totalCount);
+
+                return (data, totalCount);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "搜尋人員資料失敗：使用者 {UserId}", userId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 記錄搜尋關鍵字
+        /// </summary>
+        public async Task RecordSearchKeywordAsync(string keyword, string searchType, string userId)
+        {
+            try
+            {
+                var sql = @"
+                    INSERT INTO search_history (keyword, search_type, user_id, created_at)
+                    VALUES (@keyword, @searchType, @userId, @createdAt)";
+
+                var parameters = new
+                {
+                    keyword = keyword,
+                    searchType = searchType,
+                    userId = userId,
+                    createdAt = DateTime.UtcNow
+                };
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                await connection.ExecuteAsync(sql, parameters);
+
+                _logger.LogInformation("搜尋關鍵字記錄成功：{Keyword}", keyword);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "記錄搜尋關鍵字失敗：{Keyword}", keyword);
+                // 不重新拋出異常，因為這不是關鍵功能
+            }
+        }
+
+        /// <summary>
+        /// 獲取搜尋歷史
+        /// </summary>
+        public async Task<List<string>> GetSearchHistoryAsync(string userId, int limit = 20)
+        {
+            try
+            {
+                var sql = @"
+                    SELECT DISTINCT keyword 
+                    FROM search_history 
+                    WHERE user_id = @userId 
+                    ORDER BY MAX(created_at) DESC 
+                    LIMIT @limit";
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var history = await connection.QueryAsync<string>(sql, new { userId, limit });
+
+                return history.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "獲取搜尋歷史失敗：使用者 {UserId}", userId);
+                return new List<string>();
+            }
+        }
+
+        /// <summary>
+        /// 獲取人員關係（基於用戶權限）
+        /// </summary>
+        public async Task<IEnumerable<RelationshipData>> GetPersonRelationshipsAsync(int personId, string userId, string userRole)
+        {
+            try
+            {
+                _logger.LogInformation("獲取人員關係：人員 {PersonId}，使用者 {UserId}", personId, userId);
+
+                var sql = userRole == "admin"
+                    ? @"SELECT * FROM relationships WHERE source_person_id = @personId OR target_person_id = @personId"
+                    : @"SELECT r.* FROM relationships r 
+                        INNER JOIN person_profile p1 ON r.source_person_id = p1.id 
+                        INNER JOIN person_profile p2 ON r.target_person_id = p2.id 
+                        WHERE (r.source_person_id = @personId OR r.target_person_id = @personId)
+                        AND p1.user_id = @userId AND p2.user_id = @userId";
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                
+                var relationships = await connection.QueryAsync<RelationshipData>(sql, new { personId, userId });
+
+                _logger.LogInformation("獲取人員關係完成：{Count} 筆關係", relationships.Count());
+                return relationships;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "獲取人員關係失敗：人員 {PersonId}", personId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 建立關係
+        /// </summary>
+        public async Task<bool> CreateRelationshipAsync(RelationshipData relationship, string userId)
+        {
+            try
+            {
+                _logger.LogInformation("建立關係：{SourcePersonId} -> {TargetPersonId}", 
+                    relationship.SourcePersonId, relationship.TargetPersonId);
+
+                // 檢查權限：確保兩個人員都屬於該使用者
+                var permissionSql = @"
+                    SELECT COUNT(*) FROM person_profile 
+                    WHERE id IN (@sourcePersonId, @targetPersonId) AND user_id = @userId";
+
+                var sql = @"
+                    INSERT INTO relationships (source_person_id, target_person_id, relation_type, 
+                                              relationship_type, source_field, project_id, created_at)
+                    VALUES (@sourcePersonId, @targetPersonId, @relationType, 
+                            @relationshipType, @sourceField, @projectId, @createdAt)";
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                // 檢查權限
+                var permissionCount = await connection.ExecuteScalarAsync<int>(permissionSql, new 
+                { 
+                    sourcePersonId = relationship.SourcePersonId,
+                    targetPersonId = relationship.TargetPersonId,
+                    userId = userId
+                });
+
+                if (permissionCount != 2)
+                {
+                    _logger.LogWarning("建立關係失敗：無權限存取相關人員");
+                    return false;
+                }
+
+                var parameters = new
+                {
+                    sourcePersonId = relationship.SourcePersonId,
+                    targetPersonId = relationship.TargetPersonId,
+                    relationType = relationship.RelationType,
+                    relationshipType = relationship.RelationshipType,
+                    sourceField = relationship.SourceField,
+                    projectId = relationship.ProjectId,
+                    createdAt = DateTime.UtcNow
+                };
+
+                var rowsAffected = await connection.ExecuteAsync(sql, parameters);
+
+                var success = rowsAffected > 0;
+                if (success)
+                {
+                    _logger.LogInformation("關係建立成功");
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "建立關係失敗");
+                throw;
+            }
+        }
+
+        #endregion
+
         #region 通用查詢
 
         /// <summary>
@@ -910,6 +1332,24 @@ namespace familytree_backend.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "執行標量查詢失敗：{Sql}", sql);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 執行非查詢命令（會自動加入 user_id 過濾）
+        /// </summary>
+        public async Task<int> ExecuteAsync(string sql, object? parameters = null, string? userId = null, string? userRole = null)
+        {
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+                return await connection.ExecuteAsync(sql, parameters);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "執行非查詢命令失敗：{Sql}", sql);
                 throw;
             }
         }

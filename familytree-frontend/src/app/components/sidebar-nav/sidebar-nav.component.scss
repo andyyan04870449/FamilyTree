@@ -89,26 +89,6 @@
     padding: 16px 12px;
     position: relative;
 
-    .collapse-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 56px;
-      height: 56px;
-      background: transparent;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-
-      .collapse-icon {
-        width: 24px;
-        height: 24px;
-      }
-
-      &:hover {
-        background: var(--warning);
-      }
-    }
 
     .close-btn {
       display: none;

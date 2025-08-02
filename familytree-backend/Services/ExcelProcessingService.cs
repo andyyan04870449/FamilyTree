@@ -24,18 +24,26 @@ namespace familytree_backend.Services
 
         public async Task<ExcelProcessingResult> ProcessExcelFileAsync(string filePath, string fileMd5, string? projectId = null)
         {
+            var excelId = Guid.NewGuid().ToString("N")[..8]; // 生成8位Excel處理追蹤ID
+            _logger.LogInformation("📊 [Excel分析-{ExcelId}] 開始處理Excel檔案 - 檔案: {FilePath}, MD5: {FileMd5}, 專案: {ProjectId}", 
+                excelId, filePath, fileMd5, projectId ?? "無");
+                
             try
             {
-                _logger.LogInformation("開始處理Excel檔案: {FilePath}", filePath);
-
                 // 讀取欄位對應
+                _logger.LogInformation("🗺️ [Excel分析-{ExcelId}] 讀取欄位對應設定", excelId);
                 var fieldMappings = await GetFieldMappingsAsync(projectId);
+                _logger.LogInformation("📋 [Excel分析-{ExcelId}] 載入了 {MappingCount} 個欄位對應", excelId, fieldMappings.Count);
                 
                 // 讀取Excel檔案
+                _logger.LogInformation("📖 [Excel分析-{ExcelId}] 開始讀取Excel檔案內容", excelId);
                 var excelData = await ReadExcelFileAsync(filePath);
+                _logger.LogInformation("📊 [Excel分析-{ExcelId}] Excel讀取完成 - 總列數: {RowCount}, 總欄數: {ColumnCount}", 
+                    excelId, excelData.Rows.Count, excelData.Columns.Count);
                 
                 if (excelData.Rows.Count == 0)
                 {
+                    _logger.LogWarning("⚠️ [Excel分析-{ExcelId}] Excel檔案中沒有資料列", excelId);
                     return new ExcelProcessingResult
                     {
                         Success = false,
@@ -45,19 +53,24 @@ namespace familytree_backend.Services
                 }
 
                 // 處理每一行資料
+                _logger.LogInformation("🔄 [Excel分析-{ExcelId}] 開始處理Excel資料，準備轉換為人員記錄", excelId);
                 var result = await ProcessExcelData(excelData, fieldMappings, fileMd5, projectId);
+                _logger.LogInformation("📋 [Excel分析-{ExcelId}] Excel資料處理完成 - 成功: {SuccessRows} 行, 失敗: {FailureRows} 行", 
+                    excelId, result.SuccessRows, result.FailureCount);
                 
                 // 更新檔案狀態
+                _logger.LogInformation("📝 [Excel分析-{ExcelId}] 更新檔案合併狀態", excelId);
                 await UpdateFileStatusAsync(fileMd5, "merged");
                 
-                _logger.LogInformation("Excel檔案處理完成: {FilePath}, 成功處理 {SuccessRows} 行", 
-                    filePath, result.SuccessRows);
+                _logger.LogInformation("🎉 [Excel分析-{ExcelId}] Excel檔案處理完全成功 - 檔案: {FilePath}, 成功處理: {SuccessRows} 行", 
+                    excelId, filePath, result.SuccessRows);
 
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "處理Excel檔案失敗: {FilePath}", filePath);
+                _logger.LogError(ex, "💥 [Excel分析-{ExcelId}] 處理Excel檔案過程發生異常 - 檔案: {FilePath}, 錯誤: {ErrorMessage}", 
+                    excelId, filePath, ex.Message);
                 return new ExcelProcessingResult
                 {
                     Success = false,
@@ -459,23 +472,25 @@ namespace familytree_backend.Services
 
         private async Task SavePersonDataAsync(NpgsqlConnection connection, PersonDataModel personData, string? projectId = null)
         {
-            _logger.LogInformation("開始保存人員資料: Name='{Name}', FileMd5='{FileMd5}'", personData.Name, personData.FileMd5);
+            var saveId = Guid.NewGuid().ToString("N")[..6]; // 生成6位保存追蹤ID
+            _logger.LogInformation("💾 [人員保存-{SaveId}] 開始保存人員資料 - 姓名: '{Name}', FileMd5: '{FileMd5}', 專案: '{ProjectId}'", 
+                saveId, personData.Name, personData.FileMd5, projectId ?? "無");
 
             var sql = @"
                 INSERT INTO person_profile (
-                    file_md5, photo_index, name, discovery_process, gender, birthday, birthplace,
+                    file_md5, photo_index, name, discovery_source, discovery_process, gender, birthday, birthplace,
                     nationality, ethnicity, ancestral_origin, political_party, id_number, passport_number,
                     phone, mobile, email, current_employer, address, mailing_address,
                     family_relationships, experience, education, online_accounts, publications,
-                    activities, important_friends, frequent_locations, travel_history, remarks,
-                    project_id, created_at, updated_at
+                    activities, friends, important_friends, frequent_locations, travel_history, remarks,
+                    project_id, user_id, created_at, updated_at
                 ) VALUES (
-                    @FileMd5, @Photo, @Name, @DiscoveryProcess, @Gender, @Birthday, @Birthplace,
+                    @FileMd5, @Photo, @Name, @DiscoverySource, @DiscoveryProcess, @Gender, @Birthday, @Birthplace,
                     @Nationality, @Ethnicity, @AncestralHome, @PoliticalParty, @IdNumber, @PassportNumber,
                     @Phone, @Mobile, @Email, @CurrentWorkplace, @CurrentAddress, @MailingAddress,
                     @FamilyRelationships, @Experience, @Education, @OnlineAccounts, @Publications,
-                    @Activities, @ImportantFriends, @FrequentPlaces, @TravelRecords, @Notes,
-                    @ProjectId, @CreatedAt, @UpdatedAt
+                    @Activities, @Friends, @ImportantFriends, @FrequentPlaces, @TravelRecords, @Notes,
+                    @ProjectId, @UserId, @CreatedAt, @UpdatedAt
                 )";
 
             try
@@ -485,6 +500,7 @@ namespace familytree_backend.Services
                     personData.FileMd5,
                     personData.Photo,
                     personData.Name,
+                    DiscoverySource = personData.DiscoveryProcess,  // 使用 discovery_source 欄位
                     personData.DiscoveryProcess,
                     personData.Gender,
                     personData.Birthday,
@@ -507,27 +523,31 @@ namespace familytree_backend.Services
                     personData.OnlineAccounts,
                     personData.Publications,
                     personData.Activities,
+                    Friends = personData.ImportantFriends,  // 使用 friends 欄位
                     personData.ImportantFriends,
                     personData.FrequentPlaces,
                     personData.TravelRecords,
                     personData.Notes,
                     ProjectId = projectId,
+                    UserId = "admin_default",  // 添加必填的 user_id
                     personData.CreatedAt,
                     personData.UpdatedAt
                 };
 
+                _logger.LogInformation("🗄️ [人員保存-{SaveId}] 執行SQL插入指令", saveId);
                 await connection.ExecuteAsync(sql, parameters);
-                _logger.LogInformation("人員資料保存成功: Name='{Name}'", personData.Name);
+                _logger.LogInformation("✅ [人員保存-{SaveId}] 人員資料保存成功 - 姓名: '{Name}'", saveId, personData.Name);
             }
             catch (PostgresException pgEx)
             {
-                _logger.LogError(pgEx, "保存人員資料時發生PostgreSQL錯誤: Code={ErrorCode}, Message={Message}", 
-                    pgEx.SqlState, pgEx.MessageText);
+                _logger.LogError(pgEx, "💥 [人員保存-{SaveId}] 保存人員資料時發生PostgreSQL錯誤 - 姓名: '{Name}', 錯誤代碼: {ErrorCode}, 錯誤訊息: {Message}", 
+                    saveId, personData.Name, pgEx.SqlState, pgEx.MessageText);
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "保存人員資料時發生未知錯誤");
+                _logger.LogError(ex, "💥 [人員保存-{SaveId}] 保存人員資料時發生未知錯誤 - 姓名: '{Name}', 錯誤: {ErrorMessage}", 
+                    saveId, personData.Name, ex.Message);
                 throw;
             }
         }
@@ -537,11 +557,11 @@ namespace familytree_backend.Services
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var sql = @"UPDATE user_update_file 
-                       SET status = @status, is_merged = true, merge_time = @mergeTime 
+            var sql = @"UPDATE file_uploads 
+                       SET upload_status = @status 
                        WHERE md5_hash = @fileMd5";
 
-            await connection.ExecuteAsync(sql, new { status, mergeTime = DateTime.UtcNow, fileMd5 });
+            await connection.ExecuteAsync(sql, new { status, fileMd5 });
         }
 
         // 輔助方法：根據Excel欄位名稱建議資料庫欄位名稱

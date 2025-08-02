@@ -1,0 +1,85 @@
+<div 
+  class="custom-select"
+  [class.custom-select--disabled]="disabled"
+  [class.custom-select--open]="isOpen"
+  #dropdownContainer
+>
+  <!-- Select Trigger -->
+  <div 
+    class="custom-select__trigger"
+    [attr.tabindex]="disabled ? -1 : 0"
+    [attr.aria-haspopup]="true"
+    [attr.aria-expanded]="isOpen"
+    [attr.aria-disabled]="disabled"
+    [attr.role]="'combobox'"
+    (click)="toggleDropdown()"
+    (keydown)="onKeyDown($event)"
+  >
+    <span 
+      class="custom-select__value"
+      [class.custom-select__value--placeholder]="!isOptionSelected"
+    >
+      {{ displayValue }}
+    </span>
+    
+    <i 
+      class="fas fa-chevron-down custom-select__arrow"
+      [class.custom-select__arrow--up]="isOpen"
+      aria-hidden="true"
+    ></i>
+  </div>
+
+  <!-- Dropdown -->
+  <div 
+    class="custom-select__dropdown"
+    [class.custom-select__dropdown--open]="isOpen"
+    [attr.role]="'listbox'"
+    [attr.aria-label]="placeholder"
+    *ngIf="isOpen"
+  >
+    <!-- Search Input -->
+    <div 
+      class="custom-select__search"
+      *ngIf="searchable"
+    >
+      <input
+        #searchInput
+        type="text"
+        class="custom-select__search-input"
+        placeholder="搜尋選項..."
+        [value]="searchTerm"
+        (input)="onSearchInput($event)"
+        (keydown)="onKeyDown($event)"
+        aria-label="搜尋選項"
+      >
+    </div>
+
+    <!-- Options List -->
+    <ul class="custom-select__options" role="listbox">
+      <li
+        *ngFor="let option of filteredOptions; let i = index; trackBy: trackByValue"
+        class="custom-select__option"
+        [class.custom-select__option--selected]="option.value === value"
+        [class.custom-select__option--highlighted]="i === highlightedIndex"
+        [class.custom-select__option--disabled]="option.disabled"
+        [attr.role]="'option'"
+        [attr.aria-selected]="option.value === value"
+        [attr.aria-disabled]="option.disabled"
+        (click)="selectOption(option)"
+        (mouseenter)="highlightedIndex = i"
+      >
+        {{ option.label }}
+      </li>
+      
+      <!-- No Options Message -->
+      <li 
+        class="custom-select__no-options"
+        *ngIf="filteredOptions.length === 0"
+        role="option"
+        aria-disabled="true"
+      >
+        沒有找到符合的選項
+      </li>
+    </ul>
+  </div>
+</div>

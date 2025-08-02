@@ -325,7 +325,7 @@ export class AuditLogService {
       fromDate: this.formatDate(thirtyDaysAgo),
       toDate: this.formatDate(now),
       page: 1,
-      pageSize: 50,
+      pageSize: 20,
       sortField: 'occurredAt',
       sortDirection: 'DESC',
       maskSensitiveData: true

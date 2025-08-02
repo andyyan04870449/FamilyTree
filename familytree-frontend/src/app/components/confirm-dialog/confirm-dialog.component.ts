@@ -1,43 +1,14 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="dialog-overlay" *ngIf="isOpen" (click)="onCancel()">
-      <div class="dialog" (click)="$event.stopPropagation()">
-        <div class="dialog-header">
-          <h3>{{ title }}</h3>
-          <button class="close-btn" (click)="onCancel()">×</button>
-        </div>
-        
-        <div class="dialog-content">
-          <p>{{ message }}</p>
-        </div>
-        
-        <div class="dialog-actions">
-          <button class="btn-cancel" (click)="onCancel()">{{ cancelText }}</button>
-          <button 
-            class="btn-confirm" 
-            [class.btn-danger]="isDanger"
-            (click)="onConfirm()"
-          >
-            {{ confirmText }}
-          </button>
-        </div>
-      </div>
-    </div>
-  `,
-  styles: [`
-    :host {
-      position: relative;
-      z-index: 1000;
-    }
-  `]
+  templateUrl: './confirm-dialog.component.html',
+  styleUrls: ['./confirm-dialog.component.scss']
 })
-export class ConfirmDialogComponent {
+export class ConfirmDialogComponent implements OnChanges, OnDestroy {
   @Input() isOpen = false;
   @Input() title = '確認';
   @Input() message = '確定要執行此操作嗎？';
@@ -47,6 +18,23 @@ export class ConfirmDialogComponent {
   
   @Output() confirm = new EventEmitter<void>();
   @Output() cancel = new EventEmitter<void>();
+  
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isOpen']) {
+      if (this.isOpen) {
+        // 防止背景滾動
+        document.body.style.overflow = 'hidden';
+      } else {
+        // 恢復背景滾動
+        document.body.style.overflow = '';
+      }
+    }
+  }
+  
+  ngOnDestroy(): void {
+    // 確保在組件銷毀時恢復背景滾動
+    document.body.style.overflow = '';
+  }
   
   onConfirm(): void {
     this.confirm.emit();

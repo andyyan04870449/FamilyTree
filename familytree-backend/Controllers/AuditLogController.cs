@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using familytree_backend.Models;
 using familytree_backend.Services;
+using familytree_backend.Extensions;
 
 namespace familytree_backend.Controllers
 {
@@ -54,7 +55,7 @@ namespace familytree_backend.Controllers
                 SetAuditServiceContext();
                 
                 // 非管理員只能查看自己相關的日誌
-                if (currentUserRole != "Admin")
+                if (!string.Equals(currentUserRole, "admin", StringComparison.OrdinalIgnoreCase))
                 {
                     filter.UserId = currentUserId;
                 }
@@ -111,7 +112,7 @@ namespace familytree_backend.Controllers
         /// <param name="toDate">結束日期</param>
         /// <returns>稽核日誌摘要統計</returns>
         [HttpGet("summary")]
-        [Authorize(Roles = "Admin,AuditReader")]
+        [Authorize(Roles = "admin,AuditReader")]
         public async Task<IActionResult> GetSummary(
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null)
@@ -201,7 +202,7 @@ namespace familytree_backend.Controllers
         /// <param name="format">匯出格式 (CSV/JSON)</param>
         /// <returns>匯出檔案</returns>
         [HttpPost("export")]
-        [Authorize(Roles = "Admin,AuditReader")]
+        [Authorize(Roles = "admin,AuditReader")]
         public async Task<IActionResult> ExportLogs(
             [FromBody] AuditLogFilterModel filter,
             [FromQuery] string format = "CSV")
@@ -222,7 +223,7 @@ namespace familytree_backend.Controllers
                 });
                 
                 // 非管理員只能匯出自己相關的日誌
-                if (currentUserRole != "Admin")
+                if (!string.Equals(currentUserRole, "admin", StringComparison.OrdinalIgnoreCase))
                 {
                     filter.UserId = currentUserId;
                 }
@@ -321,7 +322,7 @@ namespace familytree_backend.Controllers
         /// <param name="auditLog">稽核日誌資料</param>
         /// <returns>建立的稽核日誌ID</returns>
         [HttpPost("create")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> CreateAuditLog([FromBody] CreateAuditLogDto auditLog)
         {
             try
@@ -367,7 +368,7 @@ namespace familytree_backend.Controllers
         /// <param name="toDate">結束日期</param>
         /// <returns>報告生成任務ID</returns>
         [HttpPost("compliance-report")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> GenerateComplianceReport(
             [FromQuery, Required] string reportType,
             [FromQuery, Required] DateTime fromDate,
@@ -415,7 +416,7 @@ namespace familytree_backend.Controllers
         /// </summary>
         /// <returns>清理的記錄數量</returns>
         [HttpPost("cleanup")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> CleanupExpiredLogs()
         {
             try
@@ -454,7 +455,7 @@ namespace familytree_backend.Controllers
         /// </summary>
         /// <returns>系統狀態資訊</returns>
         [HttpGet("system-status")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> GetSystemStatus()
         {
             try
@@ -521,21 +522,43 @@ namespace familytree_backend.Controllers
 
         /// <summary>
         /// 設定稽核服務上下文
+        /// 使用強化的IP位址提取邏輯，支援代理伺服器環境
         /// </summary>
         private void SetAuditServiceContext()
         {
-            var userId = GetCurrentUserId();
-            var userName = GetCurrentUserName();
-            var userRole = GetCurrentUserRole();
-            var sessionId = HttpContext.TraceIdentifier; // 使用 TraceIdentifier 代替 Session
-            var ipAddress = HttpContext.Connection?.RemoteIpAddress?.ToString();
-            var userAgent = HttpContext.Request.Headers["User-Agent"].FirstOrDefault();
-            var requestId = HttpContext.TraceIdentifier;
-
-            if (_auditLogService is AuditLogService auditService)
+            try
             {
-                auditService.SetRequestContext(userId, userName, userRole, 
-                    sessionId, ipAddress, userAgent, requestId);
+                var userId = GetCurrentUserId();
+                var userName = GetCurrentUserName();
+                var userRole = GetCurrentUserRole();
+                var sessionId = HttpContext.TraceIdentifier; // 使用 TraceIdentifier 代替 Session
+                var ipAddress = HttpContext.GetClientIpAddress(); // 使用強化的IP提取邏輯
+                var userAgent = HttpContext.GetUserAgent();
+                var requestId = HttpContext.TraceIdentifier;
+
+                if (_auditLogService is AuditLogService auditService)
+                {
+                    auditService.SetRequestContext(userId, userName, userRole, 
+                        sessionId, ipAddress, userAgent, requestId);
+                }
+            }
+            catch (Exception ex)
+            {
+                // 即使上下文設定失敗，也不應該影響主要功能
+                _logger.LogWarning(ex, "設定稽核服務上下文時發生錯誤，將使用預設值");
+                
+                // 使用最小的預設值確保服務可以繼續運行
+                if (_auditLogService is AuditLogService auditService)
+                {
+                    auditService.SetRequestContext(
+                        GetCurrentUserId(), 
+                        GetCurrentUserName(), 
+                        GetCurrentUserRole(), 
+                        HttpContext.TraceIdentifier, 
+                        "127.0.0.1", 
+                        "Unknown", 
+                        HttpContext.TraceIdentifier);
+                }
             }
         }
 
@@ -564,19 +587,35 @@ namespace familytree_backend.Controllers
 
             try
             {
-                // 設定稽核服務上下文
+                // 設定稽核服務上下文，使用強化的IP位址提取邏輯
                 if (auditLogService is AuditLogService auditService)
                 {
-                    var userId = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                    var userName = context.User?.FindFirst(ClaimTypes.Name)?.Value;
-                    var userRole = context.User?.FindFirst(ClaimTypes.Role)?.Value;
-                    var sessionId = context.TraceIdentifier; // 使用 TraceIdentifier 代替 Session
-                    var ipAddress = context.Connection?.RemoteIpAddress?.ToString();
-                    var userAgent = context.Request.Headers["User-Agent"].FirstOrDefault();
-                    var requestId = context.TraceIdentifier;
+                    try
+                    {
+                        var userId = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                        var userName = context.User?.FindFirst(ClaimTypes.Name)?.Value;
+                        var userRole = context.User?.FindFirst(ClaimTypes.Role)?.Value;
+                        var sessionId = context.TraceIdentifier; // 使用 TraceIdentifier 代替 Session
+                        var ipAddress = context.GetClientIpAddress(); // 使用強化的IP提取邏輯
+                        var userAgent = context.GetUserAgent();
+                        var requestId = context.TraceIdentifier;
 
-                    auditService.SetRequestContext(userId, userName, userRole, 
-                        sessionId, ipAddress, userAgent, requestId);
+                        auditService.SetRequestContext(userId, userName, userRole, 
+                            sessionId, ipAddress, userAgent, requestId);
+                    }
+                    catch (Exception)
+                    {
+                        // 即使上下文設定失敗，也不應該影響請求處理
+                        // 使用預設值確保審計服務可以繼續運行
+                        auditService.SetRequestContext(
+                            context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value,
+                            context.User?.FindFirst(ClaimTypes.Name)?.Value,
+                            context.User?.FindFirst(ClaimTypes.Role)?.Value,
+                            context.TraceIdentifier,
+                            "127.0.0.1",
+                            "Unknown",
+                            context.TraceIdentifier);
+                    }
                 }
 
                 await _next(context);

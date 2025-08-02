@@ -1,0 +1,243 @@
+// ================================
+// 自定義選擇器組件
+// ================================
+.custom-select {
+  position: relative;
+  width: 100%;
+  
+  &--disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--input-padding-y, 8px) var(--input-padding-x, 12px);
+    background: var(--bg-surface, white);
+    border: 1px solid var(--input-border-color, #d1d5db);
+    border-radius: var(--input-border-radius, 6px);
+    cursor: pointer;
+    transition: all var(--duration-normal, 0.2s) var(--easing-ease-in-out, ease);
+    min-height: 44px;
+    font-size: var(--font-size-base, 14px);
+    color: var(--text-primary, #111827);
+    
+    &:hover:not([aria-disabled="true"]) {
+      border-color: var(--border-secondary, #9ca3af);
+    }
+    
+    &:focus {
+      outline: none;
+      border-color: var(--input-focus-border-color, #3b82f6);
+      box-shadow: var(--shadow-focus, 0 0 0 3px rgba(59, 130, 246, 0.1));
+    }
+    
+    .custom-select--disabled & {
+      cursor: not-allowed;
+      background-color: var(--bg-disabled, #f9fafb);
+      color: var(--text-disabled, #9ca3af);
+    }
+    
+    .custom-select--open & {
+      border-color: var(--input-focus-border-color, #3b82f6);
+      box-shadow: var(--shadow-focus, 0 0 0 3px rgba(59, 130, 246, 0.1));
+    }
+  }
+
+  &__value {
+    flex: 1;
+    text-align: left;
+    color: var(--text-primary, #111827);
+    
+    &--placeholder {
+      color: var(--text-tertiary, #9ca3af);
+    }
+  }
+
+  &__arrow {
+    margin-left: var(--spacing-sm, 8px);
+    transition: transform var(--duration-normal, 0.2s) var(--easing-ease-in-out, ease);
+    color: var(--text-secondary, #6b7280);
+    font-size: var(--font-size-sm, 12px);
+    
+    &--up {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-surface, white);
+    border: 1px solid var(--border-primary, #d1d5db);
+    border-top: none;
+    border-radius: 0 0 var(--input-border-radius, 6px) var(--input-border-radius, 6px);
+    box-shadow: var(--shadow-lg, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    z-index: var(--z-dropdown, 1000);
+    max-height: 200px;
+    overflow: hidden;
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: all var(--duration-normal, 0.2s) var(--easing-ease-in-out, ease);
+    
+    &:not(&--open) {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-4px);
+    }
+  }
+
+  &__search {
+    padding: var(--spacing-sm, 8px);
+    border-bottom: 1px solid var(--border-tertiary, #e5e7eb);
+  }
+
+  &__search-input {
+    width: 100%;
+    padding: var(--spacing-xs, 6px) var(--spacing-sm, 8px);
+    border: 1px solid var(--border-primary, #d1d5db);
+    border-radius: var(--radius-sm, 4px);
+    font-size: var(--font-size-sm, 14px);
+    background: var(--bg-surface, white);
+    color: var(--text-primary, #111827);
+    
+    &:focus {
+      outline: none;
+      border-color: var(--input-focus-border-color, #3b82f6);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+
+    &::placeholder {
+      color: var(--text-tertiary, #9ca3af);
+    }
+  }
+
+  &__options {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  &__option {
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+    cursor: pointer;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--text-primary, #111827);
+    transition: background-color var(--duration-fast, 0.1s) var(--easing-ease-in-out, ease);
+    
+    &:hover:not(&--disabled) {
+      background-color: var(--bg-hover, #f3f4f6);
+    }
+    
+    &--selected {
+      background-color: var(--bg-secondary, #eff6ff);
+      color: var(--primary, #1d4ed8);
+      font-weight: var(--font-weight-medium, 500);
+    }
+    
+    &--highlighted {
+      background-color: var(--bg-hover, #dbeafe);
+    }
+    
+    &--disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      color: var(--text-disabled, #9ca3af);
+    }
+  }
+
+  &__no-options {
+    padding: var(--spacing-md, 12px);
+    text-align: center;
+    color: var(--text-tertiary, #9ca3af);
+    font-size: var(--font-size-sm, 14px);
+    font-style: italic;
+  }
+}
+
+// ================================
+// 響應式設計
+// ================================
+@media (max-width: 768px) {
+  .custom-select {
+    &__dropdown {
+      max-height: 150px;
+    }
+    
+    &__option {
+      padding: var(--spacing-sm, 10px) var(--spacing-md, 12px);
+      font-size: 16px; // Prevent zoom on iOS
+    }
+
+    &__search-input {
+      font-size: 16px; // Prevent zoom on iOS
+    }
+  }
+}
+
+// ================================
+// 高對比度支援
+// ================================
+@media (prefers-contrast: high) {
+  .custom-select {
+    &__trigger {
+      border-width: 2px;
+    }
+    
+    &__option--selected {
+      outline: 2px solid currentColor;
+      outline-offset: -2px;
+    }
+  }
+}
+
+// ================================
+// 減少動畫支援
+// ================================
+@media (prefers-reduced-motion: reduce) {
+  .custom-select {
+    &__trigger,
+    &__arrow,
+    &__dropdown,
+    &__option {
+      transition: none;
+    }
+  }
+}
+
+// ================================
+// 可訪問性增強
+// ================================
+.custom-select__trigger:focus-visible {
+  outline: 2px solid var(--border-focus, #3b82f6);
+  outline-offset: 2px;
+}
+
+// ================================
+// 滾動條樣式
+// ================================
+.custom-select__options {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: var(--bg-tertiary, #f9fafb);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-secondary, #d1d5db);
+    border-radius: 3px;
+    
+    &:hover {
+      background: var(--border-primary, #9ca3af);
+    }
+  }
+}

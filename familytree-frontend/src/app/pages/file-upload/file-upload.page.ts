@@ -20,6 +20,7 @@ interface UnifiedFileRecord {
   md5Hash?: string;
   status?: string;
   isProcessed?: boolean;
+  relatedPersonsCount?: number;
 }
 
 @Component({
@@ -350,8 +351,14 @@ export class FileUploadComponent implements OnInit, OnDestroy {
    * 更新統一檔案列表
    */
   private updateUnifiedFileList(): void {
+    const currentProject = this.projectService.getCurrentProject();
+    console.log('🔄 [FileUpload] 更新檔案列表，當前專案:', currentProject?.projectName || '無');
+    
     const excelFiles = this.fileUploadService.getCurrentFiles();
     const photoFiles = this.photoUploadService.getCurrentPhotos();
+    
+    console.log('📊 [FileUpload] Excel檔案數量:', excelFiles.length);
+    console.log('📸 [FileUpload] 照片檔案數量:', photoFiles.length);
     
     // 轉換Excel檔案格式
     const excelRecords: UnifiedFileRecord[] = excelFiles.map(file => ({
@@ -364,7 +371,8 @@ export class FileUploadComponent implements OnInit, OnDestroy {
       filePath: file.filePath,
       md5Hash: file.md5Hash,
       status: file.uploadStatus,
-      isProcessed: file.isProcessed
+      isProcessed: file.isProcessed,
+      relatedPersonsCount: file.relatedPersonsCount || 0
     }));
     
     // 轉換照片檔案格式（適應PhotoFileInfo介面）
@@ -384,6 +392,7 @@ export class FileUploadComponent implements OnInit, OnDestroy {
       .sort((a, b) => new Date(b.uploadTime).getTime() - new Date(a.uploadTime).getTime());
     
     console.log('📋 [FileUpload] 統一檔案列表已更新:', this.allFileRecords.length, '個檔案');
+    console.log('📋 [FileUpload] 檔案詳情:', this.allFileRecords.map(f => ({ name: f.originalName, type: f.fileType })));
   }
 
   // 取得支援的檔案格式說明
@@ -490,6 +499,7 @@ export class FileUploadComponent implements OnInit, OnDestroy {
    * 刪除 Excel 檔案
    */
   private deleteExcelFile(fileId: string, fileName: string): void {
+    console.log(`🔍 [FileUpload] 準備刪除Excel檔案，fileId: ${fileId}, fileName: ${fileName}`);
     this.subscription.add(
       this.fileUploadService.deleteFile(fileId).subscribe({
         next: (response) => {

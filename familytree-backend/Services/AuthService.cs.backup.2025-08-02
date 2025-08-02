@@ -20,7 +20,6 @@ namespace familytree_backend.Services
         private readonly IUserService _userService;
         private readonly ITokenService _tokenService;
         private readonly ILoggingService _loggingService;
-        private readonly IAuditLogService _auditLogService;
         private readonly JwtSettings _jwtSettings;
         private readonly ILogger<AuthService> _logger;
 
@@ -28,14 +27,12 @@ namespace familytree_backend.Services
             IUserService userService,
             ITokenService tokenService,
             ILoggingService loggingService,
-            IAuditLogService auditLogService,
             IOptions<JwtSettings> jwtSettings,
             ILogger<AuthService> logger)
         {
             _userService = userService;
             _tokenService = tokenService;
             _loggingService = loggingService;
-            _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
             _jwtSettings = jwtSettings.Value;
             _logger = logger;
         }
@@ -73,20 +70,11 @@ namespace familytree_backend.Services
                     _logger.LogWarning("Login failed - invalid password for user: {UserId}", user.Id);
                     
                     // 記錄失敗登入
-                    await _auditLogService.LogEventAsync(
-                        new CreateAuditLogDto
-                        {
-                            EventType = AuditEventTypes.LOGIN_FAILED,
-                            Action = AuditActions.LOGIN,
-                            UserId = user.Id,
-                            UserName = user.Username,
-                            UserRole = user.Role,
-                            AdditionalData = new {
-                                Reason = "Invalid password",
-                                IpAddress = ipAddress,
-                                AttemptTime = DateTime.UtcNow
-                            }
-                        }
+                    await _loggingService.LogActivityAsync(
+                        user.Id,
+                        "login_failed",
+                        "Invalid password",
+                        ipAddress
                     );
 
                     return new LoginResponse
@@ -108,19 +96,11 @@ namespace familytree_backend.Services
                 await _userService.UpdateLastLoginAsync(user.Id);
 
                 // 記錄成功登入
-                await _auditLogService.LogEventAsync(
-                    new CreateAuditLogDto
-                    {
-                        EventType = AuditEventTypes.LOGIN,
-                        Action = AuditActions.LOGIN,
-                        UserId = user.Id,
-                        UserName = user.Username,
-                        UserRole = user.Role,
-                        AdditionalData = new {
-                            IpAddress = ipAddress,
-                            LoginTime = DateTime.UtcNow
-                        }
-                    }
+                await _loggingService.LogActivityAsync(
+                    user.Id,
+                    "login_success",
+                    "User logged in successfully",
+                    ipAddress
                 );
 
                 _logger.LogInformation("User logged in successfully: {UserId}", user.Id);
@@ -153,22 +133,11 @@ namespace familytree_backend.Services
                 // 撤銷 refresh token
                 var revoked = await _tokenService.RevokeRefreshTokenAsync(token);
 
-                // 獲取用戶資訊以記錄登出
-                var user = await _userService.GetByIdAsync(userId);
-
                 // 記錄登出
-                await _auditLogService.LogEventAsync(
-                    new CreateAuditLogDto
-                    {
-                        EventType = AuditEventTypes.LOGOUT,
-                        Action = AuditActions.LOGOUT,
-                        UserId = userId,
-                        UserName = user?.Username ?? "Unknown",
-                        UserRole = user?.Role ?? "Unknown",
-                        AdditionalData = new {
-                            LogoutTime = DateTime.UtcNow
-                        }
-                    }
+                await _loggingService.LogActivityAsync(
+                    userId,
+                    "logout",
+                    "User logged out"
                 );
 
                 _logger.LogInformation("User logged out: {UserId}", userId);
@@ -269,29 +238,11 @@ namespace familytree_backend.Services
 
                 if (success)
                 {
-                    // 獲取管理員和目標用戶資訊
-                    var adminUser = await _userService.GetByIdAsync(adminUserId);
-                    var targetUser = await _userService.GetByIdAsync(userId);
-
                     // 記錄密碼重設
-                    await _auditLogService.LogEventAsync(
-                        new CreateAuditLogDto
-                        {
-                            EventType = AuditEventTypes.PASSWORD_RESET,
-                            Action = AuditActions.UPDATE,
-                            UserId = adminUserId,
-                            UserName = adminUser?.Username ?? "Unknown",
-                            UserRole = adminUser?.Role ?? "Unknown",
-                            ResourceType = "User",
-                            ResourceId = userId,
-                            ResourceName = targetUser?.Username ?? "Unknown",
-                            AdditionalData = new {
-                                AdminUserId = adminUserId,
-                                TargetUserId = userId,
-                                ResetTime = DateTime.UtcNow,
-                                ResetMethod = "AdminReset"
-                            }
-                        }
+                    await _loggingService.LogActivityAsync(
+                        adminUserId,
+                        "reset_password",
+                        $"Password reset by admin for user {userId}"
                     );
 
                     _logger.LogInformation("Password reset for user {UserId} by admin {AdminUserId}", userId, adminUserId);

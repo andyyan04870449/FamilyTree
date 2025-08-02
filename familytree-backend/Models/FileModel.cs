@@ -193,6 +193,7 @@ namespace familytree_backend.Models
         public string? FileType { get; set; }
         public string? Status { get; set; }
         public string? AssociatedRecordType { get; set; }
+        public string? AssociatedRecordId { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 50;
         public string? SortBy { get; set; } = "UploadedAt";

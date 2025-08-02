@@ -255,5 +255,115 @@ namespace familytree_backend.Constants
                     (SELECT COUNT(*) FROM relationship_layers WHERE project_id IN (SELECT id FROM projects WHERE status != 'deleted')) as TotalRelationships,
                     (SELECT COUNT(*) FROM file_uploads) as TotalFileUploads";
         }
+
+        /// <summary>
+        /// 審計日誌相關查詢
+        /// </summary>
+        public static class AuditLogs
+        {
+            /// <summary>
+            /// 使用者資訊補全查詢
+            /// 用於從 users 表獲取使用者詳細資訊
+            /// </summary>
+            public const string EnrichUserInfo = @"
+                SELECT id, username, full_name, role 
+                FROM users 
+                WHERE id = @UserId";
+
+            /// <summary>
+            /// 審計日誌查詢（包含使用者資訊 JOIN）
+            /// 提供完整的使用者資訊，支援系統使用者的友好顯示
+            /// </summary>
+            public const string SelectLogsWithUserInfo = @"
+                SELECT 
+                    al.id as Id,
+                    al.event_id as EventId,
+                    al.batch_id as BatchId,
+                    al.session_id as SessionId,
+                    al.user_id as UserId,
+                    -- 使用者名稱優先級：audit_logs.user_name > users.full_name > users.username > 系統使用者友好名稱 > user_id
+                    COALESCE(
+                        NULLIF(al.user_name, ''), 
+                        u.full_name, 
+                        u.username,
+                        CASE 
+                            WHEN al.user_id = 'admin_default' THEN '系統管理員'
+                            WHEN al.user_id = 'system' THEN '系統'
+                            WHEN al.user_id IS NULL THEN 'Anonymous'
+                            ELSE al.user_id
+                        END
+                    ) as UserName,
+                    -- 使用者角色優先級：audit_logs.user_role > users.role > 系統使用者預設角色
+                    COALESCE(
+                        NULLIF(al.user_role, ''), 
+                        u.role,
+                        CASE 
+                            WHEN al.user_id = 'admin_default' THEN 'admin'
+                            WHEN al.user_id = 'system' THEN 'system'
+                            ELSE 'unknown'
+                        END
+                    ) as UserRole,
+                    al.impersonator_id as ImpersonatorId,
+                    al.event_type as EventType,
+                    al.action as Action,
+                    al.resource_type as ResourceType,
+                    al.resource_id as ResourceId,
+                    al.resource_name as ResourceName,
+                    al.old_values as OldValues,
+                    al.new_values as NewValues,
+                    al.changes_summary as ChangesSummary,
+                    al.ip_address as IpAddress,
+                    al.user_agent as UserAgent,
+                    al.request_method as RequestMethod,
+                    al.request_url as RequestUrl,
+                    al.request_id as RequestId,
+                    al.success as Success,
+                    al.error_message as ErrorMessage,
+                    al.error_code as ErrorCode,
+                    al.response_time_ms as ResponseTimeMs,
+                    al.security_level as SecurityLevel,
+                    al.risk_score as RiskScore,
+                    al.is_suspicious as IsSuspicious,
+                    al.additional_data as AdditionalMetadata,
+                    al.occurred_at as OccurredAt,
+                    al.created_at as CreatedAt
+                FROM audit_logs al
+                LEFT JOIN users u ON al.user_id = u.id";
+
+            /// <summary>
+            /// 使用者活動統計查詢（包含使用者資訊 JOIN）
+            /// </summary>
+            public const string UserActivityStats = @"
+                SELECT 
+                    al.user_id, 
+                    COALESCE(
+                        NULLIF(al.user_name, ''), 
+                        u.full_name, 
+                        u.username,
+                        CASE 
+                            WHEN al.user_id = 'admin_default' THEN '系統管理員'
+                            WHEN al.user_id = 'system' THEN '系統'
+                            ELSE al.user_id
+                        END
+                    ) as user_name,
+                    COUNT(*) as event_count
+                FROM audit_logs al
+                LEFT JOIN users u ON al.user_id = u.id
+                WHERE al.occurred_at >= @FromDate AND al.occurred_at <= @ToDate
+                    AND al.user_id IS NOT NULL
+                GROUP BY al.user_id, 
+                    COALESCE(
+                        NULLIF(al.user_name, ''), 
+                        u.full_name, 
+                        u.username,
+                        CASE 
+                            WHEN al.user_id = 'admin_default' THEN '系統管理員'
+                            WHEN al.user_id = 'system' THEN '系統'
+                            ELSE al.user_id
+                        END
+                    )
+                ORDER BY event_count DESC
+                LIMIT 10";
+        }
     }
 } 

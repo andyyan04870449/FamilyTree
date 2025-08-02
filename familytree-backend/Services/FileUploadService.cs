@@ -1,6 +1,7 @@
 // 檔案上傳服務 - 使用新的 file_uploads 表和標準化命名
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using familytree_backend.Models;
 using Dapper;
 using Npgsql;
@@ -46,15 +47,24 @@ namespace familytree_backend.Services
             string? associatedRecordId = null,
             string? associatedRecordType = null)
         {
+            var uploadId = Guid.NewGuid().ToString("N")[..8]; // 生成8位追蹤ID
+            _logger.LogInformation("🚀 [檔案上傳-{UploadId}] 開始處理檔案上傳 - 檔案: {FileName}, 大小: {FileSize} bytes, 用戶: {UserId}, 專案: {ProjectId}", 
+                uploadId, file.FileName, file.Length, userId, associatedRecordId ?? "無");
+            
             try
             {
                 // 驗證檔案類型
+                _logger.LogInformation("📋 [檔案上傳-{UploadId}] 開始驗證檔案類型", uploadId);
                 var allowedExtensions = _configuration.GetSection("FileUpload:AllowedExtensions")
                     .Get<string[]>() ?? new[] { ".xls", ".xlsx", ".jpg", ".jpeg", ".png", ".zip", ".7z" };
                     
                 var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                _logger.LogInformation("🔍 [檔案上傳-{UploadId}] 檔案副檔名: {Extension}, 允許的類型: {AllowedTypes}", 
+                    uploadId, fileExtension, string.Join(", ", allowedExtensions));
+                
                 if (!allowedExtensions.Contains(fileExtension))
                 {
+                    _logger.LogWarning("❌ [檔案上傳-{UploadId}] 檔案類型不被支援: {Extension}", uploadId, fileExtension);
                     return new FileOperationResult
                     {
                         Success = false,
@@ -63,33 +73,44 @@ namespace familytree_backend.Services
                 }
 
                 // 計算 MD5
+                _logger.LogInformation("🔐 [檔案上傳-{UploadId}] 開始計算檔案 MD5 雜湊值", uploadId);
                 var md5Hash = await CalculateMd5Async(file);
+                _logger.LogInformation("✅ [檔案上傳-{UploadId}] MD5 計算完成: {MD5Hash}", uploadId, md5Hash);
                 
-                // 檢查是否為重複檔案
-                var existingFile = await GetFileByMd5Async(md5Hash, userId);
+                // 檢查是否為重複檔案（同一用戶、同一專案、同一檔案）
+                _logger.LogInformation("🔍 [檔案上傳-{UploadId}] 檢查檔案是否在此專案中重複", uploadId);
+                var existingFile = await GetFileByMd5AndProjectAsync(md5Hash, userId, associatedRecordId);
                 if (existingFile != null)
                 {
+                    _logger.LogInformation("♻️ [檔案上傳-{UploadId}] 檔案已存在於此專案中 - FileId: {FileId}, 使用現有檔案", 
+                        uploadId, existingFile.FileId);
                     return new FileOperationResult
                     {
                         Success = true,
-                        Message = "檔案已存在，使用現有檔案",
+                        Message = "檔案已存在於此專案中，使用現有檔案",
                         IsDuplicate = true,
                         File = existingFile,
                         FilePath = existingFile.FilePath
                     };
                 }
 
+                _logger.LogInformation("🆕 [檔案上傳-{UploadId}] 檔案在此專案中為新檔案，開始處理", uploadId);
+
                 // 生成唯一檔名
                 var fileName = GenerateUniqueFileName(file.FileName);
                 var filePath = Path.Combine(_uploadDirectory, fileName);
+                _logger.LogInformation("📁 [檔案上傳-{UploadId}] 生成檔案路徑: {FilePath}", uploadId, filePath);
 
                 // 儲存檔案
+                _logger.LogInformation("💾 [檔案上傳-{UploadId}] 開始儲存實體檔案", uploadId);
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
                 }
+                _logger.LogInformation("✅ [檔案上傳-{UploadId}] 實體檔案儲存完成", uploadId);
 
                 // 準備檔案模型
+                _logger.LogInformation("📝 [檔案上傳-{UploadId}] 準備檔案資料模型", uploadId);
                 var fileModel = new FileModel
                 {
                     FileId = Guid.NewGuid(),
@@ -109,16 +130,26 @@ namespace familytree_backend.Services
                     UpdatedAt = DateTime.UtcNow
                 };
 
-                // 儲存到資料庫
-                var savedFile = await SaveFileToDatabaseAsync(fileModel);
+                _logger.LogInformation("🔤 [檔案上傳-{UploadId}] 檔案模型詳情 - FileId: {FileId}, 類型: {FileType}, MIME: {MimeType}", 
+                    uploadId, fileModel.FileId, fileModel.FileType, fileModel.MimeType);
 
-                _logger.LogInformation("檔案上傳成功: {OriginalFilename} -> {Filename}, FileId: {FileId}", 
-                    file.FileName, fileName, savedFile.FileId);
+                // 儲存到資料庫
+                _logger.LogInformation("💾 [檔案上傳-{UploadId}] 開始儲存檔案記錄到資料庫", uploadId);
+                var savedFile = await SaveFileToDatabaseAsync(fileModel);
+                _logger.LogInformation("✅ [檔案上傳-{UploadId}] 檔案記錄儲存完成", uploadId);
+
+                _logger.LogInformation("🎉 [檔案上傳-{UploadId}] 檔案上傳成功 - 原檔名: {OriginalFilename}, 儲存檔名: {Filename}, FileId: {FileId}", 
+                    uploadId, file.FileName, fileName, savedFile.FileId);
 
                 // 如果是Excel檔案，自動處理
                 if (fileModel.IsProcessable())
                 {
+                    _logger.LogInformation("📊 [檔案上傳-{UploadId}] 檔案可處理，開始背景 Excel 處理任務", uploadId);
                     _ = Task.Run(async () => await ProcessExcelFileInternalAsync(savedFile));
+                }
+                else
+                {
+                    _logger.LogInformation("📄 [檔案上傳-{UploadId}] 檔案不需要處理（非Excel檔案）", uploadId);
                 }
 
                 return new FileOperationResult
@@ -132,7 +163,8 @@ namespace familytree_backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "檔案上傳失敗: {FileName}", file.FileName);
+                _logger.LogError(ex, "💥 [檔案上傳-{UploadId}] 檔案上傳過程發生異常 - 檔案: {FileName}, 錯誤: {ErrorMessage}", 
+                    uploadId, file.FileName, ex.Message);
                 return new FileOperationResult
                 {
                     Success = false,
@@ -149,6 +181,9 @@ namespace familytree_backend.Services
         {
             try
             {
+                _logger.LogInformation($"🔍 [FileUploadService] 開始查詢檔案列表 - 用戶: {userId}");
+                _logger.LogInformation($"📋 [FileUploadService] 查詢選項 - AssociatedRecordId: {options.AssociatedRecordId}, AssociatedRecordType: {options.AssociatedRecordType}, FileType: {options.FileType}");
+                
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
@@ -157,6 +192,8 @@ namespace familytree_backend.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("userId", userId);
                 parameters.Add("deletedStatus", FileUploadStatus.Deleted);
+                
+                _logger.LogInformation($"🔧 [FileUploadService] 基本查詢條件 - user_id = {userId}, upload_status != {FileUploadStatus.Deleted}");
 
                 if (!string.IsNullOrEmpty(options.FileType))
                 {
@@ -176,15 +213,29 @@ namespace familytree_backend.Services
                     parameters.Add("recordType", options.AssociatedRecordType);
                 }
 
+                if (!string.IsNullOrEmpty(options.AssociatedRecordId))
+                {
+                    whereConditions.Add("associated_record_id = @recordId");
+                    parameters.Add("recordId", options.AssociatedRecordId);
+                    _logger.LogInformation($"➕ [FileUploadService] 添加專案ID條件 - associated_record_id = {options.AssociatedRecordId}");
+                }
+
                 var whereClause = string.Join(" AND ", whereConditions);
+                _logger.LogInformation($"🔍 [FileUploadService] 最終查詢條件: {whereClause}");
 
                 // 查詢總數
                 var countSql = $"SELECT COUNT(*) FROM file_uploads WHERE {whereClause}";
+                _logger.LogInformation($"📊 [FileUploadService] 執行計數查詢: {countSql}");
                 var totalCount = await connection.QuerySingleAsync<int>(countSql, parameters);
+                _logger.LogInformation($"📈 [FileUploadService] 查詢到總數: {totalCount}");
 
                 // 查詢資料
                 var orderBy = options.SortDescending ? "DESC" : "ASC";
                 var offset = (options.Page - 1) * options.PageSize;
+                
+                // 將 PascalCase 屬性名稱轉換為 snake_case 資料庫欄位名稱
+                var sortColumn = ConvertPropertyToColumnName(options.SortBy);
+                _logger.LogInformation($"🔄 [FileUploadService] 排序欄位轉換: {options.SortBy} -> {sortColumn}");
                 
                 var dataSql = $@"
                     SELECT f.file_id as FileId, f.user_id as UserId, f.filename, f.original_filename as OriginalFilename,
@@ -204,7 +255,7 @@ namespace familytree_backend.Services
                         GROUP BY file_md5
                     ) p ON f.md5_hash = p.file_md5
                     WHERE {whereClause}
-                    ORDER BY f.{options.SortBy} {orderBy}
+                    ORDER BY f.{sortColumn} {orderBy}
                     LIMIT @limit OFFSET @offset";
 
                 parameters.Add("limit", options.PageSize);
@@ -604,7 +655,7 @@ namespace familytree_backend.Services
         }
 
         /// <summary>
-        /// 檢查檔案是否重複
+        /// 檢查檔案是否重複（全局檢查，不限專案）
         /// </summary>
         public async Task<bool> CheckDuplicateAsync(string md5Hash, string userId)
         {
@@ -624,6 +675,34 @@ namespace familytree_backend.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "檢查檔案重複失敗");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 檢查檔案在特定專案中是否重複
+        /// </summary>
+        public async Task<bool> CheckDuplicateInProjectAsync(string md5Hash, string userId, string? projectId)
+        {
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                var sql = @"
+                    SELECT COUNT(*) 
+                    FROM file_uploads 
+                    WHERE md5_hash = @md5Hash 
+                        AND user_id = @userId 
+                        AND associated_record_id = @projectId 
+                        AND upload_status != 'deleted'";
+
+                var count = await connection.QuerySingleAsync<int>(sql, new { md5Hash, userId, projectId });
+                return count > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "檢查專案檔案重複失敗");
                 return false;
             }
         }
@@ -680,12 +759,18 @@ namespace familytree_backend.Services
 
         private async Task<ProcessResult> ProcessExcelFileInternalAsync(FileModel file)
         {
+            var processId = Guid.NewGuid().ToString("N")[..8]; // 生成8位處理追蹤ID
+            _logger.LogInformation("🔄 [Excel處理-{ProcessId}] 開始處理Excel檔案 - FileId: {FileId}, 檔案: {FileName}, 專案: {ProjectId}", 
+                processId, file.FileId, file.OriginalFilename, file.AssociatedRecordId ?? "無");
+                
             try
             {
                 // 更新狀態為處理中
+                _logger.LogInformation("📝 [Excel處理-{ProcessId}] 更新檔案狀態為處理中", processId);
                 await UpdateFileStatusAsync(file.FileId, FileUploadStatus.Processing);
 
                 // 呼叫Excel處理服務
+                _logger.LogInformation("📊 [Excel處理-{ProcessId}] 開始呼叫 ExcelProcessingService", processId);
                 var startTime = DateTime.UtcNow;
                 var result = await _excelProcessingService.ProcessExcelFileAsync(
                     file.FilePath, 
@@ -693,14 +778,20 @@ namespace familytree_backend.Services
                     file.AssociatedRecordId);
 
                 var duration = DateTime.UtcNow - startTime;
+                _logger.LogInformation("⏱️ [Excel處理-{ProcessId}] ExcelProcessingService 處理完成，耗時: {Duration} 秒", 
+                    processId, duration.TotalSeconds);
 
                 if (result.Success)
                 {
+                    _logger.LogInformation("✅ [Excel處理-{ProcessId}] Excel處理成功 - 成功: {SuccessCount} 行, 失敗: {FailureCount} 行, 總計: {TotalRecords} 筆", 
+                        processId, result.SuccessCount, result.FailureCount, result.TotalRecords);
+                        
                     // 更新狀態為已處理
+                    _logger.LogInformation("📝 [Excel處理-{ProcessId}] 更新檔案狀態為已處理", processId);
                     await UpdateFileStatusAsync(file.FileId, FileUploadStatus.Processed, true, DateTime.UtcNow);
 
-                    _logger.LogInformation("Excel檔案處理成功: FileId={FileId}, 處理時間={Duration}秒", 
-                        file.FileId, duration.TotalSeconds);
+                    _logger.LogInformation("🎉 [Excel處理-{ProcessId}] Excel檔案處理完全成功 - FileId: {FileId}, 處理時間: {Duration} 秒", 
+                        processId, file.FileId, duration.TotalSeconds);
 
                     return new ProcessResult
                     {
@@ -713,7 +804,16 @@ namespace familytree_backend.Services
                 }
                 else
                 {
+                    _logger.LogError("❌ [Excel處理-{ProcessId}] Excel處理失敗 - 錯誤訊息: {ErrorMessage}", 
+                        processId, result.Message);
+                    if (result.Errors != null && result.Errors.Any())
+                    {
+                        _logger.LogError("❌ [Excel處理-{ProcessId}] 詳細錯誤: {Errors}", 
+                            processId, string.Join("; ", result.Errors));
+                    }
+                        
                     // 更新狀態為失敗
+                    _logger.LogInformation("📝 [Excel處理-{ProcessId}] 更新檔案狀態為失敗", processId);
                     await UpdateFileStatusAsync(file.FileId, FileUploadStatus.Failed);
 
                     return new ProcessResult
@@ -726,6 +826,8 @@ namespace familytree_backend.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "💥 [Excel處理-{ProcessId}] Excel處理過程發生異常 - FileId: {FileId}, 錯誤: {ErrorMessage}", 
+                    processId, file.FileId, ex.Message);
                 await UpdateFileStatusAsync(file.FileId, FileUploadStatus.Failed);
                 throw;
             }
@@ -780,6 +882,40 @@ namespace familytree_backend.Services
                 LIMIT 1";
 
             return await connection.QueryFirstOrDefaultAsync<FileModel>(sql, new { md5Hash, userId });
+        }
+
+        /// <summary>
+        /// 檢查檔案是否在特定專案中已存在（按MD5、用戶ID、專案ID檢查）
+        /// </summary>
+        private async Task<FileModel?> GetFileByMd5AndProjectAsync(string md5Hash, string userId, string? projectId)
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT f.file_id as FileId, f.user_id as UserId, f.filename, f.original_filename as OriginalFilename,
+                       f.file_path as FilePath, f.file_size as FileSize, f.md5_hash as Md5Hash,
+                       f.file_type as FileType, f.mime_type as MimeType,
+                       f.associated_record_id as AssociatedRecordId, 
+                       f.associated_record_type as AssociatedRecordType,
+                       f.upload_status as UploadStatus, f.is_processed as IsProcessed,
+                       f.processed_at as ProcessedAt, f.uploaded_at as UploadedAt,
+                       f.created_at as CreatedAt, f.updated_at as UpdatedAt,
+                       COALESCE(p.person_count, 0) as RelatedPersonsCount
+                FROM file_uploads f
+                LEFT JOIN (
+                    SELECT file_md5, COUNT(*) as person_count
+                    FROM person_profile
+                    WHERE file_md5 IS NOT NULL
+                    GROUP BY file_md5
+                ) p ON f.md5_hash = p.file_md5
+                WHERE f.md5_hash = @md5Hash 
+                    AND f.user_id = @userId 
+                    AND f.associated_record_id = @projectId 
+                    AND f.upload_status != 'deleted'
+                LIMIT 1";
+
+            return await connection.QueryFirstOrDefaultAsync<FileModel>(sql, new { md5Hash, userId, projectId });
         }
 
         private async Task<FileModel> SaveFileToDatabaseAsync(FileModel file)
@@ -862,6 +998,46 @@ namespace familytree_backend.Services
                 ".7z" => "application/x-7z-compressed",
                 _ => "application/octet-stream"
             };
+        }
+
+        /// <summary>
+        /// 將 PascalCase 屬性名稱轉換為 snake_case 資料庫欄位名稱
+        /// </summary>
+        private string ConvertPropertyToColumnName(string propertyName)
+        {
+            if (string.IsNullOrEmpty(propertyName))
+                return "uploaded_at"; // 預設排序欄位
+                
+            // 特定屬性名稱的映射
+            var columnMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "FileId", "file_id" },
+                { "UserId", "user_id" },
+                { "Filename", "filename" },
+                { "OriginalFilename", "original_filename" },
+                { "FilePath", "file_path" },
+                { "FileSize", "file_size" },
+                { "Md5Hash", "md5_hash" },
+                { "FileType", "file_type" },
+                { "MimeType", "mime_type" },
+                { "AssociatedRecordId", "associated_record_id" },
+                { "AssociatedRecordType", "associated_record_type" },
+                { "UploadStatus", "upload_status" },
+                { "IsProcessed", "is_processed" },
+                { "ProcessedAt", "processed_at" },
+                { "UploadedAt", "uploaded_at" },
+                { "CreatedAt", "created_at" },
+                { "UpdatedAt", "updated_at" }
+            };
+            
+            // 如果有明確的映射就使用
+            if (columnMappings.TryGetValue(propertyName, out var columnName))
+            {
+                return columnName;
+            }
+            
+            // 否則進行通用的 PascalCase 到 snake_case 轉換
+            return Regex.Replace(propertyName, "(?<!^)([A-Z])", "_$1").ToLowerInvariant();
         }
     }
 

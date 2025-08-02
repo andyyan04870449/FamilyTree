@@ -6,7 +6,7 @@
     <!-- 當前專案資訊 -->
     <div class="current-project-info" *ngIf="getCurrentProject()">
       <div class="project-indicator">
-        <span class="project-label">當前案件：</span>
+        <span class="project-label">當前案件名稱：</span>
         <span class="project-name">{{ getCurrentProject()?.projectName }}</span>
       </div>
     </div>
@@ -104,6 +104,9 @@
               <p class="file-meta">
                 {{ formatFileSize(record.fileSize) }} • 
                 {{ formatUploadTime(record.uploadTime) }}
+                <span *ngIf="record.fileType === 'excel' && record.relatedPersonsCount !== undefined" class="related-persons">
+                  • <span class="person-icon">👥</span> {{ record.relatedPersonsCount }} 人
+                </span>
               </p>
               <p class="saved-name" *ngIf="record.savedName && record.savedName !== record.originalName">
                 儲存為: {{ record.savedName }}

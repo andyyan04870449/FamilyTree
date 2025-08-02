@@ -123,8 +123,11 @@ namespace familytree_backend.Controllers
             try
             {
                 var userId = GetUserId();
+                _logger.LogInformation($"📁 [FileController] 獲取檔案列表請求 - 用戶ID: {userId}, 參數: AssociatedRecordId={options.AssociatedRecordId}, AssociatedRecordType={options.AssociatedRecordType}");
+                
                 if (string.IsNullOrEmpty(userId))
                 {
+                    _logger.LogWarning("❌ [FileController] 無法識別使用者身份");
                     return Unauthorized(new ApiResponse 
                     { 
                         Success = false, 
@@ -133,6 +136,7 @@ namespace familytree_backend.Controllers
                 }
 
                 var result = await _fileUploadService.GetUserFilesAsync(userId, options);
+                _logger.LogInformation($"📋 [FileController] 檔案列表查詢完成 - 用戶: {userId}, 結果數量: {result.Files?.Count() ?? 0}");
 
                 return Ok(new FileListResponse
                 {
@@ -244,13 +248,51 @@ namespace familytree_backend.Controllers
         }
 
         /// <summary>
-        /// 刪除檔案
+        /// 刪除檔案 - 支援GUID格式
         /// </summary>
         [HttpDelete("{fileId:guid}")]
         public async Task<IActionResult> DeleteFile(Guid fileId)
         {
+            return await DeleteFileInternal(fileId.ToString());
+        }
+
+        /// <summary>
+        /// 刪除檔案 - 支援字串格式，會嘗試轉換為GUID
+        /// </summary>
+        [HttpDelete("{fileId}")]
+        public async Task<IActionResult> DeleteFileByString(string fileId)
+        {
+            // 嘗試解析為GUID
+            if (!Guid.TryParse(fileId, out var guidFileId))
+            {
+                _logger.LogWarning("無效的檔案ID格式: {FileId}", fileId);
+                return BadRequest(new ApiResponse
+                {
+                    Success = false,
+                    Message = $"無效的檔案ID格式: {fileId}"
+                });
+            }
+
+            return await DeleteFileInternal(guidFileId.ToString());
+        }
+
+        /// <summary>
+        /// 內部刪除檔案方法
+        /// </summary>
+        private async Task<IActionResult> DeleteFileInternal(string fileIdString)
+        {
             try
             {
+                if (!Guid.TryParse(fileIdString, out var fileId))
+                {
+                    _logger.LogWarning("無效的檔案ID格式: {FileId}", fileIdString);
+                    return BadRequest(new ApiResponse
+                    {
+                        Success = false,
+                        Message = $"無效的檔案ID格式: {fileIdString}"
+                    });
+                }
+
                 var userId = GetUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
@@ -261,10 +303,13 @@ namespace familytree_backend.Controllers
                     });
                 }
 
+                _logger.LogInformation("開始刪除檔案: FileId={FileId}, UserId={UserId}", fileId, userId);
+
                 // 刪除前分析影響
                 var impactResult = await _fileUploadService.AnalyzeDeleteImpactAsync(fileId, userId);
                 if (!impactResult.Success)
                 {
+                    _logger.LogWarning("刪除影響分析失敗: {Message}", impactResult.Message);
                     return BadRequest(new ApiResponse
                     {
                         Success = false,
@@ -274,6 +319,7 @@ namespace familytree_backend.Controllers
 
                 if (!impactResult.CanDelete)
                 {
+                    _logger.LogWarning("檔案無法刪除: {Warning}", impactResult.Warning);
                     return BadRequest(new ApiResponse
                     {
                         Success = false,
@@ -285,6 +331,7 @@ namespace familytree_backend.Controllers
                 var deleteResult = await _fileUploadService.DeleteFileAsync(fileId, userId);
                 if (!deleteResult.Success)
                 {
+                    _logger.LogError("檔案刪除失敗: {Message}", deleteResult.Message);
                     return BadRequest(new ApiResponse
                     {
                         Success = false,
@@ -292,6 +339,7 @@ namespace familytree_backend.Controllers
                     });
                 }
 
+                _logger.LogInformation("檔案刪除成功: {FileName}", impactResult.FileName);
                 return Ok(new ApiResponse
                 {
                     Success = true,
@@ -300,7 +348,7 @@ namespace familytree_backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"刪除檔案失敗: {fileId}");
+                _logger.LogError(ex, "刪除檔案發生異常: FileId={FileId}", fileIdString);
                 return StatusCode(500, new ApiResponse
                 {
                     Success = false,

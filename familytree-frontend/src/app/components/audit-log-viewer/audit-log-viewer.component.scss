@@ -3,11 +3,6 @@
 // ================================
 // 使用統一設計系統和 BEM 命名規範
 
-@import '../../../styles/foundation/tokens';
-@import '../../../styles/foundation/css-variables';
-@import '../../../styles/foundation/mixins';
-@import '../../../styles/foundation/responsive-mobile-first';
-
 // ================================
 // 主要容器
 // ================================
@@ -67,6 +62,15 @@
   // ================================
   // 過濾面板
   // ================================
+  &__filter-panel {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--spacing-2xl);
+    border: 1px solid var(--border-primary);
+    overflow: hidden;
+  }
+
   &__loading {
     display: flex;
     flex-direction: column;
@@ -121,6 +125,78 @@
     padding: var(--spacing-lg) var(--spacing-2xl);
     border-top: 1px solid var(--border-primary);
     background: var(--bg-secondary);
+  }
+
+  // ================================
+  // 快速時間選擇
+  // ================================
+  &__filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg) var(--spacing-2xl);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    cursor: pointer;
+  }
+
+  &__filter-count {
+    background: var(--primary);
+    color: var(--text-inverse);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    margin-left: var(--spacing-sm);
+    min-width: 20px;
+    text-align: center;
+  }
+
+  &__quick-time {
+    padding: var(--spacing-lg) var(--spacing-2xl);
+    border-bottom: 1px solid var(--border-primary);
+    background: var(--bg-tertiary);
+  }
+
+  &__quick-time-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  &__quick-time-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  &__quick-time-btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all var(--duration-normal) var(--easing-ease-in-out);
+
+    &:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-focus);
+    }
+
+    &--active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--text-inverse);
+
+      &:hover {
+        background: var(--primary-hover);
+        border-color: var(--primary-hover);
+      }
+    }
   }
 
   // ================================
@@ -271,7 +347,15 @@
     margin-bottom: var(--spacing-sm);
 
     &--sr-only {
-      @include sr-only;
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
     }
   }
 
@@ -801,6 +885,125 @@
 }
 
 // ================================
+// 自定義選擇器
+// ================================
+.custom-select {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+
+  &__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--input-padding-y) var(--input-padding-x);
+    border: 1px solid var(--input-border-color);
+    border-radius: var(--input-border-radius);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    transition: all var(--duration-normal) var(--easing-ease-in-out);
+    min-height: 44px;
+
+    &:hover {
+      border-color: var(--border-secondary);
+    }
+
+    &:focus,
+    &--open {
+      outline: none;
+      border-color: var(--input-focus-border-color);
+      box-shadow: var(--shadow-focus);
+    }
+
+    &--disabled {
+      background: var(--bg-disabled);
+      color: var(--text-disabled);
+      cursor: not-allowed;
+    }
+  }
+
+  &__placeholder {
+    color: var(--text-tertiary);
+  }
+
+  &__icon {
+    margin-left: var(--spacing-sm);
+    transition: transform var(--duration-normal) var(--easing-ease-in-out);
+    color: var(--text-secondary);
+
+    &--rotated {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--input-border-radius);
+    box-shadow: var(--shadow-lg);
+    z-index: var(--z-dropdown);
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 2px;
+  }
+
+  &__option {
+    padding: var(--spacing-sm) var(--input-padding-x);
+    cursor: pointer;
+    transition: background-color var(--duration-normal) var(--easing-ease-in-out);
+    border-bottom: 1px solid var(--border-tertiary);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    &--selected {
+      background: var(--bg-secondary);
+      color: var(--primary);
+      font-weight: var(--font-weight-medium);
+    }
+
+    &--disabled {
+      color: var(--text-disabled);
+      cursor: not-allowed;
+      background: var(--bg-disabled);
+    }
+  }
+
+  &__search {
+    padding: var(--spacing-sm) var(--input-padding-x);
+    border: none;
+    border-bottom: 1px solid var(--border-primary);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    outline: none;
+    width: 100%;
+
+    &::placeholder {
+      color: var(--text-tertiary);
+    }
+  }
+
+  &__no-results {
+    padding: var(--spacing-md) var(--input-padding-x);
+    color: var(--text-tertiary);
+    font-style: italic;
+    text-align: center;
+  }
+}
+
+// ================================
 // 按鈕系統
 // ================================
 .btn {
@@ -888,7 +1091,7 @@
 // ================================
 // 響應式設計
 // ================================
-@include mobile {
+@media (max-width: 768px) {
   .audit-log {
     padding: var(--spacing-lg);
 
@@ -959,7 +1162,7 @@
   }
 }
 
-@include tablet {
+@media (max-width: 1024px) {
   .audit-log {
     &__stats-grid {
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -997,7 +1200,15 @@
 }
 
 .sr-only {
-  @include sr-only;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 // ================================

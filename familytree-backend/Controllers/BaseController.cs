@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using familytree_backend.Constants;
 using familytree_backend.Services;
+using familytree_backend.Extensions;
 
 namespace familytree_backend.Controllers
 {
@@ -489,7 +490,7 @@ namespace familytree_backend.Controllers
             try
             {
                 var userId = GetCurrentUserId();
-                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                var ipAddress = HttpContext.GetClientIpAddress();
                 
                 // 格式化詳細資訊包含資源類型和ID
                 var formattedDetails = $"{action} - {resourceType}:{resourceId} - {details}";

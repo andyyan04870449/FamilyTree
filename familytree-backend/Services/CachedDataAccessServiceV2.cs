@@ -326,6 +326,157 @@ namespace familytree_backend.Services
 
         #endregion
 
+        #region 專案管理操作
+
+        public async Task<IEnumerable<ProjectModel>> GetProjectListAsync(string userId, string userRole)
+        {
+            var cacheKey = $"project_list_{userId}_{userRole}";
+            
+            if (_cache.TryGetValue(cacheKey, out IEnumerable<ProjectModel>? cached))
+            {
+                _logger.LogInformation("快取命中：專案列表查詢 - 使用者：{UserId}", userId);
+                return cached;
+            }
+
+            var result = await _baseService.GetProjectListAsync(userId, userRole);
+            _cache.Set(cacheKey, result, _mediumCacheOptions);
+            return result;
+        }
+
+        public async Task<ProjectModel?> GetProjectByIdAsync(string projectId, string userId, string userRole)
+        {
+            var cacheKey = $"project_{projectId}_{userId}_{userRole}";
+            
+            if (_cache.TryGetValue(cacheKey, out ProjectModel? cached))
+            {
+                _logger.LogInformation("快取命中：專案詳情查詢 - 專案：{ProjectId}", projectId);
+                return cached;
+            }
+
+            var result = await _baseService.GetProjectByIdAsync(projectId, userId, userRole);
+            
+            if (result != null)
+            {
+                _cache.Set(cacheKey, result, _mediumCacheOptions);
+            }
+            
+            return result;
+        }
+
+        public async Task<string?> CreateProjectAsync(CreateProjectRequest request, string userId)
+        {
+            var result = await _baseService.CreateProjectAsync(request, userId);
+            
+            if (result != null)
+            {
+                // 清除專案列表快取
+                _cache.Remove($"project_list_{userId}_user");
+                _cache.Remove($"project_list_{userId}_admin");
+            }
+            
+            return result;
+        }
+
+        public async Task<bool> UpdateProjectAsync(string projectId, UpdateProjectRequest request, string userId, string userRole)
+        {
+            var result = await _baseService.UpdateProjectAsync(projectId, request, userId, userRole);
+            
+            if (result)
+            {
+                // 清除相關快取
+                _cache.Remove($"project_{projectId}_{userId}_{userRole}");
+                _cache.Remove($"project_list_{userId}_user");
+                _cache.Remove($"project_list_{userId}_admin");
+            }
+            
+            return result;
+        }
+
+        public async Task<bool> DeleteProjectAsync(string projectId, string userId, string userRole)
+        {
+            var result = await _baseService.DeleteProjectAsync(projectId, userId, userRole);
+            
+            if (result)
+            {
+                // 清除相關快取
+                _cache.Remove($"project_{projectId}_{userId}_{userRole}");
+                _cache.Remove($"project_list_{userId}_user");
+                _cache.Remove($"project_list_{userId}_admin");
+            }
+            
+            return result;
+        }
+
+        #endregion
+
+        #region 搜尋操作
+
+        public async Task<(IEnumerable<PersonSearchResult> Data, int TotalCount)> SearchPersonDataAsync(string userId, string userRole, SearchRequest request)
+        {
+            var cacheKey = $"search_data_{userId}_{userRole}_{request.Keyword}_{request.Page}_{request.PageSize}";
+            
+            if (_cache.TryGetValue(cacheKey, out (IEnumerable<PersonSearchResult> Data, int TotalCount) cached))
+            {
+                _logger.LogInformation("快取命中：搜尋人員資料 - 關鍵字：{Keyword}", request.Keyword);
+                return cached;
+            }
+
+            var result = await _baseService.SearchPersonDataAsync(userId, userRole, request);
+            _cache.Set(cacheKey, result, _shortCacheOptions);
+            return result;
+        }
+
+        public async Task RecordSearchKeywordAsync(string keyword, string searchType, string userId)
+        {
+            await _baseService.RecordSearchKeywordAsync(keyword, searchType, userId);
+        }
+
+        public async Task<List<string>> GetSearchHistoryAsync(string userId, int limit = 20)
+        {
+            var cacheKey = $"search_history_{userId}_{limit}";
+            
+            if (_cache.TryGetValue(cacheKey, out List<string>? cached))
+            {
+                return cached;
+            }
+
+            var result = await _baseService.GetSearchHistoryAsync(userId, limit);
+            _cache.Set(cacheKey, result, _shortCacheOptions);
+            return result;
+        }
+
+        public async Task<IEnumerable<RelationshipData>> GetPersonRelationshipsAsync(int personId, string userId, string userRole)
+        {
+            var cacheKey = $"person_relationships_{personId}_{userId}_{userRole}";
+            
+            if (_cache.TryGetValue(cacheKey, out IEnumerable<RelationshipData>? cached))
+            {
+                return cached;
+            }
+
+            var result = await _baseService.GetPersonRelationshipsAsync(personId, userId, userRole);
+            _cache.Set(cacheKey, result, _mediumCacheOptions);
+            return result;
+        }
+
+        public async Task<bool> CreateRelationshipAsync(RelationshipData relationship, string userId)
+        {
+            var result = await _baseService.CreateRelationshipAsync(relationship, userId);
+            
+            if (result)
+            {
+                // 清除相關關係快取
+                _cache.Remove($"person_relationships_{relationship.SourcePersonId}_{userId}_user");
+                _cache.Remove($"person_relationships_{relationship.TargetPersonId}_{userId}_user");
+                _cache.Remove($"person_relationships_{relationship.SourcePersonId}_{userId}_admin");
+                _cache.Remove($"person_relationships_{relationship.TargetPersonId}_{userId}_admin");
+            }
+            
+            return result;
+        }
+
+        #endregion
+
         #region 通用查詢
 
         public async Task<IEnumerable<T>> ExecuteQueryAsync<T>(string sql, object? parameters = null, string? userId = null, string? userRole = null)
@@ -336,6 +487,11 @@ namespace familytree_backend.Services
         public async Task<T?> ExecuteScalarAsync<T>(string sql, object? parameters = null)
         {
             return await _baseService.ExecuteScalarAsync<T>(sql, parameters);
+        }
+
+        public async Task<int> ExecuteAsync(string sql, object? parameters = null, string? userId = null, string? userRole = null)
+        {
+            return await _baseService.ExecuteAsync(sql, parameters, userId, userRole);
         }
 
         public async Task<bool> CheckResourceOwnershipAsync(string resourceType, string resourceId, string userId, string userRole)

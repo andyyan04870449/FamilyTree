@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using familytree_backend.Services;
 using familytree_backend.Constants;
+using familytree_backend.Extensions;
 
 namespace familytree_backend.Middleware
 {
@@ -52,7 +53,7 @@ namespace familytree_backend.Middleware
                     Path = context.Request.Path,
                     Method = context.Request.Method,
                     UserAgent = context.Request.Headers.UserAgent.ToString(),
-                    RemoteIpAddress = context.Connection.RemoteIpAddress?.ToString()
+                    RemoteIpAddress = context.GetClientIpAddress()
                 });
 
                 // 執行安全性檢查
@@ -82,7 +83,7 @@ namespace familytree_backend.Middleware
                 {
                     Path = context.Request.Path,
                     Method = context.Request.Method,
-                    RemoteIpAddress = context.Connection.RemoteIpAddress?.ToString()
+                    RemoteIpAddress = context.GetClientIpAddress()
                 });
 
                 // 重新拋出異常
@@ -204,7 +205,7 @@ namespace familytree_backend.Middleware
             // 8. 檢查 IP 白名單（如果啟用）
             if (_securityConfig.EnableIpWhitelist)
             {
-                var clientIp = context.Connection.RemoteIpAddress?.ToString();
+                var clientIp = context.GetClientIpAddress();
                 if (!string.IsNullOrEmpty(clientIp) && !IsIpAllowed(clientIp))
                 {
                     result.IsValid = false;

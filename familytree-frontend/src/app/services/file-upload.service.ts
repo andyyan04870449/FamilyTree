@@ -2,7 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpEvent, HttpEventType, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
 import { AppConstants } from '../constants/app.constants';
 import { ProjectService } from './project.service';
 
@@ -24,6 +24,7 @@ export interface FileModel {
   uploadedAt: string;
   createdAt: string;
   updatedAt: string;
+  relatedPersonsCount: number;
 }
 
 export interface FileUploadResponse {
@@ -83,8 +84,8 @@ export class FileUploadService {
       params = params.set('project_id', currentProject.id);
       console.log('🎯 [FileUploadService] 添加專案 ID 到請求:', currentProject.id);
     } else {
-      console.warn('⚠️ [FileUploadService] 沒有當前專案，不進行 API 請求');
-      throw new Error('請先選擇專案');
+      console.warn('⚠️ [FileUploadService] 沒有當前專案，返回空參數');
+      // 不再拋出錯誤，返回空參數讓調用者處理
     }
     
     return params;
@@ -141,15 +142,45 @@ export class FileUploadService {
 
   // 取得檔案列表
   getFileList(): Observable<any> {
-    const params = this.getProjectParams();
+    const currentProject = this.projectService.getCurrentProject();
+    
+    if (!currentProject) {
+      console.warn('⚠️ [FileUploadService] 沒有當前專案，清空檔案列表');
+      // 沒有專案時，清空檔案列表並返回空結果
+      this.filesSubject.next([]);
+      return new Observable(observer => {
+        observer.next({ success: true, data: [], message: '請先選擇專案' });
+        observer.complete();
+      });
+    }
+
+    let params = new HttpParams();
+    params = params.set('AssociatedRecordId', currentProject.id);
+    params = params.set('AssociatedRecordType', 'project');
+    console.log('📡 [FileUploadService] 發送檔案列表請求，專案:', currentProject.projectName, 'ID:', currentProject.id);
+    
     return this.http.get<any>(`${this.apiUrl}/list`, { params }).pipe(
       map(response => {
+        console.log('📋 [FileUploadService] 收到檔案列表回應:', response);
         if (response.success) {
           // 處理新的回應格式：後端現在回應 { success: true, data: [...], message: "..." }
           const files = response.data || response.files || [];
+          console.log('📁 [FileUploadService] 解析到檔案數量:', files.length);
           this.filesSubject.next(files);
+        } else {
+          console.error('❌ [FileUploadService] API 回應失敗:', response.message);
+          this.filesSubject.next([]);
         }
         return response;
+      }),
+      catchError(error => {
+        console.error('❌ [FileUploadService] 獲取檔案列表失敗:', error);
+        this.filesSubject.next([]);
+        // 返回一個表示錯誤的響應而不是拋出錯誤
+        return new Observable(observer => {
+          observer.next({ success: false, data: [], message: '獲取檔案列表失敗' });
+          observer.complete();
+        });
       })
     );
   }
