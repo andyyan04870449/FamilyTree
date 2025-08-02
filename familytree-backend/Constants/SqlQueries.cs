@@ -188,15 +188,6 @@ namespace familytree_backend.Constants
                     search_count = search_keywords.search_count + 1,
                     last_search_time = @now";
 
-            /// <summary>
-            /// 獲取熱門關鍵字
-            /// </summary>
-            public const string GetPopularKeywords = @"
-                SELECT keyword 
-                FROM search_keywords 
-                WHERE (@projectId IS NULL OR project_id = @projectId)
-                ORDER BY search_count DESC, last_search_time DESC 
-                LIMIT @limit";
 
             /// <summary>
             /// 獲取搜索歷史

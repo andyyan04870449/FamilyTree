@@ -45,7 +45,6 @@ namespace familytree_backend.Models
         public int Page { get; set; }
         public int PageSize { get; set; }
         public List<PersonSearchResult> Results { get; set; } = new List<PersonSearchResult>();
-        public List<string> PopularKeywords { get; set; } = new List<string>();
         public List<string> SearchHistory { get; set; } = new List<string>();
     }
 
@@ -166,16 +165,6 @@ namespace familytree_backend.Models
         public bool CanDelete { get; set; } = true;
     }
 
-    /// <summary>
-    /// 熱門關鍵字模型
-    /// </summary>
-    public class PopularKeyword
-    {
-        public string Keyword { get; set; } = string.Empty;
-        public int SearchCount { get; set; }
-        public DateTime LastSearchTime { get; set; }
-        public string PopularityLevel { get; set; } = string.Empty; // 熱門程度：熱門、常用、一般
-    }
 
     /// <summary>
     /// 搜索統計模型
@@ -185,7 +174,7 @@ namespace familytree_backend.Models
         public int TotalSearches { get; set; }
         public int UniqueKeywords { get; set; }
         public int TotalFavorites { get; set; }
-        public List<PopularKeyword> TopKeywords { get; set; } = new List<PopularKeyword>();
+        public List<string> TopKeywords { get; set; } = new List<string>();
         public Dictionary<string, int> SearchTypeStats { get; set; } = new Dictionary<string, int>();
     }
 

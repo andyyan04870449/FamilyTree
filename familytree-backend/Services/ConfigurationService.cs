@@ -263,7 +263,6 @@ namespace familytree_backend.Services
                 SearchCacheExpirationMinutes = _configuration.GetValue<int>("Search:SearchCacheExpirationMinutes",
                                                                            ApplicationConstants.Search.SearchCacheExpirationMinutes),
                 
-                MaxPopularKeywords = _configuration.GetValue<int>("Search:MaxPopularKeywords", 10),
                 MaxSearchHistoryItems = _configuration.GetValue<int>("Search:MaxSearchHistoryItems", 50),
                 MaxTopKeywords = _configuration.GetValue<int>("Search:MaxTopKeywords", 20)
             };
@@ -767,10 +766,6 @@ namespace familytree_backend.Services
         /// </summary>
         public int SearchCacheExpirationMinutes { get; set; }
 
-        /// <summary>
-        /// 最大熱門關鍵字數量
-        /// </summary>
-        public int MaxPopularKeywords { get; set; }
 
         /// <summary>
         /// 最大搜尋歷史項目數量

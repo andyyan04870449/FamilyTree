@@ -79,13 +79,23 @@ start_backend() {
     # 檢查是否需要還原依賴
     if [ ! -d "bin" ] || [ ! -d "obj" ]; then
         log_info "還原 .NET 依賴..."
-        dotnet restore
+        if ! dotnet restore; then
+            log_error "後端依賴還原失敗"
+            exit 1
+        fi
     fi
     
     # 啟動後端
     dotnet run --urls "http://localhost:5088" > ../backend.log 2>&1 &
     BACKEND_PID=$!
     cd ..
+    
+    # 檢查進程是否成功啟動
+    if ! kill -0 $BACKEND_PID 2>/dev/null; then
+        log_error "後端服務啟動失敗"
+        log_error "請檢查 backend.log 檔案查看詳細錯誤"
+        exit 1
+    fi
     
     log_info "後端已啟動 (PID: $BACKEND_PID)"
     log_info "後端地址: http://localhost:5088"
@@ -100,13 +110,23 @@ start_frontend() {
     # 檢查是否需要安裝依賴
     if [ ! -d "node_modules" ]; then
         log_info "安裝 npm 依賴..."
-        npm install
+        if ! npm install; then
+            log_error "前端依賴安裝失敗"
+            exit 1
+        fi
     fi
     
     # 啟動前端
     npm start > ../frontend.log 2>&1 &
     FRONTEND_PID=$!
     cd ..
+    
+    # 檢查進程是否成功啟動
+    if ! kill -0 $FRONTEND_PID 2>/dev/null; then
+        log_error "前端服務啟動失敗"
+        log_error "請檢查 frontend.log 檔案查看詳細錯誤"
+        exit 1
+    fi
     
     log_info "前端已啟動 (PID: $FRONTEND_PID)"
     log_info "前端地址: http://localhost:4200"
@@ -117,21 +137,48 @@ check_services() {
     log_info "檢查服務狀態..."
     
     # 等待服務啟動
-    sleep 3
+    sleep 5
     
     # 檢查後端
-    if curl -s http://localhost:5088/api/project > /dev/null 2>&1; then
-        log_info "✅ 後端服務正常運行"
-    else
-        log_warn "⚠️  後端服務可能還在啟動中..."
-    fi
+    local backend_retries=0
+    local max_retries=10
+    
+    while [ $backend_retries -lt $max_retries ]; do
+        if curl -s http://localhost:5088/api/project > /dev/null 2>&1; then
+            log_info "✅ 後端服務正常運行"
+            break
+        else
+            backend_retries=$((backend_retries + 1))
+            if [ $backend_retries -eq $max_retries ]; then
+                log_error "❌ 後端服務啟動失敗或無法連接"
+                log_error "請檢查 backend.log 檔案查看詳細錯誤"
+                cleanup
+                exit 1
+            fi
+            log_warn "⚠️  後端服務還在啟動中... (嘗試 $backend_retries/$max_retries)"
+            sleep 2
+        fi
+    done
     
     # 檢查前端
-    if curl -s http://localhost:4200 > /dev/null 2>&1; then
-        log_info "✅ 前端服務正常運行"
-    else
-        log_warn "⚠️  前端服務可能還在啟動中..."
-    fi
+    local frontend_retries=0
+    
+    while [ $frontend_retries -lt $max_retries ]; do
+        if curl -s http://localhost:4200 > /dev/null 2>&1; then
+            log_info "✅ 前端服務正常運行"
+            break
+        else
+            frontend_retries=$((frontend_retries + 1))
+            if [ $frontend_retries -eq $max_retries ]; then
+                log_error "❌ 前端服務啟動失敗或無法連接"
+                log_error "請檢查 frontend.log 檔案查看詳細錯誤"
+                cleanup
+                exit 1
+            fi
+            log_warn "⚠️  前端服務還在啟動中... (嘗試 $frontend_retries/$max_retries)"
+            sleep 2
+        fi
+    done
 }
 
 # 函數：清理進程
@@ -164,7 +211,7 @@ trap cleanup SIGINT SIGTERM
 
 # 啟動服務器
 start_backend
-sleep 5
+sleep 3
 start_frontend
 
 # 檢查服務狀態

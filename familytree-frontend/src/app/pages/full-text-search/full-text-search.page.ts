@@ -31,11 +31,7 @@ interface SearchHistory {
   lastUsed: string;
 }
 
-// 熱門關鍵字接口
-interface PopularKeyword {
-  keyword: string;
-  count: number;
-}
+// 熱門關鍵字接口 - 已移除功能
 
 // 收藏接口
 interface Favorite {
@@ -76,9 +72,8 @@ export class FullTextSearchPage implements OnInit {
   totalPages: number = 1;
   pageSize: number = 10;
 
-  // 歷史和熱門關鍵字
+  // 搜索歷史
   searchHistory: SearchHistory[] = [];
-  popularKeywords: PopularKeyword[] = [];
 
   // 收藏相關
   favorites: Favorite[] = [];
@@ -160,7 +155,6 @@ export class FullTextSearchPage implements OnInit {
   private async loadInitialData(): Promise<void> {
     await Promise.all([
       this.loadSearchHistory(),
-      this.loadPopularKeywords(),
       this.loadFavorites()
     ]);
   }
@@ -187,26 +181,6 @@ export class FullTextSearchPage implements OnInit {
     }
   }
 
-  // 載入熱門關鍵字
-  private async loadPopularKeywords(): Promise<void> {
-    try {
-      this.fullTextSearchService.getPopularKeywords().subscribe({
-        next: (response) => {
-          if (response?.success && response.data) {
-            this.popularKeywords = response.data.map((keyword: string) => ({
-              keyword,
-              count: 1
-            }));
-          }
-        },
-        error: (error) => {
-          console.error('載入熱門關鍵字失敗:', error);
-        }
-      });
-    } catch (error) {
-      console.error('載入熱門關鍵字失敗:', error);
-    }
-  }
 
   // 載入收藏列表
   private async loadFavorites(): Promise<void> {
@@ -246,20 +220,34 @@ export class FullTextSearchPage implements OnInit {
 
       this.fullTextSearchService.search(searchRequest).subscribe({
         next: (response) => {
-          if (response?.success && response.data) {
-            this.searchResults = response.data.results.map((item: PersonSearchResult) => ({
-              id: item.id,
-              name: item.name,
-              gender: item.gender,
-              source: item.source,
-              createdAt: item.createdAt,
-              isFavorited: this.favorites.some(f => f.id === item.id)
-            }));
-            this.totalResults = response.data.totalCount;
-            this.totalPages = Math.ceil(this.totalResults / this.pageSize);
-            this.hasSearched = true;
+          if (response?.success) {
+            // 无论是否有搜索结果，都更新搜索历史
+            if (response.data?.searchHistory) {
+              this.searchHistory = response.data.searchHistory.map((keyword: string) => ({
+                keyword,
+                count: 1,
+                lastUsed: new Date().toISOString()
+              }));
+            }
             
-
+            if (response.data) {
+              this.searchResults = response.data.results.map((item: PersonSearchResult) => ({
+                id: item.id,
+                name: item.name,
+                gender: item.gender,
+                source: item.source,
+                createdAt: item.createdAt,
+                isFavorited: this.favorites.some(f => f.id === item.id)
+              }));
+              this.totalResults = response.data.totalCount;
+              this.totalPages = Math.ceil(this.totalResults / this.pageSize);
+            } else {
+              // 没有data但success=true的情况，清空结果
+              this.searchResults = [];
+              this.totalResults = 0;
+              this.totalPages = 1;
+            }
+            this.hasSearched = true;
           } else {
             this.error = response?.message || '搜索失敗';
           }
@@ -288,11 +276,6 @@ export class FullTextSearchPage implements OnInit {
     this.performSearch();
   }
 
-  // 使用熱門關鍵字
-  usePopularKeyword(keyword: string): void {
-    this.searchKeyword = keyword;
-    this.performSearch();
-  }
 
   // 重置搜索
   resetSearch(): void {

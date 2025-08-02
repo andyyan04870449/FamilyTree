@@ -377,7 +377,10 @@ export class AuditLogService {
    */
   canViewAuditLogs(): boolean {
     const user = this.authService.currentUserValue;
-    return user && user.role === 'admin' || false;
+    if (!user || !user.role) return false;
+    
+    const role = user.role.toLowerCase();
+    return role === 'admin' || role === 'auditreader';
   }
 
   /**
@@ -385,6 +388,9 @@ export class AuditLogService {
    */
   canManageAuditLogs(): boolean {
     const user = this.authService.currentUserValue;
-    return user && user.role === 'admin' || false;
+    if (!user || !user.role) return false;
+    
+    const role = user.role.toLowerCase();
+    return role === 'admin';
   }
 }

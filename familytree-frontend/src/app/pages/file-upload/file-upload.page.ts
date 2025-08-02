@@ -265,7 +265,11 @@ export class FileUploadComponent implements OnInit, OnDestroy {
       this.fileUploadService.refreshFileList();
     } else {
       if (result.isDuplicate) {
-        this.uploadMessage = '⚠️ 檔案已存在，無法重複上傳';
+        this.uploadMessage = '⚠️ 檔案已存在，但已記錄到列表';
+        // 重複檔案也需要刷新列表，因為後端已記錄到資料庫
+        this.fileUploadService.refreshFileList();
+        this.selectedFile = null;
+        this.detectedFileType = 'unknown';
       } else {
         this.uploadMessage = `❌ 上傳失敗: ${result.message}`;
       }

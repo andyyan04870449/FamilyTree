@@ -241,8 +241,7 @@
   padding-left: 0;
 }
 
-.keyword-suggestions__history,
-.keyword-suggestions__popular {
+.keyword-suggestions__history {
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -262,6 +261,17 @@
   gap: 8px;
 }
 
+// 空狀態樣式
+.no-history {
+  font-size: 12px;
+  color: $text-tertiary;
+  font-style: italic;
+  padding: 4px 8px;
+  background: $bg-tertiary;
+  border-radius: 4px;
+  border: 1px dashed $border-secondary;
+}
+
 // 標籤樣式
 .tag {
   padding: 4px 10px;
@@ -273,8 +283,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
 
-  &--history,
-  &--popular {
+  &--history {
     &:hover {
       background: $bg-tertiary;
       border-color: $primary;

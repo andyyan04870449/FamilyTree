@@ -389,7 +389,38 @@ namespace familytree_backend.Services
 
         public async Task<IEnumerable<FileUploadRecord>> GetFileUploadRecordsAsync(string projectId)
         {
-            throw new NotImplementedException("暫未實作");
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                var sql = @"
+                    SELECT 
+                        file_id as Id,
+                        filename as FileName,
+                        original_filename as OriginalFileName,
+                        file_path as FilePath,
+                        file_size as FileSize,
+                        md5_hash as Md5Hash,
+                        file_type as FileType,
+                        user_id as UserId,
+                        associated_record_id as ProjectId,
+                        upload_status as Status,
+                        uploaded_at as UploadTime
+                    FROM file_uploads 
+                    WHERE associated_record_id = @ProjectId 
+                      AND associated_record_type = 'project'
+                      AND upload_status != 'deleted'
+                    ORDER BY uploaded_at DESC";
+
+                var records = await connection.QueryAsync<FileUploadRecord>(sql, new { ProjectId = projectId });
+                return records;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "獲取檔案上傳記錄失敗: ProjectId={ProjectId}", projectId);
+                throw;
+            }
         }
 
 
@@ -494,31 +525,6 @@ namespace familytree_backend.Services
             }
         }
 
-        public async Task<List<string>> GetPopularKeywordsAsync(string? projectId = null, int limit = 10)
-        {
-            try
-            {
-                _logger.LogInformation("獲取熱門關鍵字：專案 {ProjectId}，限制 {Limit}", 
-                    projectId ?? "全專案", limit);
-
-                var parameters = new
-                {
-                    projectId = projectId,
-                    limit = limit
-                };
-
-                var keywords = await ExecuteQueryAsync<string>(SqlQueries.Search.GetPopularKeywords, parameters);
-
-                _logger.LogInformation("獲取熱門關鍵字成功：{Count} 個", keywords.Count());
-
-                return keywords.ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "獲取熱門關鍵字失敗");
-                return new List<string>();
-            }
-        }
 
         public async Task<List<string>> GetSearchHistoryAsync(string? projectId = null, int limit = 20)
         {
@@ -600,7 +606,29 @@ namespace familytree_backend.Services
 
         public async Task RecordFileUploadAsync(FileUploadRecord record)
         {
-            throw new NotImplementedException("暫未實作");
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                var sql = @"
+                    INSERT INTO file_uploads (
+                        user_id, filename, original_filename, file_path, file_size, 
+                        md5_hash, file_type, associated_record_id, associated_record_type,
+                        upload_status, uploaded_at
+                    ) VALUES (
+                        @UserId, @FileName, @FileName, @FilePath, @FileSize,
+                        @Md5Hash, @FileType, @ProjectId, 'project',
+                        @Status, @UploadTime
+                    )";
+
+                await connection.ExecuteAsync(sql, record);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "記錄檔案上傳失敗: FileName={FileName}", record.FileName);
+                throw;
+            }
         }
 
         #endregion

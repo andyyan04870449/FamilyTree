@@ -53,10 +53,11 @@ namespace familytree_backend.Services
                 {
                     return new FileUploadResponse
                     {
-                        Success = false,
-                        Message = "檔案已存在，無法重複上傳",
+                        Success = true,
+                        Message = "檔案已存在，使用現有檔案",
                         IsDuplicate = true,
-                        FileInfo = existingFile
+                        FileInfo = existingFile,
+                        FilePath = existingFile.FilePath
                     };
                 }
 
@@ -185,7 +186,7 @@ namespace familytree_backend.Services
             }
         }
 
-        public async Task<FileUploadResponse> ProcessFileAsync(int fileId)
+        public async Task<FileUploadResponse> ProcessFileAsync(Guid fileId)
         {
             try
             {
@@ -268,7 +269,7 @@ namespace familytree_backend.Services
             }
         }
 
-        public async Task<FileUploadResponse> DeleteFileAsync(int fileId)
+        public async Task<FileUploadResponse> DeleteFileAsync(Guid fileId)
         {
             try
             {
@@ -340,7 +341,7 @@ namespace familytree_backend.Services
             }
         }
 
-        public async Task<DeleteImpactResponse> GetDeleteImpactAsync(int fileId)
+        public async Task<DeleteImpactResponse> GetDeleteImpactAsync(Guid fileId)
         {
             try
             {

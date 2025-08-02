@@ -63,13 +63,14 @@ namespace FamilyTree.Services
             ["superadmin"] = new List<string> { "*" }, // 所有權限
             ["admin"] = new List<string> 
             { 
-                "user:*", "project:*", "person:*", "file:*", "report:*"
+                "user:*", "project:*", "person:*", "file:*", "report:*", "search:*"
             },
             ["user"] = new List<string> 
             { 
                 "project:read", "project:create", 
                 "person:*", 
                 "file:upload", "file:download",
+                "search:perform",
                 "report:view"
             },
             ["guest"] = new List<string> 

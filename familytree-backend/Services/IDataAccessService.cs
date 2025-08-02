@@ -124,10 +124,6 @@ namespace familytree_backend.Services
         /// </summary>
         Task RecordSearchKeywordAsync(string keyword, string searchType, string? projectId = null);
 
-        /// <summary>
-        /// 獲取熱門關鍵字
-        /// </summary>
-        Task<List<string>> GetPopularKeywordsAsync(string? projectId = null, int limit = 10);
 
         /// <summary>
         /// 獲取搜尋歷史
@@ -178,7 +174,9 @@ namespace familytree_backend.Services
     /// </summary>
     public class FileUploadRecord
     {
+        public Guid Id { get; set; }
         public string FileName { get; set; } = string.Empty;
+        public string OriginalFileName { get; set; } = string.Empty;
         public string Md5Hash { get; set; } = string.Empty;
         public long FileSize { get; set; }
         public string Status { get; set; } = string.Empty;

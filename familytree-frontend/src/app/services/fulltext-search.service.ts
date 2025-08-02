@@ -126,16 +126,7 @@ export interface SearchStatistics {
   totalSearches: number;
   uniqueKeywords: number;
   totalFavorites: number;
-  topKeywords: PopularKeyword[];
   searchTypeStats: { [key: string]: number };
-}
-
-// 熱門關鍵字接口
-export interface PopularKeyword {
-  keyword: string;
-  searchCount: number;
-  lastSearchTime: string;
-  popularityLevel: string;
 }
 
 @Injectable({
@@ -150,8 +141,6 @@ export class FullTextSearchService {
   private favoritesSubject = new BehaviorSubject<FavoriteItem[]>([]);
   public favorites$ = this.favoritesSubject.asObservable();
 
-  private popularKeywordsSubject = new BehaviorSubject<string[]>([]);
-  public popularKeywords$ = this.popularKeywordsSubject.asObservable();
 
   private searchHistorySubject = new BehaviorSubject<string[]>([]);
   public searchHistory$ = this.searchHistorySubject.asObservable();
@@ -161,7 +150,7 @@ export class FullTextSearchService {
     private projectService: ProjectService
   ) {
     // FullTextSearchService 初始化
-    // 初始化時載入收藏列表和熱門關鍵字
+    // 初始化時載入收藏列表和搜索歷史
     this.loadInitialData();
   }
 
@@ -190,7 +179,6 @@ export class FullTextSearchService {
     // 載入初始資料
     try {
       this.loadFavorites();
-      this.loadPopularKeywords();
       this.loadSearchHistory();
     } catch (error) {
       // 初始化時沒有當前專案，跳過資料載入
@@ -216,14 +204,6 @@ export class FullTextSearchService {
     return this.http.post<SearchResult>(`${this.searchUrl}/search`, searchRequest);
   }
 
-  /**
-   * 獲取熱門關鍵字
-   */
-  getPopularKeywords(): Observable<ApiResponse<string[]>> {
-    // 獲取熱門關鍵字
-    const params = this.getProjectParams();
-    return this.http.get<ApiResponse<string[]>>(`${this.searchUrl}/popular-keywords`, { params });
-  }
 
   /**
    * 獲取搜索歷史
@@ -358,26 +338,6 @@ export class FullTextSearchService {
      });
    }
 
-  /**
-   * 載入熱門關鍵字並更新狀態
-   */
-  loadPopularKeywords(): void {
-    this.getPopularKeywords().subscribe({
-      next: (result) => {
-        if (result.success && result.data) {
-          // 熱門關鍵字載入成功
-          this.popularKeywordsSubject.next(result.data);
-        } else {
-          // 熱門關鍵字載入失敗
-          this.popularKeywordsSubject.next([]);
-        }
-      },
-              error: (error) => {
-          // 熱門關鍵字載入錯誤
-        this.popularKeywordsSubject.next([]);
-      }
-    });
-  }
 
   /**
    * 載入搜索歷史並更新狀態
@@ -526,12 +486,6 @@ export class FullTextSearchService {
     return this.favoritesSubject.value;
   }
 
-  /**
-   * 獲取當前熱門關鍵字
-   */
-  getCurrentPopularKeywords(): string[] {
-    return this.popularKeywordsSubject.value;
-  }
 
   /**
    * 獲取當前搜索歷史

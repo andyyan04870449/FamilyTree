@@ -83,8 +83,7 @@ namespace familytree_backend.Controllers
                 // 步驟 4：記錄搜索關鍵字
                 await _dataAccessService.RecordSearchKeywordAsync(request.Keyword, request.SearchType, request.ProjectId);
 
-                // 步驟 5：獲取熱門關鍵字和搜索歷史
-                var popularKeywords = await _dataAccessService.GetPopularKeywordsAsync(request.ProjectId, _searchConfig.MaxPopularKeywords);
+                // 步驟 5：獲取搜索歷史
                 var searchHistory = await _dataAccessService.GetSearchHistoryAsync(request.ProjectId, _searchConfig.MaxSearchHistory);
 
                 var endTime = DateTime.UtcNow;
@@ -106,7 +105,6 @@ namespace familytree_backend.Controllers
                         Page = request.Page,
                         PageSize = request.PageSize,
                         Results = searchResults.ToList(),
-                        PopularKeywords = popularKeywords,
                         SearchHistory = searchHistory
                     }
                 };
@@ -152,8 +150,7 @@ namespace familytree_backend.Controllers
                 // 步驟 3：記錄搜索關鍵字（全局記錄）
                 await _dataAccessService.RecordSearchKeywordAsync(request.Keyword, request.SearchType);
 
-                // 步驟 4：獲取全專案的熱門關鍵字和搜索歷史
-                var popularKeywords = await _dataAccessService.GetPopularKeywordsAsync(limit: _searchConfig.MaxPopularKeywords);
+                // 步驟 4：獲取全專案的搜索歷史
                 var searchHistory = await _dataAccessService.GetSearchHistoryAsync(limit: _searchConfig.MaxSearchHistory);
 
                 var endTime = DateTime.UtcNow;
@@ -175,7 +172,6 @@ namespace familytree_backend.Controllers
                         Page = request.Page,
                         PageSize = request.PageSize,
                         Results = searchResults.ToList(),
-                        PopularKeywords = popularKeywords,
                         SearchHistory = searchHistory
                     }
                 };
@@ -185,47 +181,6 @@ namespace familytree_backend.Controllers
             }, "全專案搜索");
         }
 
-        /// <summary>
-        /// 獲取熱門關鍵字 API
-        /// 設計改善：使用統一的資料存取服務，簡化熱門關鍵字查詢
-        /// </summary>
-        /// <param name="project_id">專案 ID</param>
-        /// <returns>熱門關鍵字列表</returns>
-        [HttpGet("popular-keywords")]
-        [RequirePermission("search:perform")]
-        public async Task<IActionResult> GetPopularKeywords([FromQuery] string? project_id = null)
-        {
-            return await ExecuteWithExceptionHandling(async () =>
-            {
-                LogRequestStart("獲取熱門關鍵字", new { ProjectId = project_id });
-
-                // 驗證專案 ID（如果提供）
-                if (!string.IsNullOrEmpty(project_id))
-                {
-                    var projectValidationResult = ValidateProjectId(project_id, allowNull: false);
-                    if (projectValidationResult != null)
-                    {
-                        return projectValidationResult;
-                    }
-                }
-
-                // 使用統一的資料存取服務獲取熱門關鍵字
-                var popularKeywords = await _dataAccessService.GetPopularKeywordsAsync(project_id, _searchConfig.MaxPopularKeywords);
-
-                Logger.LogInformation("獲取熱門關鍵字完成：專案 {ProjectId}，關鍵字數量 {Count}", 
-                    project_id ?? "全專案", popularKeywords.Count);
-
-                var response = new ApiResponse<List<string>>
-                {
-                    Success = true,
-                    Message = "熱門關鍵字獲取成功",
-                    Data = popularKeywords
-                };
-
-                LogRequestComplete("獲取熱門關鍵字", popularKeywords.Count);
-                return Ok(response);
-            }, "獲取熱門關鍵字");
-        }
 
         /// <summary>
         /// 獲取搜索歷史 API
@@ -339,7 +294,7 @@ namespace familytree_backend.Controllers
                     TotalSearches = 0,
                     UniqueKeywords = 0,
                     TotalFavorites = 0,
-                    TopKeywords = new List<PopularKeyword>(),
+                    TopKeywords = new List<string>(),
                     SearchTypeStats = new Dictionary<string, int>()
                 };
 

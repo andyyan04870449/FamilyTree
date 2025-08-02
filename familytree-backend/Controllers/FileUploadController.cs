@@ -82,15 +82,34 @@ namespace familytree_backend.Controllers
                 var result = await _fileUploadService.UploadFileAsync(file, project_id);
 
                 // 步驟 4：記錄檔案上傳到資料庫
-                if (result.Success)
+                if (result.Success || result.IsDuplicate)
                 {
+                    // 獲取當前用戶 ID
+                    var currentUserId = GetCurrentUserId();
+                    
+                    // 計算 MD5 hash
+                    string md5Hash;
+                    using (var md5 = System.Security.Cryptography.MD5.Create())
+                    {
+                        file.OpenReadStream().Position = 0;
+                        var hashBytes = md5.ComputeHash(file.OpenReadStream());
+                        md5Hash = Convert.ToHexString(hashBytes).ToLowerInvariant();
+                    }
+                    
+                    // 獲取檔案路徑 - 重複檔案使用現有檔案的路徑
+                    var filePath = result.IsDuplicate 
+                        ? result.FileInfo?.FilePath ?? result.FilePath ?? throw new InvalidOperationException("重複檔案路徑不能為空")
+                        : result.FilePath ?? throw new InvalidOperationException("檔案路徑不能為空");
+                    
                     var fileRecord = new FileUploadRecord
                     {
                         FileName = file.FileName,
-                        FilePath = result.FilePath,
+                        FilePath = filePath,
                         FileSize = file.Length,
                         FileType = Path.GetExtension(file.FileName),
                         ProjectId = project_id,
+                        UserId = currentUserId,
+                        Md5Hash = md5Hash,
                         UploadTime = DateTime.UtcNow,
                         Status = "uploaded"
                     };
@@ -180,12 +199,15 @@ namespace familytree_backend.Controllers
                     Message = "檔案列表獲取成功",
                     Files = fileRecords.Select(f => new FileData
                     {
+                        Id = f.Id,
                         FileName = f.FileName,
+                        OriginalFileName = f.OriginalFileName,
                         FilePath = f.FilePath,
                         FileSize = f.FileSize,
                         FileType = f.FileType,
                         UploadTime = f.UploadTime,
-                        Status = f.Status
+                        Status = f.Status,
+                        Md5Hash = f.Md5Hash
                     }).ToList(),
                     TotalCount = fileRecords.Count()
                 };
@@ -203,16 +225,16 @@ namespace familytree_backend.Controllers
         /// <returns>刪除結果</returns>
         [HttpDelete("{id}")]
         [RequirePermission("file:delete")]
-        public async Task<IActionResult> DeleteFile(int id)
+        public async Task<IActionResult> DeleteFile(Guid id)
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
                 LogRequestStart("刪除檔案", new { FileId = id });
 
                 // 參數驗證
-                if (id <= 0)
+                if (id == Guid.Empty)
                 {
-                    return CreateErrorResponse("檔案 ID 必須大於 0");
+                    return CreateErrorResponse("檔案 ID 不能為空");
                 }
 
                 // 執行檔案刪除（內部已處理檔案存在性檢查）
@@ -243,16 +265,16 @@ namespace familytree_backend.Controllers
         /// <param name="id">檔案 ID</param>
         /// <returns>刪除影響分析</returns>
         [HttpGet("{id}/impact")]
-        public async Task<IActionResult> GetDeleteImpact(int id)
+        public async Task<IActionResult> GetDeleteImpact(Guid id)
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
                 LogRequestStart("獲取檔案刪除影響", new { FileId = id });
 
                 // 參數驗證
-                if (id <= 0)
+                if (id == Guid.Empty)
                 {
-                    return CreateErrorResponse("檔案 ID 必須大於 0");
+                    return CreateErrorResponse("檔案 ID 不能為空");
                 }
 
                 // 使用 FileUploadService 分析刪除影響
@@ -296,16 +318,16 @@ namespace familytree_backend.Controllers
         /// <returns>處理結果</returns>
         [HttpPost("process/{id}")]
         [RequirePermission("file:process")]
-        public async Task<IActionResult> ProcessFile(int id)
+        public async Task<IActionResult> ProcessFile(Guid id)
         {
             return await ExecuteWithExceptionHandling(async () =>
             {
                 LogRequestStart("處理檔案", new { FileId = id });
 
                 // 參數驗證
-                if (id <= 0)
+                if (id == Guid.Empty)
                 {
-                    return CreateErrorResponse("檔案 ID 必須大於 0");
+                    return CreateErrorResponse("檔案 ID 不能為空");
                 }
 
                 // 執行檔案處理（內部會檢查檔案是否存在）
@@ -424,12 +446,15 @@ namespace familytree_backend.Controllers
     /// </summary>
     public class FileData
     {
+        public Guid Id { get; set; }
         public string FileName { get; set; } = string.Empty;
+        public string OriginalFileName { get; set; } = string.Empty;
         public string FilePath { get; set; } = string.Empty;
         public long FileSize { get; set; }
         public string? FileType { get; set; }
         public DateTime UploadTime { get; set; }
         public string? Status { get; set; }
+        public string? Md5Hash { get; set; }
     }
 
     /// <summary>
@@ -437,7 +462,7 @@ namespace familytree_backend.Controllers
     /// </summary>
     public class FileDeleteImpact
     {
-        public int FileId { get; set; }
+        public Guid FileId { get; set; }
         public int AffectedPersons { get; set; }
         public int AffectedRelationships { get; set; }
         public bool CanDelete { get; set; }

@@ -20,128 +20,144 @@ import { ToastService } from '../../services/toast.service';
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   template: `
-    <div class="audit-log-viewer">
+    <div class="audit-log">
       <!-- 標題和操作按鈕 -->
-      <div class="header">
-        <h2>稽核日誌查詢</h2>
-        <div class="header-actions">
+      <div class="audit-log__header">
+        <h2 class="audit-log__title">稽核日誌查詢</h2>
+        <div class="audit-log__actions">
           <button 
             type="button" 
-            class="btn btn-secondary"
+            class="btn btn--secondary"
             (click)="showStatistics = !showStatistics">
+            <i class="fas fa-chart-bar" aria-hidden="true"></i>
             {{ showStatistics ? '隱藏' : '顯示' }}統計
           </button>
           <button 
             type="button" 
-            class="btn btn-secondary"
+            class="btn btn--secondary"
             (click)="refreshData()"
             [disabled]="loading">
+            <i class="fas fa-sync-alt" aria-hidden="true"></i>
             重新整理
           </button>
           <button 
             type="button" 
-            class="btn btn-primary"
+            class="btn btn--primary"
             (click)="exportLogs()"
             [disabled]="loading || !queryResult">
+            <i class="fas fa-download" aria-hidden="true"></i>
             匯出日誌
           </button>
           <button 
             *ngIf="canManage"
             type="button" 
-            class="btn btn-warning"
+            class="btn btn--warning"
             (click)="cleanupLogs()"
             [disabled]="loading">
+            <i class="fas fa-trash-alt" aria-hidden="true"></i>
             清理過期日誌
           </button>
         </div>
       </div>
 
       <!-- 統計資訊面板 -->
-      <div *ngIf="showStatistics && statistics" class="statistics-panel">
-        <div class="stats-grid">
+      <div *ngIf="showStatistics && statistics" class="audit-log__statistics">
+        <div class="audit-log__stats-grid">
           <div class="stat-card">
-            <div class="stat-label">總事件數</div>
-            <div class="stat-value">{{ statistics.totalEvents | number }}</div>
+            <div class="stat-card__label">總事件數</div>
+            <div class="stat-card__value">{{ statistics.totalEvents | number }}</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">成功率</div>
-            <div class="stat-value">{{ statistics.successRate | number:'1.1-1' }}%</div>
+            <div class="stat-card__label">成功率</div>
+            <div class="stat-card__value stat-card__value--success">{{ statistics.successRate | number:'1.1-1' }}%</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">可疑事件</div>
-            <div class="stat-value warning">{{ statistics.suspiciousEvents | number }}</div>
+            <div class="stat-card__label">可疑事件</div>
+            <div class="stat-card__value stat-card__value--warning">{{ statistics.suspiciousEvents | number }}</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">唯一使用者</div>
-            <div class="stat-value">{{ statistics.uniqueUsers | number }}</div>
+            <div class="stat-card__label">唯一使用者</div>
+            <div class="stat-card__value">{{ statistics.uniqueUsers | number }}</div>
           </div>
         </div>
       </div>
 
       <!-- 查詢過濾器 -->
-      <div class="filter-panel" [class.expanded]="showFilters">
-        <div class="filter-header">
-          <h3>過濾條件</h3>
+      <div class="filter-panel" [class.filter-panel--expanded]="showFilters">
+        <div class="filter-panel__header">
+          <h3 class="filter-panel__title">過濾條件</h3>
           <button 
             type="button" 
-            class="btn btn-link"
-            (click)="showFilters = !showFilters">
+            class="btn btn--link"
+            (click)="showFilters = !showFilters"
+            [attr.aria-expanded]="showFilters"
+            aria-label="切換過濾條件面板">
+            <i class="fas" [ngClass]="showFilters ? 'fa-chevron-up' : 'fa-chevron-down'" aria-hidden="true"></i>
             {{ showFilters ? '收合' : '展開' }}
           </button>
         </div>
         
-        <form [formGroup]="filterForm" *ngIf="showFilters">
-          <div class="form-row">
+        <form [formGroup]="filterForm" *ngIf="showFilters" class="filter-panel__form">
+          <div class="filter-panel__row">
             <!-- 時間範圍 -->
-            <div class="form-group">
-              <label for="fromDate">開始時間</label>
-              <input 
-                type="datetime-local" 
-                id="fromDate"
-                formControlName="fromDate"
-                class="form-control">
-            </div>
-            <div class="form-group">
-              <label for="toDate">結束時間</label>
-              <input 
-                type="datetime-local" 
-                id="toDate"
-                formControlName="toDate"
-                class="form-control">
+            <div class="form-field" role="group" aria-labelledby="date-range-label">
+              <legend id="date-range-label" class="form-field__label">時間範圍</legend>
+              <div class="form-field__group">
+                <div class="form-field__item">
+                  <label for="fromDate" class="form-field__label form-field__label--sr-only">開始時間</label>
+                  <input 
+                    type="datetime-local" 
+                    id="fromDate"
+                    formControlName="fromDate"
+                    class="form-field__input"
+                    aria-label="開始時間">
+                </div>
+                <span class="form-field__separator">至</span>
+                <div class="form-field__item">
+                  <label for="toDate" class="form-field__label form-field__label--sr-only">結束時間</label>
+                  <input 
+                    type="datetime-local" 
+                    id="toDate"
+                    formControlName="toDate"
+                    class="form-field__input"
+                    aria-label="結束時間">
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="form-row">
+          <div class="filter-panel__row">
             <!-- 使用者過濾 -->
-            <div class="form-group">
-              <label for="userId">使用者ID</label>
+            <div class="form-field">
+              <label for="userId" class="form-field__label">使用者ID</label>
               <input 
                 type="text" 
                 id="userId"
                 formControlName="userId"
-                class="form-control"
+                class="form-field__input"
                 placeholder="輸入使用者ID">
             </div>
-            <div class="form-group">
-              <label for="userName">使用者名稱</label>
+            <div class="form-field">
+              <label for="userName" class="form-field__label">使用者名稱</label>
               <input 
                 type="text" 
                 id="userName"
                 formControlName="userName"
-                class="form-control"
+                class="form-field__input"
                 placeholder="輸入使用者名稱">
             </div>
           </div>
 
-          <div class="form-row">
+          <div class="filter-panel__row">
             <!-- 事件類型 -->
-            <div class="form-group">
-              <label for="eventTypes">事件類型</label>
+            <div class="form-field">
+              <label for="eventTypes" class="form-field__label">事件類型</label>
               <select 
                 id="eventTypes"
                 formControlName="eventTypes"
-                class="form-control"
-                multiple>
+                class="form-field__select form-field__select--multiple"
+                multiple
+                aria-describedby="eventTypes-help">
                 <optgroup *ngFor="let category of categories" [label]="category">
                   <option 
                     *ngFor="let eventType of getEventTypesByCategory(category)"
@@ -150,14 +166,15 @@ import { ToastService } from '../../services/toast.service';
                   </option>
                 </optgroup>
               </select>
+              <small id="eventTypes-help" class="form-field__help">可選擇多個事件類型</small>
             </div>
             <!-- 資源類型 -->
-            <div class="form-group">
-              <label for="resourceType">資源類型</label>
+            <div class="form-field">
+              <label for="resourceType" class="form-field__label">資源類型</label>
               <select 
                 id="resourceType"
                 formControlName="resourceType"
-                class="form-control">
+                class="form-field__select">
                 <option value="">全部</option>
                 <option value="Person">人員資料</option>
                 <option value="File">檔案</option>
@@ -167,28 +184,30 @@ import { ToastService } from '../../services/toast.service';
             </div>
           </div>
 
-          <div class="form-row">
+          <div class="filter-panel__row">
             <!-- 安全等級 -->
-            <div class="form-group">
-              <label for="securityLevels">安全等級</label>
+            <div class="form-field">
+              <label for="securityLevels" class="form-field__label">安全等級</label>
               <select 
                 id="securityLevels"
                 formControlName="securityLevels"
-                class="form-control"
-                multiple>
+                class="form-field__select form-field__select--multiple"
+                multiple
+                aria-describedby="securityLevels-help">
                 <option value="LOW">低</option>
                 <option value="NORMAL">一般</option>
                 <option value="HIGH">高</option>
                 <option value="CRITICAL">嚴重</option>
               </select>
+              <small id="securityLevels-help" class="form-field__help">可選擇多個安全等級</small>
             </div>
             <!-- 操作結果 -->
-            <div class="form-group">
-              <label for="success">操作結果</label>
+            <div class="form-field">
+              <label for="success" class="form-field__label">操作結果</label>
               <select 
                 id="success"
                 formControlName="success"
-                class="form-control">
+                class="form-field__select">
                 <option value="">全部</option>
                 <option value="true">成功</option>
                 <option value="false">失敗</option>
@@ -196,44 +215,48 @@ import { ToastService } from '../../services/toast.service';
             </div>
           </div>
 
-          <div class="form-row">
+          <div class="filter-panel__row">
             <!-- 搜尋文字 -->
-            <div class="form-group">
-              <label for="searchText">搜尋</label>
+            <div class="form-field">
+              <label for="searchText" class="form-field__label">搜尋</label>
               <input 
                 type="text" 
                 id="searchText"
                 formControlName="searchText"
-                class="form-control"
-                placeholder="搜尋日誌內容...">
+                class="form-field__input"
+                placeholder="搜尋日誌內容..."
+                aria-describedby="searchText-help">
+              <small id="searchText-help" class="form-field__help">在日誌內容中搜尋關鍵字</small>
             </div>
             <!-- 特殊選項 -->
-            <div class="form-group">
-              <div class="form-check">
+            <div class="form-field">
+              <div class="form-field__checkbox">
                 <input 
                   type="checkbox" 
                   id="onlySuspicious"
                   formControlName="onlySuspicious"
-                  class="form-check-input">
-                <label for="onlySuspicious" class="form-check-label">
+                  class="form-field__checkbox-input">
+                <label for="onlySuspicious" class="form-field__checkbox-label">
                   只顯示可疑事件
                 </label>
               </div>
             </div>
           </div>
 
-          <div class="filter-actions">
+          <div class="filter-panel__actions">
             <button 
               type="button" 
-              class="btn btn-primary"
+              class="btn btn--primary"
               (click)="applyFilter()"
               [disabled]="loading">
+              <i class="fas fa-search" aria-hidden="true"></i>
               套用過濾
             </button>
             <button 
               type="button" 
-              class="btn btn-secondary"
+              class="btn btn--secondary"
               (click)="resetFilter()">
+              <i class="fas fa-undo" aria-hidden="true"></i>
               重設
             </button>
           </div>
@@ -241,15 +264,15 @@ import { ToastService } from '../../services/toast.service';
       </div>
 
       <!-- 載入狀態 -->
-      <div *ngIf="loading" class="loading-indicator">
-        <div class="spinner"></div>
-        <span>載入中...</span>
+      <div *ngIf="loading" class="audit-log__loading">
+        <div class="spinner" role="status" aria-label="載入中"></div>
+        <span class="audit-log__loading-text">載入中...</span>
       </div>
 
       <!-- 查詢結果 -->
-      <div *ngIf="!loading && queryResult" class="results-panel">
+      <div *ngIf="!loading && queryResult" class="audit-log__results">
         <!-- 結果摘要 -->
-        <div class="results-summary">
+        <div class="audit-log__summary">
           <span>
             共找到 {{ queryResult.totalCount | number }} 筆記錄，
             顯示第 {{ (queryResult.page - 1) * queryResult.pageSize + 1 }} - 
@@ -261,91 +284,106 @@ import { ToastService } from '../../services/toast.service';
         </div>
 
         <!-- 日誌表格 -->
-        <div class="table-container">
-          <table class="audit-log-table">
-            <thead>
-              <tr>
-                <th (click)="sort('occurredAt')" class="sortable">
+        <div class="audit-log__table-container">
+          <table class="audit-table" role="table" aria-label="稽核日誌表格">
+            <thead class="audit-table__header">
+              <tr class="audit-table__row">
+                <th (click)="sort('occurredAt')" class="audit-table__cell audit-table__cell--sortable audit-table__cell--timestamp" 
+                    [attr.aria-sort]="getSortAriaLabel('occurredAt')" tabindex="0" 
+                    (keydown.enter)="sort('occurredAt')" (keydown.space)="sort('occurredAt')">
                   時間 
-                  <span class="sort-indicator" [class]="getSortClass('occurredAt')"></span>
+                  <i class="fas sort-indicator" [ngClass]="getSortIcon('occurredAt')" aria-hidden="true"></i>
                 </th>
-                <th (click)="sort('eventType')" class="sortable">
+                <th (click)="sort('eventType')" class="audit-table__cell audit-table__cell--sortable" 
+                    [attr.aria-sort]="getSortAriaLabel('eventType')" tabindex="0"
+                    (keydown.enter)="sort('eventType')" (keydown.space)="sort('eventType')">
                   事件類型
-                  <span class="sort-indicator" [class]="getSortClass('eventType')"></span>
+                  <i class="fas sort-indicator" [ngClass]="getSortIcon('eventType')" aria-hidden="true"></i>
                 </th>
-                <th (click)="sort('action')" class="sortable">
+                <th (click)="sort('action')" class="audit-table__cell audit-table__cell--sortable" 
+                    [attr.aria-sort]="getSortAriaLabel('action')" tabindex="0"
+                    (keydown.enter)="sort('action')" (keydown.space)="sort('action')">
                   操作
-                  <span class="sort-indicator" [class]="getSortClass('action')"></span>
+                  <i class="fas sort-indicator" [ngClass]="getSortIcon('action')" aria-hidden="true"></i>
                 </th>
-                <th (click)="sort('userName')" class="sortable">
+                <th (click)="sort('userName')" class="audit-table__cell audit-table__cell--sortable" 
+                    [attr.aria-sort]="getSortAriaLabel('userName')" tabindex="0"
+                    (keydown.enter)="sort('userName')" (keydown.space)="sort('userName')">
                   使用者
-                  <span class="sort-indicator" [class]="getSortClass('userName')"></span>
+                  <i class="fas sort-indicator" [ngClass]="getSortIcon('userName')" aria-hidden="true"></i>
                 </th>
-                <th>資源</th>
-                <th (click)="sort('success')" class="sortable">
+                <th class="audit-table__cell">資源</th>
+                <th (click)="sort('success')" class="audit-table__cell audit-table__cell--sortable" 
+                    [attr.aria-sort]="getSortAriaLabel('success')" tabindex="0"
+                    (keydown.enter)="sort('success')" (keydown.space)="sort('success')">
                   結果
-                  <span class="sort-indicator" [class]="getSortClass('success')"></span>
+                  <i class="fas sort-indicator" [ngClass]="getSortIcon('success')" aria-hidden="true"></i>
                 </th>
-                <th (click)="sort('securityLevel')" class="sortable">
+                <th (click)="sort('securityLevel')" class="audit-table__cell audit-table__cell--sortable" 
+                    [attr.aria-sort]="getSortAriaLabel('securityLevel')" tabindex="0"
+                    (keydown.enter)="sort('securityLevel')" (keydown.space)="sort('securityLevel')">
                   安全等級
-                  <span class="sort-indicator" [class]="getSortClass('securityLevel')"></span>
+                  <i class="fas sort-indicator" [ngClass]="getSortIcon('securityLevel')" aria-hidden="true"></i>
                 </th>
-                <th>操作</th>
+                <th class="audit-table__cell">操作</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="audit-table__body">
               <tr 
                 *ngFor="let log of queryResult.logs; trackBy: trackByLogId"
-                [class.suspicious]="log.isSuspicious"
-                [class.failed]="!log.success">
-                <td class="timestamp">
+                class="audit-table__row"
+                [class.audit-table__row--suspicious]="log.isSuspicious"
+                [class.audit-table__row--failed]="!log.success">
+                <td class="audit-table__cell audit-table__cell--timestamp">
                   {{ log.occurredAt | date:'yyyy-MM-dd HH:mm:ss' }}
                 </td>
-                <td class="event-type">
-                  <span class="event-badge" [class]="getEventTypeClass(log.eventType)">
+                <td class="audit-table__cell audit-table__cell--event-type">
+                  <span class="badge badge--event" [class]="'badge--' + getEventTypeClass(log.eventType)">
                     {{ getEventTypeName(log.eventType) }}
                   </span>
                 </td>
-                <td class="action">{{ log.action }}</td>
-                <td class="user">
+                <td class="audit-table__cell">{{ log.action }}</td>
+                <td class="audit-table__cell audit-table__cell--user">
                   <div class="user-info">
-                    <span class="user-name">{{ log.userName || log.userId || 'N/A' }}</span>
-                    <small class="user-role" *ngIf="log.userRole">{{ log.userRole }}</small>
+                    <span class="user-info__name">{{ log.userName || log.userId || 'N/A' }}</span>
+                    <small class="user-info__role" *ngIf="log.userRole">{{ log.userRole }}</small>
                   </div>
                 </td>
-                <td class="resource">
+                <td class="audit-table__cell audit-table__cell--resource">
                   <div class="resource-info" *ngIf="log.resourceType">
-                    <span class="resource-type">{{ log.resourceType }}</span>
-                    <small class="resource-name" *ngIf="log.resourceName">{{ log.resourceName }}</small>
+                    <span class="resource-info__type">{{ log.resourceType }}</span>
+                    <small class="resource-info__name" *ngIf="log.resourceName">{{ log.resourceName }}</small>
                   </div>
                 </td>
-                <td class="result">
+                <td class="audit-table__cell audit-table__cell--result">
                   <span 
-                    class="result-badge"
-                    [class.success]="log.success"
-                    [class.failed]="!log.success">
+                    class="badge badge--result"
+                    [class.badge--success]="log.success"
+                    [class.badge--error]="!log.success">
                     {{ log.success ? '成功' : '失敗' }}
                   </span>
-                  <small class="error-code" *ngIf="log.errorCode">{{ log.errorCode }}</small>
+                  <small class="audit-table__error-code" *ngIf="log.errorCode">{{ log.errorCode }}</small>
                 </td>
-                <td class="security-level">
+                <td class="audit-table__cell audit-table__cell--security">
                   <span 
-                    class="security-badge"
-                    [class]="getSecurityLevelClass(log.securityLevel)">
+                    class="badge badge--security"
+                    [class]="'badge--' + getSecurityLevelClass(log.securityLevel)">
                     {{ getSecurityLevelName(log.securityLevel) }}
                   </span>
                   <span 
-                    class="risk-score"
+                    class="audit-table__risk-score"
                     *ngIf="log.riskScore > 0"
-                    [class.high-risk]="log.riskScore > 70">
+                    [class.audit-table__risk-score--high]="log.riskScore > 70">
                     ({{ log.riskScore }})
                   </span>
                 </td>
-                <td class="actions">
+                <td class="audit-table__cell audit-table__cell--actions">
                   <button 
                     type="button"
-                    class="btn btn-sm btn-link"
-                    (click)="viewLogDetails(log)">
+                    class="btn btn--sm btn--link"
+                    (click)="viewLogDetails(log)"
+                    [attr.aria-label]="'查看 ' + log.eventId + ' 的詳細資料'">
+                    <i class="fas fa-eye" aria-hidden="true"></i>
                     詳情
                   </button>
                 </td>
@@ -355,51 +393,53 @@ import { ToastService } from '../../services/toast.service';
         </div>
 
         <!-- 分頁 -->
-        <div class="pagination-container" *ngIf="queryResult.totalPages > 1">
-          <nav aria-label="稽核日誌分頁">
-            <ul class="pagination">
-              <li class="page-item" [class.disabled]="!queryResult.hasPreviousPage">
-                <button 
-                  class="page-link"
-                  (click)="changePage(queryResult.page - 1)"
-                  [disabled]="!queryResult.hasPreviousPage">
-                  上一頁
-                </button>
-              </li>
-              
-              <li 
+        <div class="audit-log__pagination" *ngIf="queryResult.totalPages > 1">
+          <nav class="pagination" aria-label="稽核日誌分頁導航">
+            <button 
+              class="pagination__btn pagination__btn--prev"
+              (click)="changePage(queryResult.page - 1)"
+              [disabled]="!queryResult.hasPreviousPage"
+              [attr.aria-label]="'上一頁，目前第 ' + queryResult.page + ' 頁'">
+              <i class="fas fa-chevron-left" aria-hidden="true"></i>
+              上一頁
+            </button>
+            
+            <div class="pagination__pages">
+              <button 
                 *ngFor="let page of getPageNumbers()"
-                class="page-item"
-                [class.active]="page === queryResult.page">
-                <button 
-                  class="page-link"
-                  (click)="changePage(page)">
-                  {{ page }}
-                </button>
-              </li>
-              
-              <li class="page-item" [class.disabled]="!queryResult.hasNextPage">
-                <button 
-                  class="page-link"
-                  (click)="changePage(queryResult.page + 1)"
-                  [disabled]="!queryResult.hasNextPage">
-                  下一頁
-                </button>
-              </li>
-            </ul>
+                class="pagination__btn pagination__btn--page"
+                [class.pagination__btn--active]="page === queryResult.page"
+                (click)="changePage(page)"
+                [attr.aria-label]="'第 ' + page + ' 頁'"
+                [attr.aria-current]="page === queryResult.page ? 'page' : null">
+                {{ page }}
+              </button>
+            </div>
+            
+            <button 
+              class="pagination__btn pagination__btn--next"
+              (click)="changePage(queryResult.page + 1)"
+              [disabled]="!queryResult.hasNextPage"
+              [attr.aria-label]="'下一頁，目前第 ' + queryResult.page + ' 頁'">
+              下一頁
+              <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </button>
           </nav>
         </div>
       </div>
 
       <!-- 空狀態 -->
-      <div *ngIf="!loading && queryResult && queryResult.logs.length === 0" class="empty-state">
-        <div class="empty-icon">📊</div>
-        <h3>無稽核日誌</h3>
-        <p>在指定的條件下未找到任何稽核日誌記錄</p>
+      <div *ngIf="!loading && queryResult && queryResult.logs.length === 0" class="audit-log__empty">
+        <div class="audit-log__empty-icon" aria-hidden="true">
+          <i class="fas fa-clipboard-list"></i>
+        </div>
+        <h3 class="audit-log__empty-title">無稽核日誌</h3>
+        <p class="audit-log__empty-text">在指定的條件下未找到任何稽核日誌記錄</p>
         <button 
           type="button"
-          class="btn btn-primary"
+          class="btn btn--primary"
           (click)="resetFilter()">
+          <i class="fas fa-undo" aria-hidden="true"></i>
           重設過濾條件
         </button>
       </div>
@@ -408,40 +448,45 @@ import { ToastService } from '../../services/toast.service';
     <!-- 日誌詳情模態框 -->
     <div 
       *ngIf="selectedLog"
-      class="modal-overlay"
-      (click)="closeLogDetails()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h4>稽核日誌詳情</h4>
+      class="modal"
+      role="dialog"
+      aria-labelledby="modal-title"
+      aria-modal="true"
+      (click)="closeLogDetails()"
+      (keydown.escape)="closeLogDetails()">
+      <div class="modal__content" (click)="$event.stopPropagation()">
+        <div class="modal__header">
+          <h4 id="modal-title" class="modal__title">稽核日誌詳情</h4>
           <button 
             type="button"
-            class="btn-close"
-            (click)="closeLogDetails()">
-            ×
+            class="modal__close-btn"
+            (click)="closeLogDetails()"
+            aria-label="關閉對話框">
+            <i class="fas fa-times" aria-hidden="true"></i>
           </button>
         </div>
-        <div class="modal-body">
+        <div class="modal__body">
           <div class="log-details">
-            <div class="detail-group">
-              <h5>基本資訊</h5>
-              <div class="detail-grid">
-                <div class="detail-item">
-                  <label>事件ID:</label>
-                  <span>{{ selectedLog.eventId }}</span>
+            <div class="log-details__section">
+              <h5 class="log-details__section-title">基本資訊</h5>
+              <dl class="log-details__grid">
+                <div class="log-details__item">
+                  <dt class="log-details__label">事件ID:</dt>
+                  <dd class="log-details__value">{{ selectedLog.eventId }}</dd>
                 </div>
-                <div class="detail-item">
-                  <label>發生時間:</label>
-                  <span>{{ selectedLog.occurredAt | date:'yyyy-MM-dd HH:mm:ss.SSS' }}</span>
+                <div class="log-details__item">
+                  <dt class="log-details__label">發生時間:</dt>
+                  <dd class="log-details__value">{{ selectedLog.occurredAt | date:'yyyy-MM-dd HH:mm:ss.SSS' }}</dd>
                 </div>
-                <div class="detail-item">
-                  <label>事件類型:</label>
-                  <span>{{ getEventTypeName(selectedLog.eventType) }}</span>
+                <div class="log-details__item">
+                  <dt class="log-details__label">事件類型:</dt>
+                  <dd class="log-details__value">{{ getEventTypeName(selectedLog.eventType) }}</dd>
                 </div>
-                <div class="detail-item">
-                  <label>操作:</label>
-                  <span>{{ selectedLog.action }}</span>
+                <div class="log-details__item">
+                  <dt class="log-details__label">操作:</dt>
+                  <dd class="log-details__value">{{ selectedLog.action }}</dd>
                 </div>
-              </div>
+              </dl>
             </div>
 
             <div class="detail-group" *ngIf="selectedLog.userId">
@@ -811,6 +856,16 @@ export class AuditLogViewerComponent implements OnInit, OnDestroy {
   getSortClass(field: string): string {
     if (this.currentFilter.sortField !== field) return '';
     return this.currentFilter.sortDirection === 'ASC' ? 'asc' : 'desc';
+  }
+
+  getSortIcon(field: string): string {
+    if (this.currentFilter.sortField !== field) return 'fa-sort';
+    return this.currentFilter.sortDirection === 'ASC' ? 'fa-sort-up' : 'fa-sort-down';
+  }
+
+  getSortAriaLabel(field: string): string {
+    if (this.currentFilter.sortField !== field) return 'none';
+    return this.currentFilter.sortDirection === 'ASC' ? 'ascending' : 'descending';
   }
 
   getPageNumbers(): number[] {

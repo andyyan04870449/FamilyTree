@@ -214,8 +214,7 @@
       margin-top: 12px;
       padding-left: 0;
 
-      .history-section,
-      .popular-keywords-section {
+      .history-section {
         display: flex;
         align-items: flex-start;
         gap: 8px;
@@ -228,15 +227,13 @@
           margin-top: 6px;
         }
 
-        .history-tags,
-        .popular-tags {
+        .history-tags {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
         }
 
-        .history-tag,
-        .popular-tag {
+        .history-tag {
           padding: 4px 10px;
           background: $bg-secondary;
           border: 1px solid $border-secondary;

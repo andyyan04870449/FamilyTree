@@ -115,7 +115,7 @@ namespace familytree_backend.Constants
             /// 專案 ID 格式驗證
             /// 設計理念：確保專案 ID 格式的一致性
             /// </summary>
-            public const int ProjectIdMaxLength = 25;
+            public const int ProjectIdMaxLength = 50;
             
             /// <summary>
             /// 常用欄位長度限制

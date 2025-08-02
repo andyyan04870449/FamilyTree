@@ -86,21 +86,14 @@
         <div class="keyword-suggestions__history">
           <span class="keyword-suggestions__label">歷史紀錄：</span>
           <div class="keyword-suggestions__tags">
-            <button class="tag tag--history" (click)="useHistoryKeyword('台科大')" aria-label="使用歷史關鍵字：台科大">台科大</button>
-            <button class="tag tag--history" (click)="useHistoryKeyword('上海市')" aria-label="使用歷史關鍵字：上海市">上海市</button>
-            <button class="tag tag--history" (click)="useHistoryKeyword('煙台大學')" aria-label="使用歷史關鍵字：煙台大學">煙台大學</button>
-            <button class="tag tag--history" (click)="useHistoryKeyword('東京華僑')" aria-label="使用歷史關鍵字：東京華僑">東京華僑</button>
-            <button class="tag tag--history" (click)="useHistoryKeyword('中國總商會')" aria-label="使用歷史關鍵字：中國總商會">中國總商會</button>
-          </div>
-        </div>
-        <div class="keyword-suggestions__popular">
-          <span class="keyword-suggestions__label">熱門關鍵字：</span>
-          <div class="keyword-suggestions__tags">
-            <button class="tag tag--popular" (click)="usePopularKeyword('中華民國')">中華民國</button>
-            <button class="tag tag--popular" (click)="usePopularKeyword('台灣大學')">台灣大學</button>
-            <button class="tag tag--popular" (click)="usePopularKeyword('北大')">北大</button>
-            <button class="tag tag--popular" (click)="usePopularKeyword('上海浦東')">上海浦東</button>
-            <button class="tag tag--popular" (click)="usePopularKeyword('台北101')">台北101</button>
+            <button 
+              *ngFor="let history of searchHistory" 
+              class="tag tag--history" 
+              (click)="useHistoryKeyword(history.keyword)"
+              [attr.aria-label]="'使用歷史關鍵字：' + history.keyword">
+              {{ history.keyword }}
+            </button>
+            <div *ngIf="searchHistory.length === 0" class="no-history">暫無搜索歷史</div>
           </div>
         </div>
       </div>
