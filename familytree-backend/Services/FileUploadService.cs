@@ -1,4 +1,4 @@
-// 檔案上傳服務 - 處理檔案操作、MD5計算、本地儲存等邏輯
+// 檔案上傳服務 - 使用新的 file_uploads 表和標準化命名
 using System.Security.Cryptography;
 using System.Text;
 using familytree_backend.Models;
@@ -12,17 +12,24 @@ namespace familytree_backend.Services
         private readonly string _connectionString;
         private readonly string _uploadDirectory;
         private readonly ILogger<FileUploadService> _logger;
-
         private readonly ExcelProcessingService _excelProcessingService;
+        private readonly IConfiguration _configuration;
 
-        public FileUploadService(IConfiguration configuration, ILogger<FileUploadService> logger, ExcelProcessingService excelProcessingService)
+        public FileUploadService(
+            IConfiguration configuration, 
+            ILogger<FileUploadService> logger, 
+            ExcelProcessingService excelProcessingService)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new ArgumentNullException(nameof(configuration));
+            _connectionString = configuration.GetConnectionString("DefaultConnection") 
+                ?? throw new ArgumentNullException(nameof(configuration));
             _logger = logger;
             _excelProcessingService = excelProcessingService;
+            _configuration = configuration;
             
             // 設定上傳目錄
-            _uploadDirectory = Path.Combine(Directory.GetCurrentDirectory(), "user_upload");
+            _uploadDirectory = Path.Combine(Directory.GetCurrentDirectory(), 
+                configuration.GetValue<string>("FileUpload:UploadDirectory") ?? "user_upload");
+                
             if (!Directory.Exists(_uploadDirectory))
             {
                 Directory.CreateDirectory(_uploadDirectory);
@@ -30,33 +37,44 @@ namespace familytree_backend.Services
             }
         }
 
-        public async Task<FileUploadResponse> UploadFileAsync(IFormFile file, string? projectId = null)
+        /// <summary>
+        /// 上傳檔案
+        /// </summary>
+        public async Task<FileOperationResult> UploadFileAsync(
+            IFormFile file, 
+            string userId, 
+            string? associatedRecordId = null,
+            string? associatedRecordType = null)
         {
             try
             {
                 // 驗證檔案類型
-                if (!IsValidFileType(file))
+                var allowedExtensions = _configuration.GetSection("FileUpload:AllowedExtensions")
+                    .Get<string[]>() ?? new[] { ".xls", ".xlsx", ".jpg", ".jpeg", ".png", ".zip", ".7z" };
+                    
+                var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(fileExtension))
                 {
-                    return new FileUploadResponse
+                    return new FileOperationResult
                     {
                         Success = false,
-                        Message = "只支援 .xls 和 .xlsx 檔案格式"
+                        Message = $"不支援的檔案類型: {fileExtension}"
                     };
                 }
 
                 // 計算 MD5
                 var md5Hash = await CalculateMd5Async(file);
                 
-                // 檢查是否為重複檔案（只在同專案內檢查）
-                var existingFile = await GetFileByMd5Async(md5Hash, projectId);
+                // 檢查是否為重複檔案
+                var existingFile = await GetFileByMd5Async(md5Hash, userId);
                 if (existingFile != null)
                 {
-                    return new FileUploadResponse
+                    return new FileOperationResult
                     {
                         Success = true,
                         Message = "檔案已存在，使用現有檔案",
                         IsDuplicate = true,
-                        FileInfo = existingFile,
+                        File = existingFile,
                         FilePath = existingFile.FilePath
                     };
                 }
@@ -71,242 +89,240 @@ namespace familytree_backend.Services
                     await file.CopyToAsync(stream);
                 }
 
-                // 儲存到資料庫
-                var fileInfo = new FileUploadModel
+                // 準備檔案模型
+                var fileModel = new FileModel
                 {
+                    FileId = Guid.NewGuid(),
+                    UserId = userId,
                     Filename = fileName,
                     OriginalFilename = file.FileName,
                     FilePath = filePath,
                     FileSize = file.Length,
                     Md5Hash = md5Hash,
-                    UploadTime = DateTime.UtcNow,
-                    Status = "uploaded",
-                    ProjectId = projectId
+                    FileType = GetFileType(fileExtension),
+                    MimeType = GetMimeType(fileExtension),
+                    AssociatedRecordId = associatedRecordId,
+                    AssociatedRecordType = associatedRecordType,
+                    UploadStatus = FileUploadStatus.Uploaded,
+                    UploadedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 };
 
-                var savedFile = await SaveFileToDatabaseAsync(fileInfo);
+                // 儲存到資料庫
+                var savedFile = await SaveFileToDatabaseAsync(fileModel);
 
-                _logger.LogInformation("檔案上傳成功: {OriginalFilename} -> {Filename}", file.FileName, fileName);
+                _logger.LogInformation("檔案上傳成功: {OriginalFilename} -> {Filename}, FileId: {FileId}", 
+                    file.FileName, fileName, savedFile.FileId);
 
-                // 自動處理Excel檔案
-                try
+                // 如果是Excel檔案，自動處理
+                if (fileModel.IsProcessable())
                 {
-                    _logger.LogInformation("開始處理Excel檔案: {FilePath}", filePath);
-                    var processingResult = await _excelProcessingService.ProcessExcelFileAsync(filePath, md5Hash, projectId);
-                    
-                    if (processingResult.Success)
-                    {
-                        _logger.LogInformation("Excel檔案處理成功: 成功處理 {SuccessRows} 行，失敗 {FailedRows} 行", 
-                            processingResult.SuccessRows, processingResult.FailedRows);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Excel檔案處理失敗: {Message}", processingResult.Message);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "處理Excel檔案時發生錯誤: {FilePath}", filePath);
+                    _ = Task.Run(async () => await ProcessExcelFileInternalAsync(savedFile));
                 }
 
-                return new FileUploadResponse
+                return new FileOperationResult
                 {
                     Success = true,
                     Message = "檔案上傳成功",
-                    FileInfo = savedFile,
-                    IsDuplicate = false
+                    File = savedFile,
+                    IsDuplicate = false,
+                    FilePath = filePath
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "檔案上傳失敗: {FileName}", file.FileName);
-                return new FileUploadResponse
+                return new FileOperationResult
                 {
                     Success = false,
-                    Message = $"檔案上傳失敗: {ex.Message}"
+                    Message = $"檔案上傳失敗: {ex.Message}",
+                    Errors = new List<string> { ex.Message }
                 };
             }
         }
 
-        public async Task<FileListResponse> GetFileListAsync(string? projectId = null)
+        /// <summary>
+        /// 獲取使用者的檔案列表
+        /// </summary>
+        public async Task<FileListResponse> GetUserFilesAsync(string userId, FileQueryOptions options)
         {
             try
             {
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                var sql = @"SELECT id, filename, original_filename, file_path, file_size, md5_hash, 
-                                  upload_time, is_merged, merge_time, status, created_at, updated_at, project_id
-                           FROM user_update_file 
-                           WHERE (@projectId IS NULL OR project_id = @projectId)
-                           ORDER BY upload_time DESC";
+                // 構建查詢條件
+                var whereConditions = new List<string> { "user_id = @userId" };
+                var parameters = new DynamicParameters();
+                parameters.Add("userId", userId);
 
-                var files = await connection.QueryAsync<dynamic>(sql, new { projectId });
-                var fileList = new List<FileModel>();
-                
-                foreach (var file in files)
+                if (!string.IsNullOrEmpty(options.FileType))
                 {
-                    fileList.Add(new FileModel
-                    {
-                        FileId = Guid.NewGuid(), // 舊數據可能沒有 GUID
-                        UserId = "system", // 舊數據可能沒有用戶 ID
-                        Filename = file.filename,
-                        OriginalFilename = file.original_filename,
-                        FilePath = file.file_path,
-                        FileSize = file.file_size,
-                        Md5Hash = file.md5_hash,
-                        FileType = Path.GetExtension(file.original_filename),
-                        UploadStatus = file.status,
-                        IsProcessed = file.is_merged,
-                        ProcessedAt = file.merge_time,
-                        AssociatedRecordId = file.project_id,
-                        AssociatedRecordType = "project",
-                        UploadedAt = file.upload_time,
-                        CreatedAt = file.created_at,
-                        UpdatedAt = file.updated_at
-                    });
+                    whereConditions.Add("file_type = @fileType");
+                    parameters.Add("fileType", options.FileType);
                 }
+
+                if (!string.IsNullOrEmpty(options.Status))
+                {
+                    whereConditions.Add("upload_status = @status");
+                    parameters.Add("status", options.Status);
+                }
+
+                if (!string.IsNullOrEmpty(options.AssociatedRecordType))
+                {
+                    whereConditions.Add("associated_record_type = @recordType");
+                    parameters.Add("recordType", options.AssociatedRecordType);
+                }
+
+                var whereClause = string.Join(" AND ", whereConditions);
+
+                // 查詢總數
+                var countSql = $"SELECT COUNT(*) FROM file_uploads WHERE {whereClause}";
+                var totalCount = await connection.QuerySingleAsync<int>(countSql, parameters);
+
+                // 查詢資料
+                var orderBy = options.SortDescending ? "DESC" : "ASC";
+                var offset = (options.Page - 1) * options.PageSize;
+                
+                var dataSql = $@"
+                    SELECT file_id as FileId, user_id as UserId, filename, original_filename as OriginalFilename,
+                           file_path as FilePath, file_size as FileSize, md5_hash as Md5Hash,
+                           file_type as FileType, mime_type as MimeType,
+                           associated_record_id as AssociatedRecordId, 
+                           associated_record_type as AssociatedRecordType,
+                           upload_status as UploadStatus, is_processed as IsProcessed,
+                           processed_at as ProcessedAt, uploaded_at as UploadedAt,
+                           created_at as CreatedAt, updated_at as UpdatedAt
+                    FROM file_uploads 
+                    WHERE {whereClause}
+                    ORDER BY {options.SortBy} {orderBy}
+                    LIMIT @limit OFFSET @offset";
+
+                parameters.Add("limit", options.PageSize);
+                parameters.Add("offset", offset);
+
+                var files = await connection.QueryAsync<FileModel>(dataSql, parameters);
 
                 return new FileListResponse
                 {
                     Success = true,
-                    Message = "取得檔案列表成功",
-                    Files = fileList,
-                    TotalCount = fileList.Count
+                    Message = "成功獲取檔案列表",
+                    Files = files.ToList(),
+                    TotalCount = totalCount,
+                    Page = options.Page,
+                    PageSize = options.PageSize,
+                    HasMore = totalCount > offset + options.PageSize
                 };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "取得檔案列表失敗");
+                _logger.LogError(ex, "獲取檔案列表失敗");
                 return new FileListResponse
                 {
                     Success = false,
-                    Message = $"取得檔案列表失敗: {ex.Message}"
+                    Message = $"獲取檔案列表失敗: {ex.Message}"
                 };
             }
         }
 
-        public async Task<FileUploadResponse> ProcessFileAsync(Guid fileId)
+        /// <summary>
+        /// 根據ID獲取檔案
+        /// </summary>
+        public async Task<FileModel?> GetFileByIdAsync(Guid fileId, string userId)
         {
             try
             {
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                // 取得檔案資訊
-                var file = await connection.QueryFirstOrDefaultAsync<FileUploadModel>(
-                    @"SELECT id, filename, original_filename as OriginalFilename, file_path as FilePath, 
-                             file_size as FileSize, md5_hash as Md5Hash, upload_time as UploadTime, 
-                             is_merged as IsMerged, merge_time as MergeTime, status, project_id as ProjectId,
-                             created_at as CreatedAt, updated_at as UpdatedAt 
-                      FROM user_update_file WHERE id = @id", new { id = fileId });
+                var sql = @"
+                    SELECT file_id as FileId, user_id as UserId, filename, original_filename as OriginalFilename,
+                           file_path as FilePath, file_size as FileSize, md5_hash as Md5Hash,
+                           file_type as FileType, mime_type as MimeType,
+                           associated_record_id as AssociatedRecordId, 
+                           associated_record_type as AssociatedRecordType,
+                           upload_status as UploadStatus, is_processed as IsProcessed,
+                           processed_at as ProcessedAt, uploaded_at as UploadedAt,
+                           created_at as CreatedAt, updated_at as UpdatedAt
+                    FROM file_uploads 
+                    WHERE file_id = @fileId AND user_id = @userId";
 
-                if (file == null)
-                {
-                    _logger.LogWarning("找不到檔案ID: {FileId}", fileId);
-                    return new FileUploadResponse
-                    {
-                        Success = false,
-                        Message = "檔案不存在"
-                    };
-                }
-
-                _logger.LogInformation("取得檔案資訊: ID={FileId}, FileName={FileName}, FilePath={FilePath}, Status={Status}", 
-                    file.Id, file.Filename, file.FilePath, file.Status);
-
-                if (file.Status == "merged")
-                {
-                    return new FileUploadResponse
-                    {
-                        Success = true,
-                        Message = "檔案已經處理過"
-                    };
-                }
-
-                if (string.IsNullOrWhiteSpace(file.FilePath))
-                {
-                    _logger.LogError("檔案路徑為空: FileId={FileId}", fileId);
-                    return new FileUploadResponse
-                    {
-                        Success = false,
-                        Message = "檔案路徑無效"
-                    };
-                }
-
-                // 處理Excel檔案
-                _logger.LogInformation("開始處理Excel檔案: {FilePath}", file.FilePath);
-                var processingResult = await _excelProcessingService.ProcessExcelFileAsync(file.FilePath, file.Md5Hash, file.ProjectId);
-                
-                if (processingResult.Success)
-                {
-                    _logger.LogInformation("Excel檔案處理成功: 成功處理 {SuccessRows} 行，失敗 {FailedRows} 行", 
-                        processingResult.SuccessRows, processingResult.FailedRows);
-                    
-                    return new FileUploadResponse
-                    {
-                        Success = true,
-                        Message = $"檔案處理成功，成功處理 {processingResult.SuccessRows} 行，失敗 {processingResult.FailedRows} 行"
-                    };
-                }
-                else
-                {
-                    _logger.LogWarning("Excel檔案處理失敗: {Message}", processingResult.Message);
-                    return new FileUploadResponse
-                    {
-                        Success = false,
-                        Message = $"檔案處理失敗: {processingResult.Message}"
-                    };
-                }
+                return await connection.QueryFirstOrDefaultAsync<FileModel>(sql, new { fileId, userId });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "檔案處理失敗: {FileId}", fileId);
-                return new FileUploadResponse
+                _logger.LogError(ex, "獲取檔案失敗: {FileId}", fileId);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 獲取檔案以供下載
+        /// </summary>
+        public async Task<FileDownloadResult> GetFileForDownloadAsync(Guid fileId, string userId)
+        {
+            try
+            {
+                var file = await GetFileByIdAsync(fileId, userId);
+                if (file == null)
+                {
+                    return new FileDownloadResult
+                    {
+                        Success = false,
+                        Message = "找不到指定的檔案"
+                    };
+                }
+
+                if (!File.Exists(file.FilePath))
+                {
+                    return new FileDownloadResult
+                    {
+                        Success = false,
+                        Message = "檔案不存在於伺服器"
+                    };
+                }
+
+                var fileContent = await File.ReadAllBytesAsync(file.FilePath);
+                
+                return new FileDownloadResult
+                {
+                    Success = true,
+                    FileContent = fileContent,
+                    FileName = file.OriginalFilename,
+                    MimeType = file.MimeType ?? "application/octet-stream"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "下載檔案失敗: {FileId}", fileId);
+                return new FileDownloadResult
                 {
                     Success = false,
-                    Message = $"檔案處理失敗: {ex.Message}"
+                    Message = $"下載檔案失敗: {ex.Message}"
                 };
             }
         }
 
-        public async Task<FileUploadResponse> DeleteFileAsync(Guid fileId)
+        /// <summary>
+        /// 刪除檔案
+        /// </summary>
+        public async Task<FileOperationResult> DeleteFileAsync(Guid fileId, string userId)
         {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var transaction = await connection.BeginTransactionAsync();
+
             try
             {
-                using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
-
-                // 取得檔案資訊
-                var file = await connection.QueryFirstOrDefaultAsync<FileUploadModel>(
-                    @"SELECT id, filename, original_filename as OriginalFilename, file_path as FilePath, 
-                             file_size as FileSize, md5_hash as Md5Hash, upload_time as UploadTime, 
-                             is_merged as IsMerged, merge_time as MergeTime, status, 
-                             created_at as CreatedAt, updated_at as UpdatedAt 
-                      FROM user_update_file WHERE id = @id", new { id = fileId });
-
+                var file = await GetFileByIdAsync(fileId, userId);
                 if (file == null)
                 {
-                    return new FileUploadResponse
+                    return new FileOperationResult
                     {
                         Success = false,
-                        Message = "檔案不存在"
+                        Message = "找不到指定的檔案"
                     };
-                }
-
-                // 檢查會影響的人員資料數量
-                var personDataCount = await connection.QuerySingleAsync<int>(
-                    "SELECT COUNT(*) FROM person_profile WHERE file_md5 = @md5", new { md5 = file.Md5Hash });
-
-                _logger.LogInformation("準備刪除檔案: {Filename}, 將同時刪除 {PersonCount} 筆相關人員資料", 
-                    file.Filename, personDataCount);
-
-                // 刪除相關人員資料
-                if (personDataCount > 0)
-                {
-                    var deletedPersons = await connection.ExecuteAsync(
-                        "DELETE FROM person_profile WHERE file_md5 = @md5", new { md5 = file.Md5Hash });
-                    
-                    _logger.LogInformation("已刪除 {DeletedCount} 筆人員資料", deletedPersons);
                 }
 
                 // 刪除實體檔案
@@ -315,25 +331,36 @@ namespace familytree_backend.Services
                     File.Delete(file.FilePath);
                 }
 
-                // 刪除資料庫記錄
-                await connection.ExecuteAsync(
-                    "DELETE FROM user_update_file WHERE id = @id", new { id = fileId });
+                // 更新資料庫狀態為已刪除（軟刪除）
+                var sql = @"
+                    UPDATE file_uploads 
+                    SET upload_status = @status, updated_at = @updatedAt
+                    WHERE file_id = @fileId AND user_id = @userId";
 
-                _logger.LogInformation("檔案刪除成功: {Filename}, 同時刪除了 {PersonCount} 筆人員資料", 
-                    file.Filename, personDataCount);
+                await connection.ExecuteAsync(sql, new 
+                { 
+                    status = FileUploadStatus.Deleted,
+                    updatedAt = DateTime.UtcNow,
+                    fileId, 
+                    userId 
+                }, transaction);
 
-                return new FileUploadResponse
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("檔案刪除成功: {FileName}, FileId: {FileId}", 
+                    file.OriginalFilename, fileId);
+
+                return new FileOperationResult
                 {
                     Success = true,
-                    Message = personDataCount > 0 
-                        ? $"檔案刪除成功，同時刪除了 {personDataCount} 筆相關人員資料" 
-                        : "檔案刪除成功"
+                    Message = "檔案刪除成功"
                 };
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "檔案刪除失敗: {FileId}", fileId);
-                return new FileUploadResponse
+                return new FileOperationResult
                 {
                     Success = false,
                     Message = $"檔案刪除失敗: {ex.Message}"
@@ -341,85 +368,384 @@ namespace familytree_backend.Services
             }
         }
 
-        public async Task<DeleteImpactResponse> GetDeleteImpactAsync(Guid fileId)
+        /// <summary>
+        /// 分析刪除影響
+        /// </summary>
+        public async Task<DeleteImpactResult> AnalyzeDeleteImpactAsync(Guid fileId, string userId)
+        {
+            try
+            {
+                var file = await GetFileByIdAsync(fileId, userId);
+                if (file == null)
+                {
+                    return new DeleteImpactResult
+                    {
+                        Success = false,
+                        Message = "找不到指定的檔案"
+                    };
+                }
+
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                // 查詢受影響的記錄
+                var affectedCount = 0;
+                var affectedNames = new List<string>();
+
+                if (file.IsProcessable())
+                {
+                    // 如果是Excel檔案，查詢相關的人員資料
+                    var sql = @"
+                        SELECT COUNT(*) FROM person_profile 
+                        WHERE file_md5 = @md5Hash";
+                    
+                    affectedCount = await connection.QuerySingleAsync<int>(sql, new { md5Hash = file.Md5Hash });
+
+                    if (affectedCount > 0)
+                    {
+                        var namesSql = @"
+                            SELECT name FROM person_profile 
+                            WHERE file_md5 = @md5Hash 
+                            LIMIT 10";
+                        
+                        var names = await connection.QueryAsync<string>(namesSql, new { md5Hash = file.Md5Hash });
+                        affectedNames = names.Where(n => !string.IsNullOrEmpty(n)).ToList();
+                    }
+                }
+
+                return new DeleteImpactResult
+                {
+                    Success = true,
+                    Message = affectedCount > 0 
+                        ? $"刪除此檔案將影響 {affectedCount} 筆相關記錄" 
+                        : "刪除此檔案不會影響其他記錄",
+                    AffectedRecords = affectedCount,
+                    AffectedRecordNames = affectedNames,
+                    CanDelete = true,
+                    FileName = file.OriginalFilename
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "分析刪除影響失敗: {FileId}", fileId);
+                return new DeleteImpactResult
+                {
+                    Success = false,
+                    Message = $"分析失敗: {ex.Message}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// 更新檔案關聯
+        /// </summary>
+        public async Task<FileOperationResult> UpdateFileAssociationAsync(
+            Guid fileId, 
+            string userId, 
+            string recordId, 
+            string recordType)
         {
             try
             {
                 using var connection = new NpgsqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                // 取得檔案資訊
-                var file = await connection.QueryFirstOrDefaultAsync<FileUploadModel>(
-                    @"SELECT id, filename, original_filename as OriginalFilename, file_path as FilePath, 
-                             file_size as FileSize, md5_hash as Md5Hash, upload_time as UploadTime, 
-                             is_merged as IsMerged, merge_time as MergeTime, status, 
-                             created_at as CreatedAt, updated_at as UpdatedAt 
-              FROM user_update_file WHERE id = @id", new { id = fileId });
+                var sql = @"
+                    UPDATE file_uploads 
+                    SET associated_record_id = @recordId, 
+                        associated_record_type = @recordType,
+                        updated_at = @updatedAt
+                    WHERE file_id = @fileId AND user_id = @userId";
 
-                if (file == null)
+                var affected = await connection.ExecuteAsync(sql, new 
+                { 
+                    recordId, 
+                    recordType, 
+                    updatedAt = DateTime.UtcNow,
+                    fileId, 
+                    userId 
+                });
+
+                if (affected == 0)
                 {
-                    _logger.LogWarning("找不到檔案ID: {FileId}", fileId);
-                    return new DeleteImpactResponse
+                    return new FileOperationResult
                     {
                         Success = false,
-                        Message = "檔案不存在",
-                        PersonCount = 0,
-                        PersonNames = new List<string>(),
-                        FileName = "",
-                        HasMorePersons = false
+                        Message = "找不到指定的檔案或無權限更新"
                     };
                 }
 
-                // 查詢與此檔案相關的人員資料
-                var sql = @"SELECT id, name, gender, nationality 
-                   FROM person_profile 
-                   WHERE file_md5 = @md5Hash";
-
-                var affectedPersons = await connection.QueryAsync<PersonDataModel>(sql, new { md5Hash = file.Md5Hash });
-                var personCount = affectedPersons.Count();
-
-                _logger.LogInformation("分析刪除影響: 檔案={FileName}, 影響人數={Count}", 
-                    file.OriginalFilename, personCount);
-
-                // 取得人員名稱列表，最多顯示10個
-                var maxDisplayNames = 10;
-                var personNames = affectedPersons.Take(maxDisplayNames).Select(p => p.Name ?? "").Where(name => !string.IsNullOrWhiteSpace(name)).ToList();
-                var hasMorePersons = personCount > maxDisplayNames;
-
-                var message = personCount > 0 
-                    ? $"刪除檔案 '{file.OriginalFilename}' 將同時刪除 {personCount} 筆人員資料"
-                    : $"刪除檔案 '{file.OriginalFilename}' 不會影響任何人員資料";
-
-                return new DeleteImpactResponse
+                return new FileOperationResult
                 {
                     Success = true,
-                    Message = message,
-                    PersonCount = personCount,
-                    PersonNames = personNames,
-                    FileName = file.OriginalFilename,
-                    HasMorePersons = hasMorePersons
+                    Message = "成功更新檔案關聯"
                 };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "分析刪除影響時發生錯誤: {FileId}", fileId);
-                return new DeleteImpactResponse
+                _logger.LogError(ex, "更新檔案關聯失敗: {FileId}", fileId);
+                return new FileOperationResult
                 {
                     Success = false,
-                    Message = $"分析刪除影響時發生錯誤: {ex.Message}",
-                    PersonCount = 0,
-                    PersonNames = new List<string>(),
-                    FileName = "",
-                    HasMorePersons = false
+                    Message = $"更新失敗: {ex.Message}"
                 };
             }
         }
 
-        private bool IsValidFileType(IFormFile file)
+        /// <summary>
+        /// 獲取檔案統計資訊
+        /// </summary>
+        public async Task<FileStatistics> GetFileStatisticsAsync(string userId)
         {
-            var allowedExtensions = new[] { ".xls", ".xlsx" };
-            var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            return allowedExtensions.Contains(fileExtension);
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                var sql = @"
+                    SELECT 
+                        COUNT(*) as TotalFiles,
+                        COALESCE(SUM(file_size), 0) as TotalSizeBytes,
+                        MIN(uploaded_at) as OldestFileDate,
+                        MAX(uploaded_at) as NewestFileDate
+                    FROM file_uploads 
+                    WHERE user_id = @userId AND upload_status != 'deleted'";
+
+                var stats = await connection.QuerySingleAsync<FileStatistics>(sql, new { userId });
+
+                // 按類型統計
+                var typeSql = @"
+                    SELECT file_type, COUNT(*) as count
+                    FROM file_uploads 
+                    WHERE user_id = @userId AND upload_status != 'deleted'
+                    GROUP BY file_type";
+
+                var typeStats = await connection.QueryAsync<(string type, int count)>(typeSql, new { userId });
+                stats.FilesByType = typeStats.ToDictionary(x => x.type ?? "unknown", x => x.count);
+
+                // 按狀態統計
+                var statusSql = @"
+                    SELECT upload_status, COUNT(*) as count
+                    FROM file_uploads 
+                    WHERE user_id = @userId
+                    GROUP BY upload_status";
+
+                var statusStats = await connection.QueryAsync<(string status, int count)>(statusSql, new { userId });
+                stats.FilesByStatus = statusStats.ToDictionary(x => x.status, x => x.count);
+
+                // 按關聯類型統計
+                var assocSql = @"
+                    SELECT associated_record_type, COUNT(*) as count
+                    FROM file_uploads 
+                    WHERE user_id = @userId AND upload_status != 'deleted' AND associated_record_type IS NOT NULL
+                    GROUP BY associated_record_type";
+
+                var assocStats = await connection.QueryAsync<(string type, int count)>(assocSql, new { userId });
+                stats.FilesByAssociationType = assocStats.ToDictionary(x => x.type, x => x.count);
+
+                return stats;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "獲取檔案統計失敗");
+                return new FileStatistics();
+            }
+        }
+
+        /// <summary>
+        /// 檢查檔案是否重複
+        /// </summary>
+        public async Task<bool> CheckDuplicateAsync(string md5Hash, string userId)
+        {
+            try
+            {
+                using var connection = new NpgsqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                var sql = @"
+                    SELECT COUNT(*) 
+                    FROM file_uploads 
+                    WHERE md5_hash = @md5Hash AND user_id = @userId AND upload_status != 'deleted'";
+
+                var count = await connection.QuerySingleAsync<int>(sql, new { md5Hash, userId });
+                return count > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "檢查檔案重複失敗");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 處理Excel檔案
+        /// </summary>
+        public async Task<ProcessResult> ProcessExcelFileAsync(Guid fileId, string userId)
+        {
+            try
+            {
+                var file = await GetFileByIdAsync(fileId, userId);
+                if (file == null)
+                {
+                    return new ProcessResult
+                    {
+                        Success = false,
+                        Message = "找不到指定的檔案"
+                    };
+                }
+
+                if (!file.IsProcessable())
+                {
+                    return new ProcessResult
+                    {
+                        Success = false,
+                        Message = "此檔案類型不支援處理"
+                    };
+                }
+
+                if (file.IsProcessed)
+                {
+                    return new ProcessResult
+                    {
+                        Success = true,
+                        Message = "檔案已經處理過"
+                    };
+                }
+
+                return await ProcessExcelFileInternalAsync(file);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "處理Excel檔案失敗: {FileId}", fileId);
+                return new ProcessResult
+                {
+                    Success = false,
+                    Message = $"處理失敗: {ex.Message}"
+                };
+            }
+        }
+
+        // ========== 私有方法 ==========
+
+        private async Task<ProcessResult> ProcessExcelFileInternalAsync(FileModel file)
+        {
+            try
+            {
+                // 更新狀態為處理中
+                await UpdateFileStatusAsync(file.FileId, FileUploadStatus.Processing);
+
+                // 呼叫Excel處理服務
+                var startTime = DateTime.UtcNow;
+                var result = await _excelProcessingService.ProcessExcelFileAsync(
+                    file.FilePath, 
+                    file.Md5Hash, 
+                    file.AssociatedRecordId);
+
+                var duration = DateTime.UtcNow - startTime;
+
+                if (result.Success)
+                {
+                    // 更新狀態為已處理
+                    await UpdateFileStatusAsync(file.FileId, FileUploadStatus.Processed, true, DateTime.UtcNow);
+
+                    _logger.LogInformation("Excel檔案處理成功: FileId={FileId}, 處理時間={Duration}秒", 
+                        file.FileId, duration.TotalSeconds);
+
+                    return new ProcessResult
+                    {
+                        Success = true,
+                        Message = $"檔案處理成功，成功 {result.SuccessCount} 行，失敗 {result.FailureCount} 行",
+                        ProcessedRows = result.SuccessCount,
+                        TotalRows = result.TotalRecords,
+                        ProcessingDuration = duration
+                    };
+                }
+                else
+                {
+                    // 更新狀態為失敗
+                    await UpdateFileStatusAsync(file.FileId, FileUploadStatus.Failed);
+
+                    return new ProcessResult
+                    {
+                        Success = false,
+                        Message = result.Message,
+                        Errors = result.Errors
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                await UpdateFileStatusAsync(file.FileId, FileUploadStatus.Failed);
+                throw;
+            }
+        }
+
+        private async Task UpdateFileStatusAsync(Guid fileId, string status, bool isProcessed = false, DateTime? processedAt = null)
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                UPDATE file_uploads 
+                SET upload_status = @status, 
+                    is_processed = @isProcessed,
+                    processed_at = @processedAt,
+                    updated_at = @updatedAt
+                WHERE file_id = @fileId";
+
+            await connection.ExecuteAsync(sql, new 
+            { 
+                status, 
+                isProcessed,
+                processedAt,
+                updatedAt = DateTime.UtcNow,
+                fileId 
+            });
+        }
+
+        private async Task<FileModel?> GetFileByMd5Async(string md5Hash, string userId)
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT file_id as FileId, user_id as UserId, filename, original_filename as OriginalFilename,
+                       file_path as FilePath, file_size as FileSize, md5_hash as Md5Hash,
+                       file_type as FileType, mime_type as MimeType,
+                       associated_record_id as AssociatedRecordId, 
+                       associated_record_type as AssociatedRecordType,
+                       upload_status as UploadStatus, is_processed as IsProcessed,
+                       processed_at as ProcessedAt, uploaded_at as UploadedAt,
+                       created_at as CreatedAt, updated_at as UpdatedAt
+                FROM file_uploads 
+                WHERE md5_hash = @md5Hash AND user_id = @userId AND upload_status != 'deleted'
+                LIMIT 1";
+
+            return await connection.QueryFirstOrDefaultAsync<FileModel>(sql, new { md5Hash, userId });
+        }
+
+        private async Task<FileModel> SaveFileToDatabaseAsync(FileModel file)
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                INSERT INTO file_uploads (
+                    file_id, user_id, filename, original_filename, file_path, 
+                    file_size, md5_hash, file_type, mime_type,
+                    associated_record_id, associated_record_type,
+                    upload_status, is_processed, processed_at,
+                    uploaded_at, created_at, updated_at
+                ) VALUES (
+                    @FileId, @UserId, @Filename, @OriginalFilename, @FilePath,
+                    @FileSize, @Md5Hash, @FileType, @MimeType,
+                    @AssociatedRecordId, @AssociatedRecordType,
+                    @UploadStatus, @IsProcessed, @ProcessedAt,
+                    @UploadedAt, @CreatedAt, @UpdatedAt
+                ) RETURNING *";
+
+            var savedFile = await connection.QuerySingleAsync<FileModel>(sql, file);
+            return savedFile;
         }
 
         private async Task<string> CalculateMd5Async(IFormFile file)
@@ -428,19 +754,6 @@ namespace familytree_backend.Services
             using var stream = file.OpenReadStream();
             var hash = await md5.ComputeHashAsync(stream);
             return Convert.ToHexString(hash).ToLowerInvariant();
-        }
-
-        private async Task<FileUploadModel?> GetFileByMd5Async(string md5Hash, string? projectId = null)
-        {
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            // 如果有專案ID，只在該專案內檢查重複；否則全局檢查
-            var sql = projectId != null 
-                ? "SELECT * FROM user_update_file WHERE md5_hash = @md5Hash AND project_id = @projectId"
-                : "SELECT * FROM user_update_file WHERE md5_hash = @md5Hash";
-
-            return await connection.QueryFirstOrDefaultAsync<FileUploadModel>(sql, new { md5Hash, projectId });
         }
 
         private string GenerateUniqueFileName(string originalFileName)
@@ -453,25 +766,56 @@ namespace familytree_backend.Services
             return $"{fileNameWithoutExtension}_{timestamp}_{random}{extension}";
         }
 
-        private async Task<FileUploadModel> SaveFileToDatabaseAsync(FileUploadModel fileInfo)
+        private string GetFileType(string extension)
         {
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
+            return extension.ToLowerInvariant() switch
+            {
+                ".xlsx" or ".xls" => "excel",
+                ".csv" => "csv",
+                ".pdf" => "pdf",
+                ".jpg" or ".jpeg" => "image",
+                ".png" => "image",
+                ".zip" => "archive",
+                ".7z" => "archive",
+                _ => "unknown"
+            };
+        }
 
-            var sql = @"INSERT INTO user_update_file (filename, original_filename, file_path, file_size, md5_hash, upload_time, status, project_id) 
-                       VALUES (@Filename, @OriginalFilename, @FilePath, @FileSize, @Md5Hash, @UploadTime, @Status, @ProjectId) 
-                       RETURNING id, filename, original_filename, file_path, file_size, md5_hash, upload_time, is_merged, merge_time, status, created_at, updated_at, project_id";
-
-            var result = await connection.QueryFirstAsync<FileUploadModel>(sql, fileInfo);
-            
-            // 確保返回的物件包含所有正確的資料
-            result.OriginalFilename = fileInfo.OriginalFilename;
-            result.FilePath = fileInfo.FilePath;
-            result.FileSize = fileInfo.FileSize;
-            result.Md5Hash = fileInfo.Md5Hash;
-            result.UploadTime = fileInfo.UploadTime;
-            
-            return result;
+        private string GetMimeType(string extension)
+        {
+            return extension.ToLowerInvariant() switch
+            {
+                ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ".xls" => "application/vnd.ms-excel",
+                ".csv" => "text/csv",
+                ".pdf" => "application/pdf",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".zip" => "application/zip",
+                ".7z" => "application/x-7z-compressed",
+                _ => "application/octet-stream"
+            };
         }
     }
-} 
+
+    // ========== 結果模型 ==========
+
+    public class FileDownloadResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public byte[]? FileContent { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public string MimeType { get; set; } = string.Empty;
+    }
+
+    public class ProcessResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public int ProcessedRows { get; set; }
+        public int TotalRows { get; set; }
+        public TimeSpan ProcessingDuration { get; set; }
+        public List<string> Errors { get; set; } = new();
+    }
+}

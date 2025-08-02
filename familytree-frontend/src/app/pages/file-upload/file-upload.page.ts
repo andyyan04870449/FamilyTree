@@ -4,7 +4,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { FileUploadService, FileUploadModel, UploadProgress } from '../../services/file-upload.service';
+import { FileUploadService, FileModel, UploadProgress } from '../../services/file-upload.service';
 import { PhotoUploadService, PhotoUploadProgress, PhotoUploadResponse } from '../../services/photo-upload.service';
 import { ProjectService } from '../../services/project.service';
 
@@ -15,11 +15,11 @@ interface UnifiedFileRecord {
   savedName?: string;
   fileSize: number;
   uploadTime: string;
-  fileType: 'excel' | 'photo';
+  fileType: 'excel' | 'photo' | 'image' | 'archive' | 'unknown';
   filePath?: string;
   md5Hash?: string;
   status?: string;
-  isMerged?: boolean;
+  isProcessed?: boolean;
 }
 
 @Component({
@@ -355,16 +355,16 @@ export class FileUploadComponent implements OnInit, OnDestroy {
     
     // 轉換Excel檔案格式
     const excelRecords: UnifiedFileRecord[] = excelFiles.map(file => ({
-      id: `excel_${file.id}`,
+      id: `excel_${file.fileId}`,
       originalName: file.originalFilename,
       savedName: file.filename,
       fileSize: file.fileSize,
-      uploadTime: file.uploadTime,
-      fileType: 'excel',
+      uploadTime: file.uploadedAt,
+      fileType: file.fileType as any || 'excel',
       filePath: file.filePath,
       md5Hash: file.md5Hash,
-      status: file.status,
-      isMerged: file.isMerged
+      status: file.uploadStatus,
+      isProcessed: file.isProcessed
     }));
     
     // 轉換照片檔案格式（適應PhotoFileInfo介面）
@@ -397,21 +397,25 @@ export class FileUploadComponent implements OnInit, OnDestroy {
   }
 
   // 取得檔案類型圖示
-  getFileTypeIcon(fileType?: 'excel' | 'photo' | 'unknown'): string {
+  getFileTypeIcon(fileType?: 'excel' | 'photo' | 'image' | 'archive' | 'unknown'): string {
     const type = fileType || this.detectedFileType;
     switch (type) {
       case 'excel': return '📊';
       case 'photo': return '📸';
+      case 'image': return '🖼️';
+      case 'archive': return '📦';
       default: return '📁';
     }
   }
 
   // 取得檔案類型名稱
-  getFileTypeText(fileType?: 'excel' | 'photo' | 'unknown'): string {
+  getFileTypeText(fileType?: 'excel' | 'photo' | 'image' | 'archive' | 'unknown'): string {
     const type = fileType || this.detectedFileType;
     switch (type) {
       case 'excel': return 'Excel 資料';
       case 'photo': return '照片檔案';
+      case 'image': return '圖片檔案';
+      case 'archive': return '壓縮檔案';
       default: return '檔案';
     }
   }
@@ -435,10 +439,12 @@ export class FileUploadComponent implements OnInit, OnDestroy {
   // 取得檔案狀態文字
   getFileStatusText(record: UnifiedFileRecord): string {
     if (record.fileType === 'excel') {
-      if (record.isMerged) {
-        return '已匯入';
+      if (record.isProcessed) {
+        return '已處理';
       }
-      return record.status === 'uploaded' ? '已上傳' : '處理中';
+      return record.status === 'uploaded' ? '已上傳' : 
+             record.status === 'processing' ? '處理中' : 
+             record.status === 'failed' ? '失敗' : '已上傳';
     }
     return '已上傳';
   }
@@ -446,7 +452,7 @@ export class FileUploadComponent implements OnInit, OnDestroy {
   // 取得檔案狀態樣式
   getFileStatusClass(record: UnifiedFileRecord): string {
     if (record.fileType === 'excel') {
-      if (record.isMerged) {
+      if (record.isProcessed) {
         return 'status-merged';
       }
       return record.status === 'uploaded' ? 'status-uploaded' : 'status-processing';
@@ -469,19 +475,21 @@ export class FileUploadComponent implements OnInit, OnDestroy {
     console.log(`🗑️ [FileUpload] 開始刪除${fileType}:`, record.id);
 
     // 從 ID 中提取實際的檔案 ID
-    const fileId = parseInt(record.id.split('_')[1]);
+    const fileId = record.id.split('_')[1];
     
-    if (record.fileType === 'excel') {
+    if (record.fileType === 'excel' || record.fileType === 'image' || record.fileType === 'archive') {
       this.deleteExcelFile(fileId, fileName);
     } else {
-      this.deletePhotoFile(fileId, fileName);
+      // 照片仍然使用數字 ID
+      const photoId = parseInt(fileId);
+      this.deletePhotoFile(photoId, fileName);
     }
   }
 
   /**
    * 刪除 Excel 檔案
    */
-  private deleteExcelFile(fileId: number, fileName: string): void {
+  private deleteExcelFile(fileId: string, fileName: string): void {
     this.subscription.add(
       this.fileUploadService.deleteFile(fileId).subscribe({
         next: (response) => {

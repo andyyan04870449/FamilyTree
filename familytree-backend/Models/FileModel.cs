@@ -201,7 +201,7 @@ namespace familytree_backend.Models
     /// </summary>
     public class FileUploadResponse : ApiResponse
     {
-        public FileUploadModel? FileInfo { get; set; }
+        public FileModel? FileInfo { get; set; }
         public bool IsDuplicate { get; set; }
         public string? FilePath { get; set; }
     }

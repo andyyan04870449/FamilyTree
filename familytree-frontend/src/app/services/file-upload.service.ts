@@ -6,17 +6,22 @@ import { map } from 'rxjs/operators';
 import { AppConstants } from '../constants/app.constants';
 import { ProjectService } from './project.service';
 
-export interface FileUploadModel {
-  id: number;
+export interface FileModel {
+  fileId: string;
+  userId: string;
   filename: string;
   originalFilename: string;
   filePath: string;
   fileSize: number;
   md5Hash: string;
-  uploadTime: string;
-  isMerged: boolean;
-  mergeTime?: string;
-  status: string;
+  fileType?: string;
+  mimeType?: string;
+  associatedRecordId?: string;
+  associatedRecordType?: string;
+  uploadStatus: string;
+  isProcessed: boolean;
+  processedAt?: string;
+  uploadedAt: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,15 +29,19 @@ export interface FileUploadModel {
 export interface FileUploadResponse {
   success: boolean;
   message: string;
-  fileInfo?: FileUploadModel;
+  data?: FileModel;
   isDuplicate: boolean;
+  filePath?: string;
 }
 
 export interface FileListResponse {
   success: boolean;
   message: string;
-  files: FileUploadModel[];
+  files: FileModel[];
   totalCount: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
 }
 
 export interface UploadProgress {
@@ -54,8 +63,8 @@ export interface DeleteImpactResponse {
   providedIn: 'root'
 })
 export class FileUploadService {
-  private apiUrl = `${AppConstants.API_BASE_URL}/FileUpload`;
-  private filesSubject = new BehaviorSubject<FileUploadModel[]>([]);
+  private apiUrl = `${AppConstants.API_BASE_URL}/File`;
+  private filesSubject = new BehaviorSubject<FileModel[]>([]);
   public files$ = this.filesSubject.asObservable();
 
   constructor(
@@ -90,7 +99,8 @@ export class FileUploadService {
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('project_id', currentProject.id);
+    formData.append('associatedRecordId', currentProject.id);
+    formData.append('associatedRecordType', 'project');
 
     return this.http.post<FileUploadResponse>(`${this.apiUrl}/upload`, formData);
   }
@@ -104,7 +114,8 @@ export class FileUploadService {
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('project_id', currentProject.id);
+    formData.append('associatedRecordId', currentProject.id);
+    formData.append('associatedRecordType', 'project');
 
     return this.http.post(`${this.apiUrl}/upload`, formData, {
       reportProgress: true,
@@ -144,20 +155,18 @@ export class FileUploadService {
   }
 
   // 取得刪除檔案的影響資訊
-  getDeleteImpact(fileId: number): Observable<DeleteImpactResponse> {
-    const params = this.getProjectParams();
-    return this.http.get<DeleteImpactResponse>(`${this.apiUrl}/${fileId}/impact`, { params });
+  getDeleteImpact(fileId: string): Observable<DeleteImpactResponse> {
+    return this.http.get<DeleteImpactResponse>(`${this.apiUrl}/${fileId}/impact`);
   }
 
   // 刪除檔案
-  deleteFile(fileId: number): Observable<FileUploadResponse> {
-    const params = this.getProjectParams();
-    return this.http.delete<FileUploadResponse>(`${this.apiUrl}/${fileId}`, { params }).pipe(
+  deleteFile(fileId: string): Observable<FileUploadResponse> {
+    return this.http.delete<FileUploadResponse>(`${this.apiUrl}/${fileId}`).pipe(
       map(response => {
         if (response.success) {
           // 從本地列表中移除已刪除的檔案
           const currentFiles = this.filesSubject.value;
-          const updatedFiles = currentFiles.filter(file => file.id !== fileId);
+          const updatedFiles = currentFiles.filter(file => file.fileId !== fileId);
           this.filesSubject.next(updatedFiles);
         }
         return response;
@@ -211,8 +220,9 @@ export class FileUploadService {
     const statusMap: { [key: string]: string } = {
       'uploaded': '已上傳',
       'processing': '處理中',
-      'merged': '已合併',
-      'error': '錯誤'
+      'processed': '已處理',
+      'failed': '失敗',
+      'deleted': '已刪除'
     };
     return statusMap[status] || status;
   }
@@ -222,8 +232,9 @@ export class FileUploadService {
     const colorMap: { [key: string]: string } = {
       'uploaded': 'success',
       'processing': 'warning',
-      'merged': 'info',
-      'error': 'danger'
+      'processed': 'info',
+      'failed': 'danger',
+      'deleted': 'secondary'
     };
     return colorMap[status] || 'secondary';
   }
@@ -234,7 +245,7 @@ export class FileUploadService {
   }
 
   // 獲取當前檔案列表
-  getCurrentFiles(): FileUploadModel[] {
+  getCurrentFiles(): FileModel[] {
     return this.filesSubject.value;
   }
 } 

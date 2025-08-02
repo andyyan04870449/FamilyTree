@@ -1,0 +1,97 @@
+<!-- InputDialog 組件模板 - 符合設計系統標準 -->
+<div 
+  class="dialog-overlay" 
+  *ngIf="isOpen" 
+  (click)="onOverlayClick($event)"
+  (keydown)="onKeyDown($event)"
+  tabindex="-1"
+  role="dialog"
+  [attr.aria-labelledby]="'dialog-title-' + title"
+  aria-modal="true"
+>
+  <div 
+    class="dialog" 
+    (click)="$event.stopPropagation()"
+    role="document"
+  >
+    <!-- 對話框標題 -->
+    <div class="dialog-header">
+      <h3 [id]="'dialog-title-' + title">{{ title }}</h3>
+      <button 
+        class="close-btn" 
+        (click)="onCancel()"
+        type="button"
+        aria-label="關閉對話框"
+        title="關閉"
+      >
+        ×
+      </button>
+    </div>
+    
+    <!-- 對話框內容 -->
+    <div class="dialog-content">
+      <div class="form-group">
+        <label 
+          [for]="'input-' + title"
+          class="input-label"
+        >
+          {{ label }}
+        </label>
+        <input 
+          [id]="'input-' + title"
+          type="text" 
+          [(ngModel)]="inputValue"
+          [placeholder]="placeholder"
+          (keydown)="onKeyDown($event)"
+          #inputField
+          class="input-field"
+          autocomplete="off"
+          [attr.aria-describedby]="placeholder ? 'input-help-' + title : null"
+        />
+        <div 
+          *ngIf="placeholder" 
+          [id]="'input-help-' + title"
+          class="sr-only"
+        >
+          {{ placeholder }}
+        </div>
+      </div>
+    </div>
+    
+    <!-- 對話框操作按鈕 -->
+    <div class="dialog-actions">
+      <button 
+        class="btn btn-cancel" 
+        (click)="onCancel()"
+        type="button"
+        [attr.aria-label]="cancelText + '，關閉對話框'"
+      >
+        {{ cancelText }}
+      </button>
+      <button 
+        class="btn btn-confirm" 
+        (click)="onConfirm()"
+        type="button"
+        [disabled]="!inputValue || !inputValue.trim()"
+        [attr.aria-label]="confirmText + '，確認輸入內容'"
+      >
+        {{ confirmText }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 無障礙設計 - 螢幕閱讀器專用隱藏文字 -->
+<style>
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+</style>

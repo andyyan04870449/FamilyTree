@@ -1,0 +1,343 @@
+// ================================
+// InputDialog 組件 - 符合設計系統標準
+// ================================
+
+// 導入設計系統
+@import '../../../styles/foundation/tokens';
+@import '../../../styles/foundation/mixins';
+
+:host {
+  position: relative;
+  z-index: $z-modal;
+}
+
+// ================================
+// 對話框覆蓋層
+// ================================
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: $bg-overlay;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: $z-modal-backdrop;
+  backdrop-filter: blur(2px);
+  animation: overlay-enter $duration-normal $easing-ease-out;
+}
+
+// ================================
+// 對話框主體
+// ================================
+.dialog {
+  background: $bg-surface;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-xl;
+  border: 1px solid $border-primary;
+  min-width: 420px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: dialog-enter $duration-normal $easing-ease-out;
+  
+  @media (max-width: 480px) {
+    min-width: 90vw;
+    margin: $spacing-md;
+  }
+}
+
+// ================================
+// 對話框標題區域
+// ================================
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-lg $spacing-xl;
+  background: $bg-secondary;
+  border-bottom: 1px solid $border-secondary;
+
+  h3 {
+    margin: 0;
+    color: $text-primary;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    line-height: $line-height-tight;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    color: $text-secondary;
+    font-size: 24px;
+    cursor: pointer;
+    padding: $spacing-xs;
+    border-radius: $radius-sm;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all $duration-fast $easing-ease-in-out;
+
+    &:hover {
+      background: $bg-tertiary;
+      color: $text-primary;
+      transform: scale(1.1);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    &:focus-visible {
+      outline: 2px solid $border-focus;
+      outline-offset: 2px;
+    }
+  }
+}
+
+// ================================
+// 對話框內容區域
+// ================================
+.dialog-content {
+  padding: $spacing-xl;
+
+  .form-group {
+    margin: 0;
+
+    label {
+      display: block;
+      margin-bottom: $spacing-sm;
+      color: $text-primary;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-medium;
+      line-height: $line-height-normal;
+    }
+
+    input {
+      width: 100%;
+      padding: $spacing-sm $spacing-md;
+      border: 1px solid $border-secondary;
+      border-radius: $radius-sm;
+      background: $bg-primary;
+      color: $text-primary;
+      font-size: $font-size-base;
+      font-family: $font-family-base;
+      line-height: $line-height-normal;
+      transition: all $duration-fast $easing-ease-in-out;
+      box-sizing: border-box;
+
+      &::placeholder {
+        color: $text-tertiary;
+      }
+
+      &:focus {
+        outline: none;
+        border-color: $primary;
+        box-shadow: $shadow-focus;
+      }
+
+      &:disabled {
+        background: $bg-tertiary;
+        color: $text-disabled;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+// ================================
+// 對話框操作區域
+// ================================
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-md;
+  padding: $spacing-lg $spacing-xl;
+  background: $bg-secondary;
+  border-top: 1px solid $border-secondary;
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-lg;
+    border: none;
+    border-radius: $radius-md;
+    font-family: $font-family-base;
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    line-height: $line-height-tight;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all $duration-normal $easing-ease-in-out;
+    user-select: none;
+    white-space: nowrap;
+    min-width: 80px;
+
+    &:focus-visible {
+      outline: 2px solid $border-focus;
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    // 取消按鈕樣式
+    &.btn-cancel {
+      background: $bg-tertiary;
+      color: $text-primary;
+      border: 1px solid $border-primary;
+
+      &:hover:not(:disabled) {
+        background: $bg-primary;
+        border-color: $border-secondary;
+        transform: translateY(-1px);
+        box-shadow: $shadow-sm;
+      }
+
+      &:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: none;
+      }
+    }
+
+    // 確認按鈕樣式
+    &.btn-confirm {
+      background: $primary;
+      color: $text-inverse;
+      border: 1px solid transparent;
+
+      &:hover:not(:disabled) {
+        background: $primary-hover;
+        transform: translateY(-1px);
+        box-shadow: $shadow-md;
+      }
+
+      &:active:not(:disabled) {
+        background: $primary-active;
+        transform: translateY(0);
+        box-shadow: $shadow-sm;
+      }
+    }
+  }
+}
+
+// ================================
+// 動畫效果
+// ================================
+@keyframes overlay-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+// ================================
+// 響應式設計
+// ================================
+@media (max-width: 768px) {
+  .dialog {
+    margin: $spacing-md;
+    min-width: calc(100vw - #{$spacing-xl});
+  }
+
+  .dialog-header,
+  .dialog-content,
+  .dialog-actions {
+    padding-left: $spacing-lg;
+    padding-right: $spacing-lg;
+  }
+
+  .dialog-actions {
+    flex-direction: column-reverse;
+    gap: $spacing-sm;
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .dialog-header,
+  .dialog-content,
+  .dialog-actions {
+    padding-left: $spacing-md;
+    padding-right: $spacing-md;
+  }
+
+  .dialog-header {
+    padding-top: $spacing-md;
+    padding-bottom: $spacing-md;
+
+    h3 {
+      font-size: $font-size-base;
+    }
+  }
+
+  .dialog-content {
+    padding-top: $spacing-lg;
+    padding-bottom: $spacing-lg;
+  }
+
+  .dialog-actions {
+    padding-top: $spacing-md;
+    padding-bottom: $spacing-md;
+  }
+}
+
+// ================================
+// 高對比度模式支援
+// ================================
+@media (prefers-contrast: high) {
+  .dialog {
+    border-width: 2px;
+  }
+
+  .dialog-header,
+  .dialog-actions {
+    border-bottom-width: 2px;
+    border-top-width: 2px;
+  }
+
+  .btn {
+    border-width: 2px;
+  }
+}
+
+// ================================
+// 減少動畫模式支援
+// ================================
+@media (prefers-reduced-motion: reduce) {
+  .dialog-overlay,
+  .dialog,
+  .btn,
+  .close-btn {
+    animation: none;
+    transition: none;
+  }
+}

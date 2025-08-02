@@ -61,11 +61,41 @@ fi
 
 log_info "環境檢查通過"
 
-# 清理可能佔用的端口
-log_info "清理可能佔用的端口..."
+# 清理可能佔用的端口和進程
+log_info "清理可能佔用的端口和進程..."
+
+# 清理後端相關進程
+log_info "清理後端進程..."
+pkill -f "dotnet.*familytree" 2>/dev/null || true
+pkill -f "dotnet.*run.*5088" 2>/dev/null || true
 lsof -ti :5088 | xargs kill -9 2>/dev/null || true
+
+# 清理前端相關進程
+log_info "清理前端進程..."
+pkill -f "ng serve" 2>/dev/null || true
+pkill -f "npm start" 2>/dev/null || true
+pkill -f "node.*angular" 2>/dev/null || true
 lsof -ti :4200 | xargs kill -9 2>/dev/null || true
-sleep 2
+
+# 清理其他可能的 Node.js 進程
+log_info "清理其他 Node.js 進程..."
+pkill -f "node.*localhost:4200" 2>/dev/null || true
+
+# 等待進程完全終止
+sleep 3
+
+# 再次確認端口已釋放
+if lsof -i :5088 > /dev/null 2>&1; then
+    log_warn "端口 5088 仍被佔用，強制清理..."
+    lsof -ti :5088 | xargs kill -9 2>/dev/null || true
+fi
+
+if lsof -i :4200 > /dev/null 2>&1; then
+    log_warn "端口 4200 仍被佔用，強制清理..."
+    lsof -ti :4200 | xargs kill -9 2>/dev/null || true
+fi
+
+log_info "端口清理完成"
 
 # 定義服務 PID 變數
 BACKEND_PID=""
@@ -186,6 +216,7 @@ cleanup() {
     echo ""
     log_info "正在停止服務器..."
     
+    # 停止當前啟動的進程
     if [ ! -z "$BACKEND_PID" ] && kill -0 $BACKEND_PID 2>/dev/null; then
         kill $BACKEND_PID 2>/dev/null
         log_info "✅ 後端已停止 (PID: $BACKEND_PID)"
@@ -196,9 +227,25 @@ cleanup() {
         log_info "✅ 前端已停止 (PID: $FRONTEND_PID)"
     fi
     
+    # 全面清理所有相關進程
+    log_info "全面清理所有相關進程..."
+    
+    # 清理後端進程
+    pkill -f "dotnet.*familytree" 2>/dev/null || true
+    pkill -f "dotnet.*run.*5088" 2>/dev/null || true
+    
+    # 清理前端進程
+    pkill -f "ng serve" 2>/dev/null || true
+    pkill -f "npm start" 2>/dev/null || true
+    pkill -f "node.*angular" 2>/dev/null || true
+    pkill -f "node.*localhost:4200" 2>/dev/null || true
+    
     # 強制清理端口
     lsof -ti :5088 | xargs kill -9 2>/dev/null || true
     lsof -ti :4200 | xargs kill -9 2>/dev/null || true
+    
+    # 等待進程完全終止
+    sleep 2
     
     echo -e "${BLUE}=======================================${NC}"
     echo -e "${GREEN}🛑 所有服務已停止${NC}"
