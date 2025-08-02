@@ -1,10 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, of, Subject } from 'rxjs';
-import { map, tap, catchError, takeUntil } from 'rxjs/operators';
-import { AuthService } from './auth.service';
+import { map, tap, catchError } from 'rxjs/operators';
 import { SYSTEM_ROLES, ROLE_LEVELS, RoleHelper, SystemRole } from '../constants/roles.const';
 import { PERMISSIONS, PermissionHelper } from '../constants/permissions.const';
+import { UserInfo } from './auth.service';
+import { ErrorHandlerService } from './error-handler.service';
+import { BaseApiService } from './base-api.service';
 
 export interface PermissionDefinition {
   resource: string;
@@ -57,8 +59,8 @@ export interface PermissionCheckRequest {
 @Injectable({
   providedIn: 'root'
 })
-export class PermissionService {
-  private apiUrl = '/api';
+export class PermissionService extends BaseApiService {
+  private readonly endpoint = 'permission';
   
   // 快取當前使用者的權限
   private userPermissionsSubject = new BehaviorSubject<string[]>([]);
@@ -67,35 +69,30 @@ export class PermissionService {
   private userRolesSubject = new BehaviorSubject<RoleInfo[]>([]);
   public userRoles$ = this.userRolesSubject.asObservable();
   
-  private destroy$ = new Subject<void>();
+  private currentUserSubject = new BehaviorSubject<UserInfo | null>(null);
+  public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(
-    private http: HttpClient,
-    private authService: AuthService
+    http: HttpClient,
+    private errorHandler: ErrorHandlerService
   ) {
-    // 監聽登入事件
-    this.authService.loginSuccess$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.loadCurrentUserPermissions();
-      });
-    
-    // 監聽登出事件
-    this.authService.logout$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.clearPermissionCache();
-      });
-    
-    // 如果已經登入，載入權限
-    if (this.authService.isLoggedIn()) {
+    super(http);
+  }
+
+  // 設定當前使用者（由 AuthService 呼叫）
+  setCurrentUser(user: UserInfo | null): void {
+    this.currentUserSubject.next(user);
+    if (user) {
       this.loadCurrentUserPermissions();
+    } else {
+      this.clearPermissionCache();
     }
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+  // 清除使用者資訊（由 AuthService 呼叫）
+  clearUser(): void {
+    this.currentUserSubject.next(null);
+    this.clearPermissionCache();
   }
 
   // 載入當前使用者的權限
@@ -121,23 +118,25 @@ export class PermissionService {
 
   // 檢查專案權限
   checkProjectPermission(projectId: string, permission: string): Observable<boolean> {
-    return this.http.post<any>(`${this.apiUrl}/permission/check`, {
+    return this.post<any>(`${this.endpoint}/check`, {
       permission,
       projectId
     }).pipe(
       map(response => response.data.hasPermission),
-      catchError(() => of(false))
+      catchError(this.errorHandler.handleError('檢查專案權限', 'PermissionService'))
     );
   }
 
   // 取得當前使用者的權限
   getCurrentUserPermissions(): Observable<string[]> {
-    return this.http.get<any>(`${this.apiUrl}/permission/current`).pipe(
+    return this.get<any>(`${this.endpoint}/current`).pipe(
       tap(response => {
-        this.userPermissionsSubject.next(response.data.permissions);
-        this.userRolesSubject.next(response.data.roles);
+        if (response?.data) {
+          this.userPermissionsSubject.next(response.data.permissions || []);
+          this.userRolesSubject.next(response.data.roles || []);
+        }
       }),
-      map(response => response.data.permissions),
+      map(response => response?.data?.permissions || []),
       catchError(() => {
         this.userPermissionsSubject.next([]);
         this.userRolesSubject.next([]);
@@ -148,7 +147,7 @@ export class PermissionService {
 
   // 取得使用者的權限資訊
   getUserPermissions(userId: string): Observable<UserPermissionInfo> {
-    return this.http.get<any>(`${this.apiUrl}/permission/user/${userId}`).pipe(
+    return this.get<any>(`${this.endpoint}/user/${userId}`).pipe(
       map(response => {
         const data = response.data;
         return {
@@ -157,59 +156,72 @@ export class PermissionService {
           email: data.email,
           fullName: data.fullName,
           roles: data.roles,
-          permissions: data.directPermissions || [], // 使用 directPermissions 作為主要的 permissions
+          permissions: data.directPermissions || [],
           directPermissions: data.directPermissions || [],
           allPermissions: data.allPermissions || [],
           projects: data.projectPermissions ? Object.values(data.projectPermissions) : []
         };
-      })
+      }),
+      catchError(this.errorHandler.handleError('取得使用者權限', 'PermissionService'))
     );
   }
 
   // 指派角色給使用者
   assignRoleToUser(userId: string, roleId: string): Observable<boolean> {
-    return this.http.post<any>(`${this.apiUrl}/permission/user/${userId}/role`, { roleId }).pipe(
-      map(response => response.success)
+    return this.post<any>(`${this.endpoint}/user/${userId}/role`, { roleId }).pipe(
+      map(response => response.success),
+      tap(() => this.errorHandler.showSuccess('角色指派成功')),
+      catchError(this.errorHandler.handleError('指派角色', 'PermissionService'))
     );
   }
 
   // 移除使用者的角色
   removeRoleFromUser(userId: string, roleId: string): Observable<boolean> {
-    return this.http.delete<any>(`${this.apiUrl}/permission/user/${userId}/role/${roleId}`).pipe(
-      map(response => response.success)
+    return this.delete<any>(`${this.endpoint}/user/${userId}/role/${roleId}`).pipe(
+      map(response => response.success),
+      tap(() => this.errorHandler.showSuccess('角色移除成功')),
+      catchError(this.errorHandler.handleError('移除角色', 'PermissionService'))
     );
   }
 
   // 設定使用者的額外權限
   setUserPermissions(userId: string, permissions: string[]): Observable<boolean> {
-    return this.http.post<any>(`${this.apiUrl}/permission/user/${userId}`, { permissions }).pipe(
-      map(response => response.success)
+    return this.post<any>(`${this.endpoint}/user/${userId}`, { permissions }).pipe(
+      map(response => response.success),
+      tap(() => this.errorHandler.showSuccess('權限設定成功')),
+      catchError(this.errorHandler.handleError('設定權限', 'PermissionService'))
     );
   }
 
   // 批次設定使用者權限
   batchSetUserPermissions(assignments: Array<{userId: string, permissions: string[]}>): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/permission/batch`, { assignments });
+    return this.post<any>(`${this.endpoint}/batch`, { assignments }).pipe(
+      tap(() => this.errorHandler.showSuccess('批次權限設定成功')),
+      catchError(this.errorHandler.handleError('批次設定權限', 'PermissionService'))
+    );
   }
 
   // 取得所有權限定義
   getAllPermissionDefinitions(): Observable<PermissionDefinition[]> {
-    return this.http.get<any>(`${this.apiUrl}/permission/definitions`).pipe(
-      map(response => response.data)
+    return this.get<any>(`${this.endpoint}/definitions`).pipe(
+      map(response => response.data),
+      catchError(this.errorHandler.handleError('取得權限定義', 'PermissionService'))
     );
   }
 
   // 取得所有角色
   getAllRoles(): Observable<RoleInfo[]> {
-    return this.http.get<any>(`${this.apiUrl}/role`).pipe(
-      map(response => response.data)
+    return this.get<any>('role').pipe(
+      map(response => response.data),
+      catchError(this.errorHandler.handleError('取得角色列表', 'PermissionService'))
     );
   }
 
   // 取得角色詳情
   getRole(roleId: string): Observable<RoleInfo> {
-    return this.http.get<any>(`${this.apiUrl}/role/${roleId}`).pipe(
-      map(response => response.data)
+    return this.get<any>(`role/${roleId}`).pipe(
+      map(response => response.data),
+      catchError(this.errorHandler.handleError('取得角色詳情', 'PermissionService'))
     );
   }
 
@@ -220,8 +232,10 @@ export class PermissionService {
     description: string;
     level: number;
   }): Observable<boolean> {
-    return this.http.post<any>(`${this.apiUrl}/role`, role).pipe(
-      map(response => response.success)
+    return this.post<any>('role', role).pipe(
+      map(response => response.success),
+      tap(() => this.errorHandler.showSuccess('角色建立成功')),
+      catchError(this.errorHandler.handleError('建立角色', 'PermissionService'))
     );
   }
 
@@ -231,29 +245,36 @@ export class PermissionService {
     description: string;
     level: number;
   }): Observable<boolean> {
-    return this.http.put<any>(`${this.apiUrl}/role/${roleId}`, role).pipe(
-      map(response => response.success)
+    return this.put<any>(`role/${roleId}`, role).pipe(
+      map(response => response.success),
+      tap(() => this.errorHandler.showSuccess('角色更新成功')),
+      catchError(this.errorHandler.handleError('更新角色', 'PermissionService'))
     );
   }
 
   // 刪除角色
   deleteRole(roleId: string): Observable<boolean> {
-    return this.http.delete<any>(`${this.apiUrl}/role/${roleId}`).pipe(
-      map(response => response.success)
+    return this.delete<any>(`role/${roleId}`).pipe(
+      map(response => response.success),
+      tap(() => this.errorHandler.showSuccess('角色刪除成功')),
+      catchError(this.errorHandler.handleError('刪除角色', 'PermissionService'))
     );
   }
 
   // 取得角色權限
   getRolePermissions(roleId: string): Observable<string[]> {
-    return this.http.get<any>(`${this.apiUrl}/role/${roleId}/permissions`).pipe(
-      map(response => response.data)
+    return this.get<any>(`role/${roleId}/permissions`).pipe(
+      map(response => response.data),
+      catchError(this.errorHandler.handleError('取得角色權限', 'PermissionService'))
     );
   }
 
   // 設定角色權限
   setRolePermissions(roleId: string, permissions: string[]): Observable<boolean> {
-    return this.http.post<any>(`${this.apiUrl}/role/${roleId}/permissions`, { permissions }).pipe(
-      map(response => response.success)
+    return this.post<any>(`role/${roleId}/permissions`, { permissions }).pipe(
+      map(response => response.success),
+      tap(() => this.errorHandler.showSuccess('角色權限設定成功')),
+      catchError(this.errorHandler.handleError('設定角色權限', 'PermissionService'))
     );
   }
 
@@ -264,15 +285,18 @@ export class PermissionService {
     description: string;
     level: number;
   }): Observable<boolean> {
-    return this.http.post<any>(`${this.apiUrl}/role/${sourceRoleId}/copy`, newRole).pipe(
-      map(response => response.success)
+    return this.post<any>(`role/${sourceRoleId}/copy`, newRole).pipe(
+      map(response => response.success),
+      tap(() => this.errorHandler.showSuccess('角色複製成功')),
+      catchError(this.errorHandler.handleError('複製角色', 'PermissionService'))
     );
   }
 
   // 取得角色使用者
   getRoleUsers(roleId: string): Observable<any[]> {
-    return this.http.get<any>(`${this.apiUrl}/role/${roleId}/users`).pipe(
-      map(response => response.data)
+    return this.get<any>(`role/${roleId}/users`).pipe(
+      map(response => response.data),
+      catchError(this.errorHandler.handleError('取得角色使用者', 'PermissionService'))
     );
   }
 
@@ -289,14 +313,15 @@ export class PermissionService {
 
   // 檢查是否為管理員
   isAdmin(): boolean {
-    const roles = this.userRolesSubject.value;
-    return roles.some(role => RoleHelper.isAdminLevel(role.id));
+    const user = this.currentUserSubject.value;
+    if (!user?.role) return false;
+    return RoleHelper.isAdminLevel(user.role);
   }
 
   // 檢查是否為超級管理員
   isSuperAdmin(): boolean {
-    const roles = this.userRolesSubject.value;
-    return roles.some(role => role.id === SYSTEM_ROLES.SUPER_ADMIN);
+    const user = this.currentUserSubject.value;
+    return user?.role === SYSTEM_ROLES.SUPER_ADMIN;
   }
 
   // 檢查角色是否達到最低等級
@@ -337,7 +362,21 @@ export class PermissionService {
           grouped.get(category)!.push(permission);
         });
         return grouped;
-      })
+      }),
+      catchError(this.errorHandler.handleError('取得權限分組', 'PermissionService'))
     );
+  }
+
+  // 使用者管理相關的便利方法
+  canManageUsers(): boolean {
+    return this.hasPermission(PERMISSIONS.USER_MANAGEMENT) || this.isAdmin();
+  }
+
+  canEditUser(): boolean {
+    return this.hasPermission(PERMISSIONS.USER_EDIT) || this.isAdmin();
+  }
+
+  canDeleteUser(): boolean {
+    return this.hasPermission(PERMISSIONS.USER_DELETE) || this.isAdmin();
   }
 }

@@ -5,6 +5,8 @@ import { map, catchError, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { SYSTEM_ROLES, ROLE_LEVELS, RoleHelper, SystemRole } from '../constants/roles.const';
 import { PERMISSIONS, PermissionHelper } from '../constants/permissions.const';
+import { ErrorHandlerService } from './error-handler.service';
+import { PermissionService } from './permission.service';
 
 export interface LoginRequest {
   usernameOrEmail: string;
@@ -58,7 +60,9 @@ export class AuthService {
 
   constructor(
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private errorHandler: ErrorHandlerService,
+    private permissionService: PermissionService
   ) {
     const storedUser = this.getStoredUser();
     this.currentUserSubject = new BehaviorSubject<UserInfo | null>(storedUser);
@@ -99,10 +103,7 @@ export class AuthService {
             this.handleLoginSuccess(response.data);
           }
         }),
-        catchError(error => {
-          console.error('Login error in service:', error);
-          return this.handleError(error);
-        })
+        catchError(this.errorHandler.handleError('登入', 'AuthService'))
       );
   }
 
@@ -122,11 +123,7 @@ export class AuthService {
           tap(() => {
             this.router.navigate(['/login']);
           }),
-          catchError(() => {
-            // 即使登出 API 失敗，仍然導航到登入頁
-            this.router.navigate(['/login']);
-            return throwError(() => new Error('登出失敗'));
-          })
+          catchError(this.errorHandler.handleError('登出', 'AuthService'))
         );
     } else {
       this.router.navigate(['/login']);
@@ -159,7 +156,7 @@ export class AuthService {
         catchError(error => {
           this.clearAuthData();
           this.router.navigate(['/login']);
-          return throwError(() => error);
+          return this.errorHandler.handleError('更新 Token', 'AuthService')(error);
         })
       );
   }
@@ -175,7 +172,7 @@ export class AuthService {
           this.currentUserSubject.next(user);
           this.storeUser(user);
         }),
-        catchError(this.handleError)
+        catchError(this.errorHandler.handleError('取得使用者資訊', 'AuthService'))
       );
   }
 
@@ -187,65 +184,24 @@ export class AuthService {
   }
 
   /**
-   * 檢查是否為管理員
+   * 檢查是否為管理員 (委派給 PermissionService)
    */
   isAdmin(): boolean {
-    const user = this.currentUserValue;
-    if (!user?.role) return false;
-    return RoleHelper.isAdminLevel(user.role);
+    return this.permissionService.isAdmin();
   }
 
   /**
-   * 檢查是否為超級管理員
+   * 檢查是否為超級管理員 (委派給 PermissionService)
    */
   isSuperAdmin(): boolean {
-    const user = this.currentUserValue;
-    return user?.role === SYSTEM_ROLES.SUPER_ADMIN;
+    return this.permissionService.isSuperAdmin();
   }
 
   /**
-   * 檢查使用者角色是否達到最低權限等級
-   */
-  hasMinimumRole(requiredRole: SystemRole): boolean {
-    const user = this.currentUserValue;
-    if (!user?.role) return false;
-    return RoleHelper.hasMinimumRole(user.role, requiredRole);
-  }
-
-  /**
-   * 檢查使用者是否擁有特定權限
+   * 檢查使用者是否擁有特定權限 (委派給 PermissionService)
    */
   hasPermission(permission: string): boolean {
-    const user = this.currentUserValue;
-    if (!user?.role) return false;
-    return PermissionHelper.roleHasPermission(user.role, permission);
-  }
-
-  /**
-   * 檢查使用者角色是否有效
-   */
-  hasValidRole(): boolean {
-    const user = this.currentUserValue;
-    if (!user?.role) return false;
-    return RoleHelper.isValidRole(user.role);
-  }
-
-  /**
-   * 取得使用者角色顯示名稱
-   */
-  getCurrentUserRoleDisplayName(): string {
-    const user = this.currentUserValue;
-    if (!user?.role) return '';
-    return RoleHelper.getDisplayName(user.role);
-  }
-
-  /**
-   * 取得使用者角色等級
-   */
-  getCurrentUserRoleLevel(): number {
-    const user = this.currentUserValue;
-    if (!user?.role) return 0;
-    return ROLE_LEVELS[user.role as SystemRole] || 0;
+    return this.permissionService.hasPermission(permission);
   }
 
   /**
@@ -287,6 +243,9 @@ export class AuthService {
     this.storeTokens(data.accessToken, data.refreshToken);
     this.storeUser(data.user);
     this.currentUserSubject.next(data.user);
+    
+    // 更新 PermissionService 的使用者資訊
+    this.permissionService.setCurrentUser(data.user);
     
     // 計算並儲存過期時間
     let expirationTime: number;
@@ -421,15 +380,11 @@ export class AuthService {
     this.tokenExpirationTime = 0;
     this.stopRefreshTokenTimer();
     
+    // 清除 PermissionService 的使用者資訊
+    this.permissionService.clearUser();
+    
     // 發送登出事件
     this.logoutSubject.next();
   }
 
-  /**
-   * 處理錯誤
-   */
-  private handleError(error: any): Observable<never> {
-    console.error('Auth error:', error);
-    return throwError(() => error);
-  }
 }
